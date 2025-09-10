@@ -29,7 +29,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
+  <View className="flex-1" style={{ backgroundColor: '#F3E9DD' }}>
       <Navbar />
       <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
         <View className="items-center mt-8 mb-8">
