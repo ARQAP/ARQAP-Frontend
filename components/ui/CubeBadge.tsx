@@ -1,7 +1,7 @@
-import React from 'react';
-import { Text, View } from 'react-native';
+import React from "react";
+import { Text, View } from "react-native";
 
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome } from "@expo/vector-icons";
 
 interface CubeBadgeProps {
   count: number;
@@ -9,7 +9,11 @@ interface CubeBadgeProps {
   icon?: keyof typeof FontAwesome.glyphMap;
 }
 
-const CubeBadge: React.FC<CubeBadgeProps> = ({ count, size = 32, icon = 'cube' }) => {
+const CubeBadge: React.FC<CubeBadgeProps> = ({
+  count,
+  size = 32,
+  icon = "cube",
+}) => {
   return (
     <View className="items-center">
       <View className="bg-[#757A65] rounded-full p-2">

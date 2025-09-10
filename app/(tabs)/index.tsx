@@ -22,7 +22,7 @@ export default function HomeScreen() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#8B5E3C" />
       </View>
     );
@@ -31,34 +31,19 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-white">
       <Navbar />
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ alignItems: "center", marginTop: 32, marginBottom: 32 }}>
+      <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
+        <View className="items-center mt-8 mb-8">
           <Text
-            style={{
-              fontFamily: "MateSC-Regular",
-              color: "#8B5E3C",
-              fontSize: 45,
-              fontWeight: "bold",
-              textAlign: "center",
-              width: "100%",
-            }}
+            className="text-[45px] font-bold text-center w-full text-[#8B5E3C]"
+            style={{ fontFamily: "MateSC-Regular" }}
           >
             ARQAP
           </Text>
         </View>
-        <View style={{ alignItems: "center", marginBottom: 32 }}>
+        <View className="items-center mb-8">
           <Text
-            style={{
-              fontFamily: "MateSC-Regular",
-              color: "#8B5E3C",
-              fontSize: 30,
-              fontWeight: "bold",
-              textAlign: "center",
-              width: "100%",
-            }}
+            className="text-[30px] font-bold text-center w-full text-[#8B5E3C]"
+            style={{ fontFamily: "MateSC-Regular" }}
           >
             Museo De Ciencias Naturales
           </Text>
@@ -93,27 +78,14 @@ export default function HomeScreen() {
           icon="exchange"
           cubeCount={23}
         />
-        <View style={{ alignItems: "center", marginTop: 30 }}>
+        <View className="items-center mt-7">
           <Text
-            style={{
-              fontFamily: "MateSC-Regular",
-              color: "#8B5E3C",
-              fontSize: 28,
-              fontWeight: "bold",
-              marginBottom: 14,
-            }}
+            className="text-[28px] font-bold text-[#8B5E3C] mb-3"
+            style={{ fontFamily: "MateSC-Regular" }}
           >
             Acciones rápidas
           </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              marginTop: 8,
-              gap: 14,
-            }}
-          >
+          <View className="flex-col justify-center items-center mt-2 gap-4 w-full">
             <ActionButton title="Nueva Pieza" />
             <ActionButton title="Nuevo Arqueólogo" />
             <ActionButton title="Nueva Colección" />

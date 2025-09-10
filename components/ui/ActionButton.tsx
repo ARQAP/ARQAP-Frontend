@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface ActionButtonProps {
   title: string;
@@ -8,69 +8,29 @@ interface ActionButtonProps {
 
 export default function ActionButton({ title, onPress }: ActionButtonProps) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
-      <View
-        style={{
-          width: "100%",
-          alignItems: "center",
-          position: "absolute",
-          top: 16,
-          left: 0,
-        }}
-      >
-        <View style={styles.circle}>
-          <Text style={styles.plus}>+</Text>
+    <TouchableOpacity
+      className="bg-[#deceb1] rounded-2xl p-4 w-[90%] max-w-[500px] h-[90px] items-center justify-center shadow-md relative overflow-visible self-center"
+      activeOpacity={0.8}
+      onPress={onPress}
+    >
+      <View className="absolute top-4 left-0 w-full items-center">
+        <View className="bg-[#8b5c2a] rounded-full w-11 h-11 items-center justify-center ">
+          <Text
+            className="text-white font-bold text-xl"
+            style={{ lineHeight: 44, marginTop: -5 }}
+          >
+            +
+          </Text>
         </View>
       </View>
-      <View
-        style={{ flex: 1, justifyContent: "flex-end", alignItems: "center" }}
-      >
-        <Text style={styles.label}>{title}</Text>
+      <View className="flex-1 justify-end items-center mt-12">
+        <Text
+          className="text-center mt-1 text-[#3d2c13]"
+          style={{ fontFamily: "MateSC-Regular", fontSize: 16 }}
+        >
+          {title}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#deceb1",
-    borderRadius: 16,
-    padding: 16,
-    width: "20%",
-    minWidth: 140,
-    maxWidth: 240,
-    height: 120,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  circle: {
-    backgroundColor: "#8b5c2a",
-    borderRadius: 40,
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  plus: {
-    color: "#fff",
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    lineHeight: 44,
-    includeFontPadding: false,
-    marginTop: -6,
-  },
-  label: {
-    fontFamily: "MateSC-Regular",
-    fontSize: 16,
-    color: "#3d2c13",
-    textAlign: "center",
-    marginTop: 4,
-  },
-});

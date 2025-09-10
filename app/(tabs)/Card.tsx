@@ -1,6 +1,6 @@
 import { FontAwesome } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import CubeBadge from "../../components/ui/CubeBadge";
 
 interface CardProps {
@@ -12,12 +12,22 @@ interface CardProps {
 
 export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   return (
-    <View style={styles.cardContainer}>
-      <View style={styles.textContainer}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+    <View className="w-[90%] self-center rounded-xl p-4 my-2 flex-row items-center bg-[#6B705C]">
+      <View className="flex-1">
+        <Text
+          className="font-bold text-xl mb-1 text-white"
+          style={{ fontFamily: "MateSC-Regular" }}
+        >
+          {title}
+        </Text>
+        <Text
+          className="text-base text-white opacity-80"
+          style={{ fontFamily: "CrimsonText-Regular" }}
+        >
+          {subtitle}
+        </Text>
       </View>
-      <View style={styles.iconContainer}>
+      <View className="ml-4 items-center justify-center">
         {cubeCount !== undefined ? (
           <CubeBadge count={cubeCount} icon={icon} />
         ) : icon ? (
@@ -27,37 +37,3 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  cardContainer: {
-    width: "90%",
-    alignSelf: "center",
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#6B705C",
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    fontWeight: "bold",
-    fontSize: 20,
-    marginBottom: 4,
-    color: "#fff",
-    fontFamily: "MateSC-Regular",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#fff",
-    opacity: 0.8,
-    fontFamily: "CrimsonText-Regular",
-  },
-  iconContainer: {
-    marginLeft: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
