@@ -1,5 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
+import { useRouter } from "expo-router";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,12 +10,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
 export default function HomeScreen() {
   const [fontsLoaded] = useFonts({
     MateSC: require("../../assets/fonts/MateSC-Regular.ttf"),
     CrimsonText: require("../../assets/fonts/CrimsonText-Regular.ttf"),
   });
+  const router = useRouter();
 
   if (!fontsLoaded) return null;
 
@@ -78,7 +79,10 @@ export default function HomeScreen() {
                 />
               </View>
             </View>
-            <TouchableOpacity className="rounded-lg w-full py-3 mt-2 bg-[#6B705C]">
+            <TouchableOpacity
+              className="rounded-lg w-full py-3 mt-2 bg-[#6B705C]"
+              onPress={() => router.push("/(tabs)/home")}
+            >
               <Text
                 className="text-white text-base text-center"
                 style={{ fontFamily: "CrimsonText-Regular" }}
