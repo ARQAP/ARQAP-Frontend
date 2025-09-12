@@ -1,7 +1,11 @@
 import React from "react";
 import { Image, Text, View } from "react-native";
 
-function Navbar() {
+interface NavbarProps {
+  title: string;
+}
+
+function Navbar({ title }: NavbarProps) {
   return (
     <View className="w-full bg-[#D9C6A5] flex-row items-center h-[80px]">
       <View
@@ -23,7 +27,7 @@ function Navbar() {
           className="font-bold text-2xl text-left text-black"
           style={{ fontFamily: "MateSC-Regular" }}
         >
-          Inicio
+          {title}
         </Text>
       </View>
     </View>
