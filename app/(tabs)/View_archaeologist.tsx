@@ -1,9 +1,11 @@
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native";
 import Button from "../../components/ui/Button";
 import Card_archaeologist from "./Card_archaeologist";
 
 export default function View_archaeologist() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const arqueologos = [
     {
@@ -72,7 +74,10 @@ export default function View_archaeologist() {
       </View>
 
       <View className="p-5 flex-1">
-        <Button title="Registrar nuevo arqueologo" />
+        <Button
+          title="Registrar nuevo arqueologo"
+          onPress={() => router.push("/(tabs)/New_archaeologist")}
+        />
         <TextInput
           placeholder="Buscar por nombre o apellido"
           className="bg-[#F7F5F2] rounded-lg p-2 mb-5 border border-[#ccc]"
