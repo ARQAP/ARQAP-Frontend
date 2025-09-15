@@ -15,7 +15,7 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   const router = useRouter();
   const handlePress = () => {
     if (title === "Arqueólogos") {
-      router.push("/(tabs)/View_archaeologist");
+      router.push("/(tabs)/archaeologist");
     }
   };
   return (

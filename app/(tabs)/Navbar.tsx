@@ -30,9 +30,7 @@ function Navbar({ title, showBackArrow, backToHome }: NavbarProps) {
         {showBackArrow && (
           <TouchableOpacity
             onPress={() =>
-              backToHome
-                ? router.push("/(tabs)/home")
-                : router.push("/(tabs)/View_archaeologist")
+              backToHome ? router.push("/(tabs)/home") : router.back()
             }
             style={{ marginRight: 12 }}
           >

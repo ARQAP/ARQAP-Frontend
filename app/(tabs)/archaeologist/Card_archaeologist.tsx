@@ -21,7 +21,7 @@ const Card_archaeologist: React.FC<CardArchaeologistProps> = ({
   const handleEdit = () => {
     setMenuVisible(false);
     router.push({
-      pathname: "/(tabs)/Edit_archaeologist",
+      pathname: "/(tabs)/archaeologist/Edit_archaeologist",
       params: { nombre, apellido },
     });
   };

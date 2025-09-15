@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TextInput, View } from "react-native";
-import Button from "../../components/ui/Button";
-import Navbar from "./Navbar";
+import Button from "../../../components/ui/Button";
+import Navbar from "../Navbar";
 
 export default function New_archaeologist() {
   const router = useRouter();

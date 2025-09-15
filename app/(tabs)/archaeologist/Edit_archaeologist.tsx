@@ -1,10 +1,14 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TextInput, View } from "react-native";
-import Button from "../../components/ui/Button";
-import Navbar from "./Navbar";
+import Button from "../../../components/ui/Button";
+import Navbar from "../Navbar";
 
-export default function Edit_archaeologist() {
+export default function Edit_archaeologist({
+  showBackArrow = false,
+}: {
+  showBackArrow?: boolean;
+}) {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [nombre, setNombre] = useState(
@@ -24,7 +28,7 @@ export default function Edit_archaeologist() {
 
   return (
     <View className="flex-1 bg-[#F7F0E6] pt-0 items-center">
-      <Navbar title="Editar Arqueólogo" showBackArrow />
+    <Navbar title="Editar Arqueólogo" showBackArrow />
       <View className="w-full items-center">
         <Text
           className="text-center text-[18px] mt-3 mb-2 text-[#222]"

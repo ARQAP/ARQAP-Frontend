@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, TextInput, View } from "react-native";
-import Button from "../../components/ui/Button";
+import Button from "../../../components/ui/Button";
 import Card_archaeologist from "./Card_archaeologist";
-import Navbar from "./Navbar";
+import Navbar from "../Navbar";
 
 export default function View_archaeologist() {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function View_archaeologist() {
       <View className="p-5 flex-1">
         <Button
           title="Registrar nuevo arqueologo"
-          onPress={() => router.push("/(tabs)/New_archaeologist")}
+          onPress={() => router.push("/(tabs)/archaeologist/New_archaeologist")}
           textStyle={{ fontFamily: "MateSC-Regular", fontWeight: "bold" }}
         />
         <TextInput
