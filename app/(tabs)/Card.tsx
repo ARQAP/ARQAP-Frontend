@@ -15,7 +15,9 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   const router = useRouter();
   const handlePress = () => {
     if (title === "Arqueólogos") {
-      router.push("/(tabs)/archaeologist");
+      router.push({ pathname: "/(tabs)/archaeologist/View_archaeologist" });
+    } else if (title === "Sitios Arqueológicos") {
+      router.push({ pathname: "/(tabs)/location/Location" });
     }
   };
   return (
