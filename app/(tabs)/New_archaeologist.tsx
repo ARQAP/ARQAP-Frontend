@@ -1,12 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Text, TextInput, View } from "react-native";
+import Button from "../../components/ui/Button";
 import Navbar from "./Navbar";
 
 export default function New_archaeologist() {
@@ -15,8 +10,6 @@ export default function New_archaeologist() {
   const [apellido, setApellido] = useState("");
 
   const handleCrear = () => {
-    // Aquí iría la lógica para crear el arqueólogo
-    // Por ahora solo navega hacia atrás
     router.back();
   };
 
@@ -25,112 +18,53 @@ export default function New_archaeologist() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={{ width: "100%" }}>
-        <Navbar title="Nuevo Arqueólogo" />
-      </View>
-      <View style={{ width: "100%", alignItems: "center" }}>
-        <Text style={styles.subtitle}>
+    <View className="flex-1 bg-[#F7F0E6] items-center">
+      <Navbar title="Nuevo Arqueólogo" showBackArrow />
+      <View className="w-full items-center">
+        <Text className="text-center text-[18px] mt-3 mb-2 text-[#222] font-crimson">
           Ingresa los datos del nuevo arqueologo
         </Text>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>NOMBRE</Text>
+        <View className="mb-2 w-[98%] self-center">
+          <Text className="text-[16px] font-bold mb-2 text-[#3d2c13] font-mate">
+            NOMBRE
+          </Text>
           <TextInput
-            style={styles.input}
+            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full font-crimson"
             placeholder="Nombre"
             value={nombre}
             onChangeText={setNombre}
             placeholderTextColor="#A68B5B"
+            selectionColor="#8B5E3C"
           />
         </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>APELLIDO</Text>
+        <View className="mb-2 w-[98%] self-center">
+          <Text className="text-[16px] font-bold mb-2 text-[#3d2c13] font-mate">
+            APELLIDO
+          </Text>
           <TextInput
-            style={styles.input}
+            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full font-crimson"
             placeholder="Apellido"
             value={apellido}
             onChangeText={setApellido}
             placeholderTextColor="#A68B5B"
+            selectionColor="#8B5E3C"
           />
         </View>
-        <TouchableOpacity style={styles.crearBtn} onPress={handleCrear}>
-          <Text style={styles.crearBtnText}>CREAR ARQUEÓLOGO</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelarBtn} onPress={handleCancelar}>
-          <Text style={styles.cancelarBtnText}>CANCELAR</Text>
-        </TouchableOpacity>
+        <Button
+          title="Crear Arqueólogo"
+          onPress={handleCrear}
+          className="w-[98%] self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
+          textClassName="text-[16px] font-bold text-white"
+          textStyle={{ fontFamily: "MateSC-Regular" }}
+        />
+        <Button
+          title="Cancelar"
+          onPress={handleCancelar}
+          className="w-[98%] self-center bg-[#D9C6A5] rounded-lg py-3 items-center"
+          textClassName="text-[16px] text-white"
+          textStyle={{ fontFamily: "MateSC-Regular" }}
+        />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F7F0E6",
-    paddingHorizontal: 24,
-    paddingTop: 0,
-    alignItems: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    fontSize: 18,
-    marginTop: 12,
-    marginBottom: 8,
-    color: "#222",
-    fontFamily: "CrimsonText-Regular",
-  },
-  inputGroup: {
-    marginHorizontal: 8,
-    marginBottom: 10,
-    width: "98%",
-    alignSelf: "center",
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#3d2c13",
-    fontFamily: "MateSC-Regular",
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: "#A67C52",
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#F7F5F2",
-    fontSize: 16,
-    fontFamily: "CrimsonText-Regular",
-    marginBottom: 8,
-    width: "100%",
-  },
-  crearBtn: {
-    backgroundColor: "#6B705C",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginBottom: 16,
-    width: "98%",
-    alignSelf: "center",
-  },
-  crearBtnText: {
-    color: "#fff",
-    fontSize: 18,
-    fontFamily: "MateSC-Regular",
-    fontWeight: "bold",
-  },
-  cancelarBtn: {
-    backgroundColor: "#E2D1B2",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    width: "98%",
-    alignSelf: "center",
-  },
-  cancelarBtnText: {
-    color: "#222",
-    fontSize: 18,
-    fontFamily: "MateSC-Regular",
-    fontWeight: "bold",
-  },
-});

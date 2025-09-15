@@ -1,17 +1,13 @@
 import React from "react";
-import {
-  StyleSheet,
-  Text,
-  TextStyle,
-  TouchableOpacity,
-  ViewStyle,
-} from "react-native";
+import { Text, TextStyle, TouchableOpacity, ViewStyle } from "react-native";
 
 interface ButtonProps {
   title: string;
   onPress?: () => void;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  className?: string;
+  textClassName?: string;
 }
 
 export default function Button({
@@ -19,29 +15,24 @@ export default function Button({
   onPress,
   style,
   textStyle,
+  className,
+  textClassName,
 }: ButtonProps) {
   return (
     <TouchableOpacity
-      style={[styles.button, style]}
+      className={
+        className ? className : "bg-[#6B705C] rounded-lg py-3 items-center mb-4"
+      }
+      style={style}
       activeOpacity={0.8}
       onPress={onPress}
     >
-      <Text style={[styles.text, textStyle]}>{title}</Text>
+      <Text
+        className={textClassName ? textClassName : "text-white text-[16px]"}
+        style={textStyle}
+      >
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: "#6B705C",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  text: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "MateSC-Regular",
-  },
-});
