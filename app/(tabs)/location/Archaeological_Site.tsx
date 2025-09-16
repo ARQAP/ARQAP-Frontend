@@ -20,19 +20,14 @@ export default function ArchaeologicalSite({
   description,
 }: ArchaeologicalSiteProps) {
   return (
-    <View className="w-full max-w-md p-4 border border-amber-200 rounded-xl mb-4 bg-[#D9C6A5]">
+    <View className="w-full max-w-md p-4 rounded-xl mb-4 bg-[#D9C6A5]">
       <Text
         className="text-xl font-bold text-amber-900 mb-4 tracking-wide"
         style={{ fontFamily: "MateSC-Regular" }}
       >
         {name}
       </Text>
-      <Text
-        className="text-center text-lg mb-4 text-[#222]"
-        style={{ fontFamily: "CrimsonText-Regular" }}
-      >
-        Ingrese los datos del nuevo sitio arqueológico
-      </Text>
+      
 
       <View className="space-y-3">
         <InfoItem icon="map-pin" label="Provincia" value={province} />

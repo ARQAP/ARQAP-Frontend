@@ -30,6 +30,15 @@ export default function Location() {
                 antiquity="Más de 9,000 años"
                 description="Sitio arqueológico con pinturas rupestres, famoso por siluetas de manos y escenas de caza"
               />
+              <View style={{ width: 48 }} />
+              <ArchaeologicalSite
+                name="Cueva De Las Manos"
+                province="Provincia de Santa Cruz"
+                region="La Patagonia"
+                country="Argentina"
+                antiquity="Más de 9,000 años"
+                description="Sitio arqueológico con pinturas rupestres, famoso por siluetas de manos y escenas de caza"
+              />
             </View>
           </View>
         </ScrollView>
@@ -37,5 +46,3 @@ export default function Location() {
     </View>
   );
 }
-
-// Todos los estilos ahora se aplican con clases Nativewind
