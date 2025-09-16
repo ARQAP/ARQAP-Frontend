@@ -22,7 +22,7 @@ export default function New_archaeologist() {
       <Navbar title="Nuevo Arqueólogo" showBackArrow />
       <View className="w-full items-center">
         <Text className="text-center text-[18px] mt-3 mb-2 text-[#222] font-crimson">
-          Ingresa los datos del nuevo arqueologo
+          Ingrese los datos del nuevo arqueologo
         </Text>
         <View className="mb-2 w-[98%] self-center">
           <Text className="text-[16px] font-bold mb-2 text-[#3d2c13] font-mate">

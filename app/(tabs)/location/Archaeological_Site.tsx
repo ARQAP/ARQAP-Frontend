@@ -20,15 +20,18 @@ export default function ArchaeologicalSite({
   description,
 }: ArchaeologicalSiteProps) {
   return (
-    <View
-      className="w-full max-w-md p-4 border border-amber-200 rounded-xl mb-4"
-      style={{ backgroundColor: "#D9C6A5" }}
-    >
+    <View className="w-full max-w-md p-4 border border-amber-200 rounded-xl mb-4 bg-[#D9C6A5]">
       <Text
         className="text-xl font-bold text-amber-900 mb-4 tracking-wide"
         style={{ fontFamily: "MateSC-Regular" }}
       >
         {name}
+      </Text>
+      <Text
+        className="text-center text-lg mb-4 text-[#222]"
+        style={{ fontFamily: "CrimsonText-Regular" }}
+      >
+        Ingrese los datos del nuevo sitio arqueológico
       </Text>
 
       <View className="space-y-3">
@@ -62,10 +65,7 @@ function InfoItem({
 }) {
   return (
     <View className="flex-row items-start mb-3">
-      <View
-        className="w-8 h-8 rounded-full items-center justify-center mr-2 mt-0.5"
-        style={{ backgroundColor: "#8B5E3C" }}
-      >
+      <View className="w-8 h-8 rounded-full items-center justify-center mr-2 mt-0.5 bg-[#8B5E3C]">
         <Feather name={icon} size={16} color="#FEF3C7" />
       </View>
       <View className="flex-1">

@@ -6,9 +6,10 @@ interface NavbarProps {
   title: string;
   showBackArrow?: boolean;
   backToHome?: boolean;
+  redirectTo?: string;
 }
 
-function Navbar({ title, showBackArrow, backToHome }: NavbarProps) {
+function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
   const router = useRouter();
   return (
     <View className="w-full bg-[#D9C6A5] flex-row items-center h-[80px]">
@@ -30,7 +31,11 @@ function Navbar({ title, showBackArrow, backToHome }: NavbarProps) {
         {showBackArrow && (
           <TouchableOpacity
             onPress={() =>
-              backToHome ? router.push("/(tabs)/home") : router.back()
+              backToHome
+                ? router.push("/(tabs)/home")
+                : redirectTo
+                  ? router.push(redirectTo as any)
+                  : router.back()
             }
             style={{ marginRight: 12 }}
           >
