@@ -60,7 +60,7 @@ const Card_archaeologist: React.FC<CardArchaeologistProps> = ({
             ))}
           </TouchableOpacity>
           {menuVisible && (
-            <View className="absolute top-5 right-0 bg-white rounded-lg shadow p-2 px-4 min-w-[100px] z-10">
+            <View className="absolute top-5 right-0 bg-white rounded-lg p-2 px-4 min-w-[100px] z-10">
               <TouchableOpacity
                 onPress={handleEdit}
                 className="py-3 px-6 rounded-lg bg-[#F7F5F2] justify-center items-center"

@@ -9,7 +9,7 @@ interface ActionButtonProps {
 export default function ActionButton({ title, onPress }: ActionButtonProps) {
   return (
     <TouchableOpacity
-      className="bg-[#deceb1] rounded-2xl p-4 w-[90%] max-w-[500px] h-[90px] flex-col items-center justify-center shadow-md relative overflow-visible self-center"
+      className="bg-[#deceb1] rounded-2xl p-4 w-[90%] max-w-[500px] h-[90px] flex-col items-center justify-center  relative overflow-visible self-center"
       activeOpacity={0.8}
       onPress={onPress}
     >

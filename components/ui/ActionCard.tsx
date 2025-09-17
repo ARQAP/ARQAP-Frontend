@@ -8,7 +8,7 @@ interface ActionCardProps {
 export default function ActionCard({ name }: ActionCardProps) {
   return (
     <TouchableOpacity
-      className="bg-[#deceb1] rounded-2xl p-4 w-28 h-32 items-center justify-center mx-2 shadow-md"
+      className="bg-[#deceb1] rounded-2xl p-4 w-28 h-32 items-center justify-center mx-2 -"
       activeOpacity={0.8}
     >
       <View className="bg-[#8b5c2a] rounded-full w-12 h-12 items-center justify-center mb-2">

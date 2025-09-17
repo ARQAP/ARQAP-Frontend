@@ -29,7 +29,7 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="flex-1 justify-center items-center px-4">
-          <View className="rounded-2xl p-6 sm:p-8 w-full max-w-md items-center shadow bg-[#E2D1B2]">
+          <View className="rounded-2xl p-6 sm:p-8 w-full max-w-md items-center  bg-[#E2D1B2]">
             <Text
               className="text-[28px] sm:text-[32px] font-bold text-center text-[#8B5E3C]"
               style={{ fontFamily: "MateSC" }}
