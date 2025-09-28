@@ -164,7 +164,7 @@ export default function EditSite() {
             />
           </View>
 
-          <View className="mb-10">
+          <View className="mb-16">
             <Text
               className="text-[16px] font-bold mb-2 text-[#3d2c13]"
               style={{ fontFamily: "MateSC-Regular" }}
@@ -190,7 +190,7 @@ export default function EditSite() {
           </View>
         </View>
 
-        <View className="space-y-4">
+        <View className="space-y-4 mt-8">
           <Button
             title="Guardar Cambios"
             onPress={handleSave}

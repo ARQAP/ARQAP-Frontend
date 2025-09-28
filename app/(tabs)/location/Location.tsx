@@ -125,7 +125,6 @@ export default function Location() {
               className="border-2 border-[#A67C52] rounded-lg p-3 bg-[#F7F5F2] text-[16px] w-full pr-12"
               style={{
                 fontFamily: "CrimsonText-Regular",
-                backgroundColor: "#F7F5F2",
               }}
               placeholder="Escriba el nombre del sitio..."
               value={searchTerm}
@@ -145,7 +144,11 @@ export default function Location() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingVertical: 20 }}
+        >
           <View className="w-full max-w-full mx-auto self-center">
             {filteredSites.length > 0 ? (
               <View className="flex-row flex-wrap justify-center w-full">
@@ -160,7 +163,7 @@ export default function Location() {
                       description={site.description}
                     />
                     {index < filteredSites.length - 1 && (
-                      <View style={{ width: 48 }} />
+                      <View className="w-12" />
                     )}
                   </React.Fragment>
                 ))}
@@ -196,7 +199,6 @@ export default function Location() {
             zIndex: 99999,
             elevation: 50,
             position: "absolute",
-            backgroundColor: "white",
             boxShadow: "0px 2px 3.84px rgba(0, 0, 0, 0.25)",
           }}
         >

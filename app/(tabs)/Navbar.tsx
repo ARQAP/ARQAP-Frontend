@@ -13,21 +13,23 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
   const router = useRouter();
   return (
     <View className="w-full bg-[#D9C6A5] flex-row items-center h-[80px]">
-      <View
-        className="bg-white h-full justify-center"
-        style={{ width: 110, borderBottomRightRadius: 40 }}
-      >
+      <View className="h-full justify-center items-center w-[110px]">
         <Image
-          source={require("../../assets/images/log.png")}
-          resizeMode="contain"
+          source={require("../../assets/images/museo.png")}
           style={{
-            width: 70,
-            height: 70,
-            alignSelf: "center",
+            width: 64,
+            height: 64,
+            resizeMode: "contain",
+            backgroundColor: "transparent",
+            borderWidth: 0,
+            overflow: "hidden",
           }}
+          fadeDuration={0}
+          accessible={true}
+          accessibilityLabel="Logo del Museo"
         />
       </View>
-      <View className="flex-1 flex-row items-center pl-6">
+      <View className="flex-1 flex-row items-center pl-4">
         {showBackArrow && (
           <TouchableOpacity
             onPress={() =>
@@ -37,12 +39,11 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
                   ? router.push(redirectTo as any)
                   : router.back()
             }
-            style={{ marginRight: 12 }}
+            className="mr-3"
           >
             <Text
+              className="text-[28px] text-[#222]"
               style={{
-                fontSize: 28,
-                color: "#222",
                 fontFamily: "MateSC-Regular",
               }}
             >

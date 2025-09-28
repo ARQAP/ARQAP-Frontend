@@ -35,7 +35,6 @@ export default function New_Conutry() {
           </Text>
           <TextInput
             className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full font-crimson placeholder:text-[#A68B5B]"
-            style={{ backgroundColor: "#F7F5F2" }}
             placeholder="Ingrese el nombre"
             value={regionName}
             onChangeText={setRegionName}

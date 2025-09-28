@@ -29,7 +29,7 @@ export default function HomeScreen() {
   }
 
   return (
-  <View className="flex-1" style={{ backgroundColor: '#F3E9DD' }}>
+    <View className="flex-1" style={{ backgroundColor: "#F3E9DD" }}>
       <Navbar title="Inicio" />
       <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
         <View className="items-center mt-8 mb-8">
@@ -85,7 +85,7 @@ export default function HomeScreen() {
           >
             Acciones rápidas
           </Text>
-          <View className="flex-col justify-center items-center mt-2 gap-4 w-full">
+          <View className="flex-col md:flex-row justify-center items-center mt-4 gap-4 sm:gap-5 md:gap-4 lg:gap-6 xl:gap-8 w-full md:flex-nowrap md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
             <ActionButton title="Nueva Pieza" />
             <ActionButton title="Nuevo Arqueólogo" />
             <ActionButton title="Nueva Colección" />
@@ -93,5 +93,5 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </View>
-    );
+  );
 }
