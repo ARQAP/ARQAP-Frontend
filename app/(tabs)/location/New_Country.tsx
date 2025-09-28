@@ -28,13 +28,14 @@ export default function New_Conutry() {
         </Text>
         <View className="mb-2 w-full">
           <Text
-            className="text-2xl font-bold mb-2 text-[#3d2c13]"
+            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
             style={{ fontFamily: "MateSC-Regular" }}
           >
             Nombre
           </Text>
           <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full font-crimson placeholder:text-[#A68B5B] selection:bg-[#8B5E3C]"
+            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full font-crimson placeholder:text-[#A68B5B]"
+            style={{ backgroundColor: "#F7F5F2" }}
             placeholder="Ingrese el nombre"
             value={regionName}
             onChangeText={setRegionName}

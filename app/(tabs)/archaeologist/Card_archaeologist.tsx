@@ -60,13 +60,13 @@ const Card_archaeologist: React.FC<CardArchaeologistProps> = ({
             ))}
           </TouchableOpacity>
           {menuVisible && (
-            <View className="absolute top-5 right-0 bg-white rounded-lg p-2 px-4 min-w-[100px] z-10">
+            <View className="absolute top-5 right-0 bg-white rounded-lg p-1 px-2 min-w-[100px] z-10">
               <TouchableOpacity
                 onPress={handleEdit}
-                className="py-3 px-6 rounded-lg bg-[#F7F5F2] justify-center items-center"
+                className="py-3 px-2 min-h-[40px] justify-center items-center w-full"
               >
                 <Text
-                  className="text-[#8B5E3C] text-[17px] text-center"
+                  className="text-[#8B5E3C] text-[17px] text-center w-full"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                 >
                   Editar

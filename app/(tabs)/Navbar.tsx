@@ -19,10 +19,10 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
       >
         <Image
           source={require("../../assets/images/log.png")}
+          resizeMode="contain"
           style={{
             width: 70,
             height: 70,
-            resizeMode: "contain",
             alignSelf: "center",
           }}
         />

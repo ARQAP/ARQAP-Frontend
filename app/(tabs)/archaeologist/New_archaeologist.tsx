@@ -21,15 +21,25 @@ export default function New_archaeologist() {
     <View className="flex-1 bg-[#F7F0E6] items-center">
       <Navbar title="Nuevo Arqueólogo" showBackArrow />
       <View className="w-full items-center">
-        <Text className="text-center text-[18px] mt-3 mb-2 text-[#222] font-crimson">
-          Ingrese los datos del nuevo arqueologo
+        <Text
+          className="text-center text-[18px] mt-3 mb-2 text-[#222]"
+          style={{ fontFamily: "CrimsonText-Regular" }}
+        >
+          Ingrese los datos del nuevo arqueólogo
         </Text>
         <View className="mb-2 w-[98%] self-center">
-          <Text className="text-[16px] font-bold mb-2 text-[#3d2c13] font-mate">
+          <Text
+            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
+            style={{ fontFamily: "MateSC-Regular" }}
+          >
             NOMBRE
           </Text>
           <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full font-crimson"
+            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
+            style={{
+              fontFamily: "MateSC-Regular",
+              backgroundColor: "#F7F5F2",
+            }}
             placeholder="Nombre"
             value={nombre}
             onChangeText={setNombre}
@@ -38,11 +48,18 @@ export default function New_archaeologist() {
           />
         </View>
         <View className="mb-2 w-[98%] self-center">
-          <Text className="text-[16px] font-bold mb-2 text-[#3d2c13] font-mate">
+          <Text
+            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
+            style={{ fontFamily: "MateSC-Regular" }}
+          >
             APELLIDO
           </Text>
           <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full font-crimson"
+            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
+            style={{
+              fontFamily: "MateSC-Regular",
+              backgroundColor: "#F7F5F2",
+            }}
             placeholder="Apellido"
             value={apellido}
             onChangeText={setApellido}
