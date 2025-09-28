@@ -5,15 +5,11 @@ import { Text, TouchableOpacity, View } from "react-native";
 interface CardArchaeologistProps {
   nombre: string;
   apellido: string;
-  documento: string;
-  numero: string;
 }
 
 const Card_archaeologist: React.FC<CardArchaeologistProps> = ({
   nombre,
   apellido,
-  documento,
-  numero,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const router = useRouter();
@@ -99,34 +95,6 @@ const Card_archaeologist: React.FC<CardArchaeologistProps> = ({
           style={{ fontFamily: "CrimsonText-Regular" }}
         >
           {apellido}
-        </Text>
-      </View>
-      <View className="flex-row items-center mb-1">
-        <Text
-          className="text-[#3d2c13] font-bold text-[15px] mr-1"
-          style={{ fontFamily: "MateSC-Regular" }}
-        >
-          Documento:
-        </Text>
-        <Text
-          className="text-[#3d2c13] text-[15px]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
-        >
-          {documento}
-        </Text>
-      </View>
-      <View className="flex-row items-center">
-        <Text
-          className="text-[#3d2c13] font-bold text-[15px] mr-1"
-          style={{ fontFamily: "MateSC-Regular" }}
-        >
-          Número:
-        </Text>
-        <Text
-          className="text-[#3d2c13] text-[15px]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
-        >
-          {numero}
         </Text>
       </View>
     </View>

@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface ArchaeologicalSiteProps {
   name: string;
@@ -19,15 +20,38 @@ export default function ArchaeologicalSite({
   antiquity,
   description,
 }: ArchaeologicalSiteProps) {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push({
+      pathname: `/(tabs)/location/View_site` as any,
+      params: {
+        name,
+        province,
+        region,
+        country,
+        antiquity,
+        description,
+      },
+    });
+  };
+
   return (
-    <View className="w-full max-w-md p-4 rounded-xl mb-4 bg-[#D9C6A5]">
+    <TouchableOpacity
+      className="w-full max-w-md p-4 rounded-xl mb-4 bg-[#D9C6A5] relative"
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <View className="absolute top-3 right-3">
+        <Feather name="chevron-right" size={20} color="#8B5E3C" />
+      </View>
+
       <Text
-        className="text-xl font-bold text-amber-900 mb-4 tracking-wide"
+        className="text-xl font-bold text-amber-900 mb-4 tracking-wide pr-8"
         style={{ fontFamily: "MateSC-Regular" }}
       >
         {name}
       </Text>
-      
 
       <View className="space-y-3">
         <InfoItem icon="map-pin" label="Provincia" value={province} />
@@ -41,7 +65,7 @@ export default function ArchaeologicalSite({
           multiline
         />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

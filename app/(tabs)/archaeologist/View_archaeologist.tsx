@@ -21,50 +21,34 @@ export default function View_archaeologist() {
     {
       nombre: "Pedro",
       apellido: "Martínez",
-      documento: "DNI",
-      numero: "27.987.987",
     },
     {
       nombre: "Ana",
       apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
     },
     {
       nombre: "Carlos",
       apellido: "Rodríguez",
-      documento: "DNI",
-      numero: "30.456.789",
     },
     {
       nombre: "María",
       apellido: "López",
-      documento: "DNI",
-      numero: "28.654.321",
     },
     {
       nombre: "José",
       apellido: "García",
-      documento: "DNI",
-      numero: "32.789.456",
     },
     {
       nombre: "Laura",
       apellido: "Fernández",
-      documento: "DNI",
-      numero: "29.321.654",
     },
     {
       nombre: "Diego",
       apellido: "Santos",
-      documento: "DNI",
-      numero: "31.147.258",
     },
     {
       nombre: "Carmen",
       apellido: "Ruiz",
-      documento: "DNI",
-      numero: "26.852.963",
     },
   ];
 
@@ -145,7 +129,10 @@ export default function View_archaeologist() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
           <View className="w-full max-w-full mx-auto self-center">
             {filteredArchaeologists.length > 0 ? (
               <View className="flex flex-col gap-4">
@@ -154,8 +141,6 @@ export default function View_archaeologist() {
                     key={idx}
                     nombre={arch.nombre}
                     apellido={arch.apellido}
-                    documento={arch.documento}
-                    numero={arch.numero}
                   />
                 ))}
               </View>
