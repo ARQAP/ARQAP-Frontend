@@ -13,7 +13,11 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
   const router = useRouter();
   return (
     <View className="w-full bg-[#D9C6A5] flex-row items-center h-[80px]">
-      <View className="h-full justify-center items-center w-[110px]">
+      <TouchableOpacity
+        className="h-full justify-center items-center w-[110px]"
+        onPress={() => router.push("/(tabs)/home")}
+        activeOpacity={0.8}
+      >
         <Image
           source={require("../../assets/images/museo.png")}
           style={{
@@ -28,7 +32,7 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
           accessible={true}
           accessibilityLabel="Logo del Museo"
         />
-      </View>
+      </TouchableOpacity>
       <View className="flex-1 flex-row items-center pl-4">
         {showBackArrow && (
           <TouchableOpacity
