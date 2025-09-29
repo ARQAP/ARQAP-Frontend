@@ -164,7 +164,7 @@ export default function EditSite() {
             />
           </View>
 
-          <View className="mb-16">
+          <View className="mb-4">
             <Text
               className="text-[16px] font-bold mb-2 text-[#3d2c13]"
               style={{ fontFamily: "MateSC-Regular" }}
@@ -190,7 +190,7 @@ export default function EditSite() {
           </View>
         </View>
 
-        <View className="space-y-4 mt-8">
+        <View className="mt-2">
           <Button
             title="Guardar Cambios"
             onPress={handleSave}
@@ -198,14 +198,15 @@ export default function EditSite() {
             textClassName="text-[16px] font-bold text-white"
             textStyle={{ fontFamily: "MateSC-Regular" }}
           />
-
-          <Button
-            title="Cancelar"
-            onPress={handleCancel}
-            className="bg-[#D9C6A5] rounded-lg py-4 items-center"
-            textClassName="text-[16px] font-bold text-[#3d2c13]"
-            textStyle={{ fontFamily: "MateSC-Regular" }}
-          />
+          <View style={{ marginTop: 24 }}>
+            <Button
+              title="Cancelar"
+              onPress={handleCancel}
+              className="bg-[#D9C6A5] rounded-lg py-4 items-center"
+              textClassName="text-[16px] font-bold text-[#3d2c13]"
+              textStyle={{ fontFamily: "MateSC-Regular" }}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>

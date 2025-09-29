@@ -126,6 +126,7 @@ export default function New_location() {
         title="Nuevo Sitio Arqueológico"
         showBackArrow
         backToHome={false}
+        redirectTo="/(tabs)/location/Location"
       />
       <View className="w-[90%] max-w-[500px] items-center self-center">
         <Text
