@@ -7,7 +7,10 @@ export default function New_Conutry() {
   const [regionName, setRegionName] = useState("");
 
   const handleCrear = () => {};
-  const handleCancelar = () => {};
+  const router = require("expo-router").useRouter();
+  const handleCancelar = () => {
+    router.push("/(tabs)/location/New_location");
+  };
 
   return (
     <View className="flex-1 bg-[#F7F0E6] items-center px-0">

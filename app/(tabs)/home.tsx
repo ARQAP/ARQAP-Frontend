@@ -1,12 +1,13 @@
 import * as Font from "expo-font";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import ActionButton from "../../components/ui/ActionButton";
 import Card from "./Card";
 import Navbar from "./Navbar";
-
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function loadFonts() {
@@ -87,7 +88,12 @@ export default function HomeScreen() {
           </Text>
           <View className="flex-col md:flex-row justify-center items-center mt-4 gap-4 sm:gap-5 md:gap-4 lg:gap-6 xl:gap-8 w-full md:flex-nowrap md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
             <ActionButton title="Nueva Pieza" />
-            <ActionButton title="Nuevo Arqueólogo" />
+            <ActionButton
+              title="Nuevo Arqueólogo"
+              onPress={() =>
+                router.push("/(tabs)/archaeologist/New_archaeologist")
+              }
+            />
             <ActionButton title="Nueva Colección" />
           </View>
         </View>

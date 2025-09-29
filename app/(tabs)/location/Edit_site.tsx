@@ -202,8 +202,8 @@ export default function EditSite() {
             <Button
               title="Cancelar"
               onPress={handleCancel}
-              className="bg-[#D9C6A5] rounded-lg py-4 items-center"
-              textClassName="text-[16px] font-bold text-[#3d2c13]"
+              className="bg-[#D9C6A5] rounded-lg py-3 items-center mb-4"
+              textClassName="text-[16px] font-bold text-white"
               textStyle={{ fontFamily: "MateSC-Regular" }}
             />
           </View>

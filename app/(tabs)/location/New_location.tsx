@@ -115,7 +115,9 @@ export default function New_location() {
 
   const handleCrear = () => {};
 
-  const handleCancelar = () => {};
+  const handleCancelar = () => {
+    router.push("/(tabs)/location/Location");
+  };
 
   return (
     <ScrollView

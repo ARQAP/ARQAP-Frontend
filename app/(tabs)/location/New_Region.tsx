@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import Button from "../../../components/ui/Button";
@@ -5,9 +6,12 @@ import Navbar from "../Navbar";
 
 export default function New_Region() {
   const [regionName, setRegionName] = useState("");
+  const router = useRouter();
 
   const handleCrear = () => {};
-  const handleCancelar = () => {};
+  const handleCancelar = () => {
+    router.push("/(tabs)/location/New_location");
+  };
 
   return (
     <View className="flex-1 bg-[#F7F0E6] items-center px-0">
@@ -38,6 +42,7 @@ export default function New_Region() {
             placeholder="Ingrese el nombre"
             value={regionName}
             onChangeText={setRegionName}
+            style={{ fontFamily: "CrimsonText-Regular" }}
           />
         </View>
         <Button
