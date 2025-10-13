@@ -18,6 +18,8 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
       router.push({ pathname: "/(tabs)/archaeologist/View_archaeologist" });
     } else if (title === "Sitios Arqueológicos") {
       router.push({ pathname: "/(tabs)/location/Location" });
+    } else if (title === "Préstamos") {
+      router.push({ pathname: "/(tabs)/loan/View_loan" });
     }
   };
   return (
