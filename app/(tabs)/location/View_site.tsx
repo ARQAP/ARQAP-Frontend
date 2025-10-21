@@ -28,7 +28,7 @@ export default function ViewSite() {
 
   return (
     <View className="flex-1 bg-[#F3E9DD]">
-      <Navbar title="Sitio Arqueológico" showBackArrow textStyle={{ fontFamily: "MateSC-Regular" }} />
+      <Navbar title="Sitio Arqueológico" showBackArrow />
 
       <ScrollView
         className="flex-1 px-5 pt-5"

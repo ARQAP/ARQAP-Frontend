@@ -21,15 +21,19 @@ export default function Button({
   return (
     <TouchableOpacity
       className={
-        className ? className : "bg-[#6B705C] rounded-lg py-3 items-center mb-4"
+        className
+          ? className
+          : "bg-[#6B705C] rounded-2xl py-3 items-center mb-4 px-4"
       }
       style={style}
       activeOpacity={0.8}
       onPress={onPress}
     >
       <Text
-        className={textClassName ? textClassName : "text-white text-[16px]"}
-        style={textStyle}
+        className={
+          textClassName ? textClassName : "text-white text-[16px]"
+        }
+        style={[{ fontFamily: 'MateSC-Regular' } as any, textStyle]}
       >
         {title}
       </Text>

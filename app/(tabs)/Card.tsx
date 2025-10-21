@@ -14,12 +14,22 @@ interface CardProps {
 export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   const router = useRouter();
   const handlePress = () => {
+    const t = title || "";
+    if (/pieza/i.test(t)) {
+      router.push({ pathname: "/(tabs)/archaeological-Pieces/View_pieces" });
+      return;
+    }
     if (title === "Arqueólogos") {
       router.push({ pathname: "/(tabs)/archaeologist/View_archaeologist" });
     } else if (title === "Sitios Arqueológicos") {
       router.push({ pathname: "/(tabs)/location/Location" });
     } else if (title === "Préstamos") {
       router.push({ pathname: "/(tabs)/loan/View_loan" });
+    } else if (
+      title === "Piezas Arqueológicas" ||
+      title === "Piezas arqueologicas"
+    ) {
+      router.push({ pathname: "/(tabs)/archaeological-Pieces/View_pieces" });
     }
   };
   return (
