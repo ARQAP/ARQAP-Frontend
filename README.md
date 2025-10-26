@@ -16,7 +16,12 @@
 	npm ci
 	```
 
-4. Ejecuta la app:
+4. Para que el front este conectado con el back, en el archivo lib/api.ts agregar tu ip en la variable API_URL
+   	```powershell
+	const API_URL = //"http://{tu ip}:8080"; 
+	```
+
+5. Ejecuta la app:
 	```powershell
 	npm run web
 	```
