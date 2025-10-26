@@ -27,7 +27,7 @@ export default function View_archaeologist() {
       <View className="p-5 flex-1">
         <Button
           title="Registrar nuevo arqueologo"
-          onPress={() => router.push("/(tabs)/New_archaeologist")}
+          onPress={() => router.push("/(tabs)/archaeologist/New_archaeologist")}
           textStyle={{ fontFamily: "MateSC-Regular", fontWeight: "bold" }}
         />
 
