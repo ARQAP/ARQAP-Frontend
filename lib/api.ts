@@ -4,8 +4,8 @@ import { queryClient } from "../lib/queryClient";
 import { getToken, removeToken } from "../services/authStorage";
 
 const LAN = "http://192.168.0.169:8080";   // ← poné la IP real de tu PC
-const ANDROID_EMULATOR = "http://10.0.2.2:8080";
-const IOS_SIMULATOR = "http://localhost:8080";
+const ANDROID_EMULATOR = "http://192.168.0.169:8080";
+const IOS_SIMULATOR = "http://192.168.0.169:8080";
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ??

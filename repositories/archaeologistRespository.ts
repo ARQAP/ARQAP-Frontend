@@ -1,31 +1,29 @@
-import axios from "axios";
-const API_URL = process.env.API_URL;
+import { apiClient } from "@/lib/api";
 
-// Tipos/Modelos TypeScript para las entidades usadas aquí
 export type Archaeologist = {
-    id?: number;
-    firstname: string;
-    lastname: string;
-}
+  id?: number;
+  firstname: string;
+  lastname: string;
+};
 
 export const ArchaeologistRepository = {
-    getArchaeologists: async () => {
-        const response = await axios.get(`${API_URL}/archaeologists`);
-        return response.data;
-    },
+  getAll: async () => {
+    const { data } = await apiClient.get("/archaeologists"); // protegida
+    return data as Archaeologist[];
+  },
 
-    createArchaeologist: async (newArchaeologist: Archaeologist) => {
-        const response = await axios.post(`${API_URL}/archaeologists`, newArchaeologist);
-        return response.data;
-    },
+  create: async (payload: Archaeologist) => {
+    const { data } = await apiClient.post("/archaeologists", payload);
+    return data as Archaeologist;
+  },
 
-    updateArchaeologist: async (id: number, updatedArchaeologist: Archaeologist) => {
-        const response = await axios.put(`${API_URL}/archaeologists/${id}`, updatedArchaeologist);
-        return response.data;
-    },
+  update: async (id: number, payload: Archaeologist) => {
+    const { data } = await apiClient.put(`/archaeologists/${id}`, payload);
+    return data as Archaeologist;
+  },
 
-    deleteArchaeologist: async (id: number) => {
-        const response = await axios.delete(`${API_URL}/archaeologists/${id}`);
-        return response.data;
-    }
+  remove: async (id: number) => {
+    const { data } = await apiClient.delete(`/archaeologists/${id}`);
+    return data as { ok: boolean } | Archaeologist;
+  },
 };

@@ -1,68 +1,26 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, TextInput, View } from "react-native";
 import Button from "../../components/ui/Button";
+import { useArchaeologists } from "../../hooks/useArchaeologist";
 import Card_archaeologist from "./Card_archaeologist";
 import Navbar from "./Navbar";
 
 export default function View_archaeologist() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const arqueologos = [
-    {
-      nombre: "Pedro",
-      apellido: "Martínez",
-      documento: "DNI",
-      numero: "27.987.987",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-    {
-      nombre: "Ana",
-      apellido: "Gómez",
-      documento: "DNI",
-      numero: "25.123.456",
-    },
-  ];
-  const filtered = arqueologos.filter(
-    (a) =>
-      a.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      a.apellido.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data, status, error, isFetching } = useArchaeologists();
+
+  const filtered = useMemo(() => {
+    const term = search.toLowerCase().trim();
+    if (!term) return data || [];
+    return (data || []).filter(
+      (a) =>
+        a.firstname.toLowerCase().includes(term) ||
+        a.lastname.toLowerCase().includes(term)
+    );
+  }, [data, search]);
+
   return (
     <View className="flex-1 bg-[#F3E9DD] p-0">
       <Navbar title="Ver Arqueólogos" showBackArrow backToHome />
@@ -72,6 +30,7 @@ export default function View_archaeologist() {
           onPress={() => router.push("/(tabs)/New_archaeologist")}
           textStyle={{ fontFamily: "MateSC-Regular", fontWeight: "bold" }}
         />
+
         <TextInput
           placeholder="Buscar por nombre o apellido"
           className="bg-[#F7F5F2] rounded-lg p-2 mb-5 border border-[#ccc]"
@@ -79,19 +38,30 @@ export default function View_archaeologist() {
           onChangeText={setSearch}
           style={{ fontFamily: "CrimsonText-Regular", fontSize: 16 }}
         />
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          <View className="flex flex-col gap-4">
-            {filtered.map((arch, idx) => (
-              <Card_archaeologist
-                key={idx}
-                nombre={arch.nombre}
-                apellido={arch.apellido}
-                documento={arch.documento}
-                numero={arch.numero}
-              />
-            ))}
-          </View>
-        </ScrollView>
+
+        {status === "pending" ? (
+          <ActivityIndicator />
+        ) : status === "error" ? (
+          <Text style={{ fontFamily: "CrimsonText-Regular", color: "#8B0000" }}>
+            {(error as Error).message}
+          </Text>
+        ) : (
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <View className="flex flex-col gap-4">
+              {filtered.map((arch) => (
+                <Card_archaeologist
+                  key={arch.id ?? `${arch.firstname}-${arch.lastname}`}
+                  id={arch.id}
+                  nombre={arch.firstname}
+                  apellido={arch.lastname}
+                />
+              ))}
+              {isFetching ? (
+                <Text style={{ fontFamily: "CrimsonText-Regular" }}>Actualizando…</Text>
+              ) : null}
+            </View>
+          </ScrollView>
+        )}
       </View>
     </View>
   );

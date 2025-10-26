@@ -1,16 +1,39 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Alert, Text, TextInput, View } from "react-native"; // 💡 Importar Alert
 import Button from "../../components/ui/Button";
+import { useCreateArchaeologist } from "../../hooks/useArchaeologist";
+import { Archaeologist } from "../../repositories/archaeologistRespository";
 import Navbar from "./Navbar";
 
 export default function New_archaeologist() {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
+  
+  const createMutation = useCreateArchaeologist();
+
+  const isButtonDisabled = createMutation.isPending || !nombre.trim() || !apellido.trim();
+
 
   const handleCrear = () => {
-    router.back();
+    if (isButtonDisabled && !createMutation.isPending) return;
+
+    const newArchaeologist: Archaeologist = {
+        firstname: nombre.trim(), 
+        lastname: apellido.trim(),
+    };
+
+    createMutation.mutate(newArchaeologist, {
+        onSuccess: () => {
+            Alert.alert("Éxito", "Arqueólogo registrado correctamente.");
+            router.back(); 
+        },
+        onError: (error) => {
+            const errorMessage = (error as Error).message || "Ocurrió un error al crear el registro.";
+            Alert.alert("Error", errorMessage);
+        },
+    });
   };
 
   const handleCancelar = () => {
@@ -51,9 +74,9 @@ export default function New_archaeologist() {
           />
         </View>
         <Button
-          title="Crear Arqueólogo"
+          title={createMutation.isPending ? "Creando..." : "Crear Arqueólogo"}
           onPress={handleCrear}
-          className="w-[98%] self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
+          className={`w-[98%] self-center mb-4 rounded-lg py-3 items-center ${isButtonDisabled ? 'bg-gray-400' : 'bg-[#6B705C]'}`}
           textClassName="text-[16px] font-bold text-white"
           textStyle={{ fontFamily: "MateSC-Regular" }}
         />
