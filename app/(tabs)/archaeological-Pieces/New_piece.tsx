@@ -22,7 +22,7 @@ import { useCreateArtefact, useUploadArtefactHistoricalRecord, useUploadArtefact
 import { useCollections } from "../../../hooks/useCollections";
 import { useArchaeologists } from "@/hooks/useArchaeologist";
 import { useShelf, useShelves } from "../../../hooks/useShelf";
-import { usePhysicalLocations } from "@/hooks/usePhysicalLocation";
+import { usePhysicalLocations, useCreatePhysicalLocation } from "@/hooks/usePhysicalLocation";
 import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
 import { Feather } from "@expo/vector-icons";
 
@@ -83,6 +83,7 @@ export default function NewPiece() {
   const createArtefact = useCreateArtefact();
   const uploadPicture = useUploadArtefactPicture();
   const uploadRecord = useUploadArtefactHistoricalRecord();
+  const createPhysicalLocation = useCreatePhysicalLocation(); // <-- crear ubicación física on-the-fly
 
   // -------- layout ----------
   const { width: windowWidth } = useWindowDimensions();
@@ -242,6 +243,27 @@ export default function NewPiece() {
         return;
       }
 
+      // ----- asegurar PhysicalLocation antes de crear la pieza -----
+      // Si NO existe (physicalLocationId === null) pero sí hay shelf + selección de grilla, la creamos primero.
+      let ensuredPhysicalLocationId = physicalLocationId ?? null;
+
+      if (!ensuredPhysicalLocationId) {
+        if (!shelfIdFromCode) {
+          Alert.alert("Estantería inválida", "Ingresá un código de estantería válido o seleccioná una de la lista.");
+          return;
+        }
+        const levelNumber = levels[selectedLevel] as 1 | 2 | 3 | 4; // 1..4
+        const columnLetter = columns[selectedColumn] as "A" | "B" | "C" | "D"; // "A".."D"
+
+        const createdLoc = await createPhysicalLocation.mutateAsync({
+          level: levelNumber,
+          column: columnLetter,
+          shelfId: shelfIdFromCode,
+        });
+
+        ensuredPhysicalLocationId = createdLoc.id!;
+      }
+
       const payload = {
         name: name.trim(),
         material: material.trim() || null,
@@ -253,7 +275,7 @@ export default function NewPiece() {
         collectionId: collectionId ?? null,
         archaeologistId: archaeologistId ?? null,
         internalClassifierId: internalClassifierId ?? null,
-        physicalLocationId: physicalLocationId ?? null,
+        physicalLocationId: ensuredPhysicalLocationId ?? null,
 
         // aún no implementado
         archaeologicalSiteId,

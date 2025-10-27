@@ -26,9 +26,9 @@ type Piece = {
   site?: string;
   archaeologist?: string;
   collection?: string;
-  shelf?: string;
-  level?: string;
-  column?: string;
+  shelf?: string; 
+  level?: string; 
+  column?: string; 
 };
 
 export default function ViewPieces() {
@@ -50,35 +50,39 @@ export default function ViewPieces() {
         (a as any)?.archaeologicalSite?.Nombre ??
         undefined;
 
+      const arch = (a as any)?.archaeologist;
       const archaeologistName =
-        ((a as any)?.archaeologist?.name) ??
-          [
-            (a as any)?.archaeologist?.firstname,
-            (a as any)?.archaeologist?.lastname,
-          ]
-            .filter(Boolean)
-            .join(" ")
-        undefined;
+        arch?.name ??
+        ([arch?.firstname, arch?.lastname].filter(Boolean).join(" ") || undefined);
 
       const collectionName =
         (a as any)?.collection?.name ??
-        (a as any)?.collection?.Nombre ??
+        undefined;
+
+      const shelfRaw =
+        (a as any)?.physicalLocation?.id ??
+        undefined;
+
+      const levelRaw =
+        (a as any)?.physicalLocation?.level ??
+        undefined;
+
+      const columnRaw =
+        (a as any)?.physicalLocation?.column ??
         undefined;
 
       const shelf =
-        (a as any)?.physicalLocation?.shelf ??
-        (a as any)?.physicalLocation?.estanteria ??
-        undefined;
+        shelfRaw == null
+          ? undefined
+          : typeof shelfRaw === "object"
+          ? (shelfRaw.code != null ? `Estantería ${String(shelfRaw.code)}` : undefined)
+          : `Estantería ${String(shelfRaw)}`;
 
       const level =
-        (a as any)?.physicalLocation?.level ??
-        (a as any)?.physicalLocation?.nivel ??
-        undefined;
+        levelRaw == null ? undefined : `Nivel ${String(levelRaw)}`;
 
       const column =
-        (a as any)?.physicalLocation?.column ??
-        (a as any)?.physicalLocation?.columna ??
-        undefined;
+        columnRaw == null ? undefined : `Columna ${String(columnRaw)}`;
 
       return {
         id: Number(a.id!),

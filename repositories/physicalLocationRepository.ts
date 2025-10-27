@@ -24,7 +24,7 @@ export const PhysicalLocationRepository = {
   },
 
   create: async (payload: { level: LevelNumber; column: ColumnLetter; shelfId: number }) => {
-    const { data } = await apiClient.post("/physical-locations", payload);
+    const { data } = await apiClient.post("/physical-locations/", payload);
     return data as PhysicalLocation;
   },
 

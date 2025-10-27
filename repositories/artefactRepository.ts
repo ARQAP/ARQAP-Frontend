@@ -50,22 +50,22 @@ export type Artefact = {
 // src/repositories/artefactRepository.ts
 export const ArtefactRepository = {
   getAll: async () => {
-    const { data } = await apiClient.get("/artefacts/"); // 👈 barra final
+    const { data } = await apiClient.get("/artefacts/");
     return data as Artefact[];
   },
 
   create: async (payload: Artefact) => {
-    const { data } = await apiClient.post("/artefacts/", payload); // 👈
+    const { data } = await apiClient.post("/artefacts/", payload)
     return data as Artefact;
   },
 
   update: async (id: number, payload: Artefact) => {
-    const { data } = await apiClient.put(`/artefacts/${id}`, payload); // este no cambia
+    const { data } = await apiClient.put(`/artefacts/${id}`, payload);
     return data as Artefact | { message: string };
   },
 
   remove: async (id: number) => {
-    const { data, status } = await apiClient.delete(`/artefacts/${id}`); // este no cambia
+    const { data, status } = await apiClient.delete(`/artefacts/${id}`);
     return (data as { ok?: boolean } | { message: string }) ?? { ok: status === 200 };
   },
 

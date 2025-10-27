@@ -4,7 +4,7 @@ import { Alert, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
-import { useCreateShelf } from "../../../hooks/useShelf"; // ⬅️ usamos tus hooks
+import { useCreateShelf } from "../../../hooks/useShelf";
 
 export default function New_shelf() {
   const router = useRouter();

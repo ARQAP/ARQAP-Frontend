@@ -1,146 +1,287 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View, Switch, Image, Platform, Alert, useWindowDimensions } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import Navbar from '../Navbar';
-import Button from '../../../components/ui/Button';
-import Colors from '../../../constants/Colors';
+// app/(tabs)/archaeological-Pieces/Edit_piece.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Switch,
+  Image,
+  Platform,
+  Alert,
+  useWindowDimensions,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import Navbar from "../Navbar";
+import Button from "../../../components/ui/Button";
+import Colors from "../../../constants/Colors";
+import { Feather } from "@expo/vector-icons";
+import { useQuery } from '@tanstack/react-query';
+
+import { useCollections } from "../../../hooks/useCollections";
+import { useArchaeologists } from "../../../hooks/useArchaeologist";
+import { useShelves } from "../../../hooks/useShelf";
+import { usePhysicalLocations } from "../../../hooks/usePhysicalLocation";
+
+import SimplePickerModal, {
+  SimplePickerItem,
+} from "../../../components/ui/SimpleModal";
+
+import { ArtefactRepository } from "@/repositories/artefactRepository";
+import {
+  useUploadArtefactHistoricalRecord,
+  useUploadArtefactPicture,
+} from "@/hooks/useArtefact";
+
+// Reemplazá tu helper por este:
+function getUpdatedId(updated: unknown, fallbackId: number): number {
+  if (updated && typeof updated === "object" && "id" in updated) {
+    const id = Number((updated as any).id);
+    if (!Number.isNaN(id)) return id;
+  }
+  // si el backend no devuelve id, usamos el que ya tenemos
+  return fallbackId;
+}
 
 export default function EditPiece() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const id = (params as any)?.id as string | undefined;
+  const artefactId = (params as any)?.id ? Number((params as any).id) : null;
 
-  // form state (same as New_piece)
-  const [name, setName] = useState('');
-  const [material, setMaterial] = useState('');
-  const [observation, setObservation] = useState('');
+  // -------- form state (mismo concepto que New_piece) ----------
+  const [name, setName] = useState("");
+  const [material, setMaterial] = useState("");
+  const [observation, setObservation] = useState("");
+  const [description, setDescription] = useState("");
   const [available, setAvailable] = useState(true);
   const [classifier, setClassifier] = useState('INAPL');
   const [color, setColor] = useState('');
   const [collection, setCollection] = useState('');
   const [archaeologist, setArchaeologist] = useState('');
   const [site, setSite] = useState('');
-  const [shelf, setShelf] = useState('07');
+
+  const [shelf, setShelf] = useState(''); // string con el code (p.ej. "07")
+  // -------- pickers (modales) ----------
+  const [archPickerOpen, setArchPickerOpen] = useState(false);
+  const [collPickerOpen, setCollPickerOpen] = useState(false);
+  const [shelfPickerOpen, setShelfPickerOpen] = useState(false);
+
+  // -------- relaciones (IDs) ----------
+  const [collectionId, setCollectionId] = useState<number | null>(null);
+  const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
+  const [shelfCode, setShelfCode] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<number | null>(2);
   const [selectedColumn, setSelectedColumn] = useState<number | null>(2);
 
-  const columns = ['COLUMNA A', 'COLUMNA B', 'COLUMNA C', 'COLUMNA D'];
-  const levels = ['NIVEL 1', 'NIVEL 2', 'NIVEL 3', 'NIVEL 4'];
-  const { width: windowWidth } = useWindowDimensions();
+  // -------- menciones (sin persistencia aún) ----------
+  const [mentionName, setMentionName] = useState("");
+  const [mentionLink, setMentionLink] = useState("");
+  const [mentionDescription, setMentionDescription] = useState("");
+  const [mentions, setMentions] = useState<
+    Array<{ id: number; name: string; link: string; description: string }>
+  >([]);
 
-  // layout tuning (copy from New_piece)
-  const horizontalPadding = 48;
-  const containerMaxWidth = 720;
-  const leftLabelWidth = 64;
-  const gap = 8;
-  const containerWidth = Math.min(windowWidth - horizontalPadding, containerMaxWidth);
-  const availableWidthForCells = Math.max(0, containerWidth - leftLabelWidth - gap * (columns.length - 1));
-  const rawCellSize = Math.floor(availableWidthForCells / columns.length);
-  const cellSize = Math.max(56, Math.min(rawCellSize, 110));
+  // -------- data remota ----------
+  const { data: collections = [] } = useCollections();
+  const { data: archaeologists = [] } = useArchaeologists();
+  const { data: shelfs = [] } = useShelves();
+  const { data: locations = [] } = usePhysicalLocations();
 
+  // -------- uploads (opcional como New_piece) ----------
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const fileInputRef = useRef<any>(null);
   const fileInputRef2 = useRef<any>(null);
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  // mentions state
-  const [mentionName, setMentionName] = useState('');
-  const [mentionLink, setMentionLink] = useState('');
-  const [mentionDescription, setMentionDescription] = useState('');
-  const [mentions, setMentions] = useState<Array<{ id: number; name: string; link: string; description: string }>>([]);
 
-  // simple mock load when id provided (in a real app fetch from API)
+  // refs y hooks de upload (si corresponde)
+  const pictureFileRef = useRef<File | null>(null); // web
+  const recordFileRef = useRef<File | null>(null); // web
+  const nativePictureRef = useRef<{ uri: string; name: string; type: string } | null>(null);
+  const nativeRecordRef = useRef<{ uri: string; name: string; type: string } | null>(null);
+  const uploadPicture = useUploadArtefactPicture();
+  const uploadRecord = useUploadArtefactHistoricalRecord();
+
+  // -------- layout (misma lógica que New_piece) ----------
+  const { width: windowWidth } = useWindowDimensions();
+  const columns = ["A", "B", "C", "D"];
+  const levels = [1, 2, 3, 4];
+  const horizontalPadding = 48;
+  const containerMaxWidth = 720;
+  const leftLabelWidth = 64;
+  const gap = 8;
+  const containerWidth = Math.min(
+    windowWidth - horizontalPadding,
+    containerMaxWidth
+  );
+  const availableWidthForCells = Math.max(
+    0,
+    containerWidth - leftLabelWidth - gap * (columns.length - 1)
+  );
+  const rawCellSize = Math.floor(availableWidthForCells / columns.length);
+  const cellSize = Math.max(56, Math.min(rawCellSize, 110));
+
+  // -------- helpers selección ----------
+  const shelfIdFromCode: number | null = useMemo(() => {
+    const codeNum = Number(shelfCode);
+    const found = shelfs.find((s) => Number(s.code) === codeNum);
+    return found?.id ?? null;
+  }, [shelfs, shelfCode]);
+
+  const physicalLocationId: number | null = useMemo(() => {
+    if (!shelfIdFromCode) return null;
+    if (selectedLevel == null || selectedColumn == null) return null;
+    const levelNumber = levels[selectedLevel]; // 1..4
+    const columnLetter = columns[selectedColumn]; // "A".."D"
+    const found = locations.find(
+      (l) =>
+        Number(l.shelfId) === shelfIdFromCode &&
+        Number(l.level) === levelNumber &&
+        String(l.column) === columnLetter
+    );
+    return found?.id ?? null;
+  }, [
+    locations,
+    shelfIdFromCode,
+    selectedLevel,
+    selectedColumn,
+    levels,
+    columns,
+  ]);
+
+  // -------- items para modales ----------
+  const archItems: SimplePickerItem<(typeof archaeologists)[number]>[] =
+    useMemo(
+      () =>
+        archaeologists.map((a) => ({
+          value: a.id!,
+          label: `${a.firstname} ${a.lastname}`,
+          raw: a,
+        })),
+      [archaeologists]
+    );
+
+  const collItems: SimplePickerItem<(typeof collections)[number]>[] = useMemo(
+    () =>
+      collections.map((c) => ({
+        value: c.id!,
+        label: c.name,
+        raw: c,
+      })),
+    [collections]
+  );
+
+  const shelfItems: SimplePickerItem<(typeof shelfs)[number]>[] = useMemo(
+    () =>
+      shelfs.map((s) => ({
+        value: s.id!,
+        label: `Estantería ${s.code}`,
+        raw: s,
+      })),
+    [shelfs]
+  );
+
+  // -------- fetch artefacto por id ----------
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['artefact', artefactId],
+    queryFn: () => ArtefactRepository.getById(artefactId as number),
+    enabled: Number.isFinite(artefactId as number),
+  });
+
+  // simple mock load cuando llega la data real del API
   useEffect(() => {
-    if (!id) return;
-    // mock prefill
-    const mock = {
-      name: 'Vasija fragmentada',
-      material: 'Cerámica',
-      observation: 'Fragmento Hallado en sector norte',
-      available: true,
-      classifier: 'INAPL',
-      color: 'Terracota',
-      collection: 'Colección Museo',
-      archaeologist: 'Dr. Perez',
-      site: 'Sitio A',
-      shelf: '07',
-      selectedLevel: 1,
-      selectedColumn: 0,
-    } as any;
+    if (!data) return;
+    const a = data as any;
+    console.log('Cargando artefacto para edición:', a);
+    setName(a?.name ?? '');
+    setMaterial(a?.material ?? '');
+    setObservation(a?.observation ?? '');
+    setDescription(a?.description ?? '');
+    setAvailable(!!a?.available);
 
-    setName(mock.name);
-    setMaterial(mock.material);
-    setObservation(mock.observation);
-    setAvailable(mock.available);
-    setClassifier(mock.classifier);
-    setColor(mock.color);
-    setCollection(mock.collection);
-    setArchaeologist(mock.archaeologist);
-    setSite(mock.site);
-    setShelf(mock.shelf);
-    setSelectedLevel(mock.selectedLevel);
-    setSelectedColumn(mock.selectedColumn);
-  }, [id]);
+    // clasificador/color: solo para UI de edición, si vinieran del backend ajustá aquí
+    setClassifier('INAPL');
+    setColor(a?.internalClassifier?.color ?? '');
 
-  function handleSave() {
-    const payload = {
-      id,
-      name,
-      material,
-      observation,
-      available,
-      classifier,
-      color,
-      collection,
-      archaeologist,
-      site,
-      shelf,
-      photoUri,
-      location: {
-        level: selectedLevel != null ? levels[selectedLevel] : null,
-        column: selectedColumn != null ? columns[selectedColumn] : null,
-        shelf: `ESTANTERIA ${shelf}`,
-      },
-    };
-    console.log('Updating piece', payload);
-    // TODO: call API to update
-    // navigate back to list
-    router.back();
-  }
+    // Colección
+    setCollection(a?.collection?.name ?? a?.collection?.Nombre ?? '');
+    setCollectionId(a?.collection?.id ?? null);
 
+    // Arqueólogo
+    const arch = a?.archaeologist;
+    setArchaeologist(arch?.name ?? [arch?.firstname, arch?.lastname].filter(Boolean).join(' '));
+    setArchaeologistId(arch?.id ?? null);
+
+    // Sitio (placeholder)
+    const siteObj = a?.archaeologicalSite;
+    setSite(siteObj?.name ?? siteObj?.Nombre ?? '');
+
+    // Estantería: guardamos el code
+    const shelfObj = a?.physicalLocation?.shelf ?? a?.physicalLocation?.estanteria ?? a?.shelf ?? null;
+    console.log('shelfObj', shelfObj);
+    const shelfCodeVal = typeof shelfObj === 'object' ? (shelfObj?.id ?? shelfObj?.code) : shelfObj;
+    setShelf(shelfCodeVal != null ? String(shelfCodeVal).padStart(2, '0') : '');
+    setShelfCode(shelfCodeVal != null ? String(shelfCodeVal).padStart(2, '0') : '');
+
+    // level/column a índices (0..3)
+    const levelRaw = a?.physicalLocation?.level ?? a?.physicalLocation?.nivel ?? null;
+    const columnRaw = a?.physicalLocation?.column ?? a?.physicalLocation?.columna ?? null;
+
+    const levelIndex = levelRaw != null && !Number.isNaN(Number(levelRaw))
+      ? Math.max(0, Math.min(3, Number(levelRaw) - 1))
+      : null;
+    setSelectedLevel(levelIndex);
+
+    const colLetter = String(columnRaw ?? '').toUpperCase().replace(/[^A-D]/g, '').charAt(0);
+    const colIndex = colLetter === 'A' ? 0 : colLetter === 'B' ? 1 : colLetter === 'C' ? 2 : colLetter === 'D' ? 3 : null;
+    setSelectedColumn(colIndex);
+  }, [data]);
+  // -------- pickers / uploads ----------
   async function pickImage() {
     try {
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         fileInputRef.current?.click?.();
         return;
       }
-
       let ImagePicker: any;
       try {
         // @ts-ignore
-        ImagePicker = await import('expo-image-picker');
+        ImagePicker = await import("expo-image-picker");
       } catch (e) {
-        Alert.alert('Dependencia faltante', 'Instale `expo-image-picker` para seleccionar imágenes en el dispositivo móvil');
+        Alert.alert(
+          "Dependencia faltante",
+          "Instale `expo-image-picker` para seleccionar imágenes en el dispositivo móvil"
+        );
         return;
       }
-
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permission.status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesitamos permiso para acceder a las fotos');
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Permiso denegado",
+          "Necesitamos permiso para acceder a las fotos"
+        );
         return;
       }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.8,
       });
-
       // @ts-ignore
       const uri = result?.assets?.[0]?.uri ?? (result as any)?.uri ?? null;
-      if (uri) setPhotoUri(uri);
+      if (uri) {
+        setPhotoUri(uri);
+        // en nativo guardamos el file-like
+        nativePictureRef.current = {
+          uri,
+          name: "picture.jpg",
+          type: "image/jpeg",
+        };
+      }
     } catch (err) {
-      console.warn('Error picking image', err);
+      console.warn("Error picking image", err);
     }
   }
 
@@ -149,32 +290,44 @@ export default function EditPiece() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setPhotoUri(url);
+    pictureFileRef.current = file;
   }
 
   async function pickFile() {
     try {
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         fileInputRef2.current?.click?.();
         return;
       }
-
       let DocumentPicker: any;
       try {
         // @ts-ignore
-        DocumentPicker = await import('expo-document-picker');
+        DocumentPicker = await import("expo-document-picker");
       } catch (e) {
-        console.warn('expo-document-picker not installed, falling back to image picker');
+        console.warn(
+          "expo-document-picker no está instalado, abriendo selector de imagen"
+        );
         await pickImage();
         return;
       }
-
-      const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
-      if (res.type === 'success') {
+      const res = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+      });
+      if (res.type === "success") {
         setFileUri(res.uri);
         setFileName(res.name || null);
+        nativeRecordRef.current = {
+          uri: res.uri,
+          name: res.name || "document.pdf",
+          type:
+            res.mimeType ||
+            (res.name?.toLowerCase().endsWith(".pdf")
+              ? "application/pdf"
+              : "image/jpeg"),
+        };
       }
     } catch (err) {
-      console.warn('Error picking file', err);
+      console.warn("Error picking file", err);
     }
   }
 
@@ -183,133 +336,558 @@ export default function EditPiece() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setFileUri(url);
-    setFileName(file.name || 'archivo');
+    setFileName(file.name || "archivo");
+    recordFileRef.current = file;
   }
 
+  // -------- guardar ----------
+  async function handleSave() {
+    try {
+      if (!artefactId) {
+        Alert.alert("Error", "ID de pieza inválido.");
+        return;
+      }
+      if (!name.trim()) {
+        Alert.alert("Falta nombre", "El nombre es obligatorio.");
+        return;
+      }
+
+      const payload: any = {
+        name: name.trim(),
+        material: material.trim() || null,
+        observation: observation.trim() || null,
+        available,
+        description: description.trim() || null,
+
+        // relaciones (aquí solo enviamos los ids si los tenés en tu API)
+        collectionId: collectionId ?? null,
+        archaeologistId: archaeologistId ?? null,
+
+        // ubicación física (si existe)
+        physicalLocationId: physicalLocationId ?? null,
+
+        // aún no implementado:
+        archaeologicalSiteId: null,
+        inplClassifierId: null,
+      };
+
+      const updated = await ArtefactRepository.update(artefactId, payload);
+      const updatedId = getUpdatedId(updated, artefactId); // <-- ya no explota
+
+      // subir foto si corresponde
+      if (Platform.OS === "web" && pictureFileRef.current) {
+        await uploadPicture.mutateAsync({
+          id: updatedId,
+          file: pictureFileRef.current,
+        });
+      } else if (Platform.OS !== "web" && nativePictureRef.current) {
+        // @ts-ignore RN FormData shape
+        const fd = new FormData();
+        fd.append("picture", nativePictureRef.current as any);
+        await ArtefactRepository.uploadPicture(
+          updatedId,
+          (fd as any).get("picture") as any
+        );
+      }
+
+      // subir ficha/documento si corresponde
+      if (Platform.OS === "web" && recordFileRef.current) {
+        await uploadRecord.mutateAsync({
+          id: updatedId,
+          file: recordFileRef.current,
+        });
+      } else if (Platform.OS !== "web" && nativeRecordRef.current) {
+        // @ts-ignore RN FormData shape
+        const fd = new FormData();
+        fd.append("document", nativeRecordRef.current as any);
+        await ArtefactRepository.uploadHistoricalRecord(
+          updatedId,
+          (fd as any).get("document") as any
+        );
+      }
+
+      Alert.alert("OK", "Pieza actualizada correctamente.");
+      router.push("/(tabs)/archaeological-Pieces/View_pieces");
+    } catch (e: any) {
+      console.warn(e);
+      Alert.alert("Error", e?.message ?? "No se pudo actualizar la pieza.");
+    }
+  }
+
+  // -------- UI helpers de selección simple ----------
+  const SimpleSelectRow = ({
+    label,
+    value,
+    onPress,
+    subdued,
+  }: {
+    label: string;
+    value?: string | null;
+    onPress?: () => void;
+    subdued?: boolean;
+  }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={!onPress}
+      style={{
+        backgroundColor: subdued ? "#f3f3f3" : "#fff",
+        borderRadius: 6,
+        padding: 8,
+        borderWidth: 1,
+        borderColor: "#E6DAC4",
+      }}
+    >
+      <Text style={{ fontFamily: "CrimsonText-Regular", color: Colors.black }}>
+        {value || label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#F3E9DD' }}>
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
       <Navbar title="Editar pieza arqueologica" showBackArrow backToHome />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <Text style={{ fontWeight: '700', marginBottom: 8, fontFamily: 'MateSC-Regular', color: Colors.black }}>Edite los datos de la pieza arqueológica</Text>
+        <Text
+          style={{
+            fontWeight: "700",
+            marginBottom: 8,
+            fontFamily: "MateSC-Regular",
+            color: Colors.black,
+          }}
+        >
+          Edite los datos de la pieza arqueológica
+        </Text>
 
-        <View style={{ flexDirection: windowWidth < 520 ? 'column' : 'row', gap: 12, marginBottom: 12 }}>
+        {/* nombre / material */}
+        <View
+          style={{
+            flexDirection: windowWidth < 520 ? "column" : "row",
+            gap: 12,
+            marginBottom: 12,
+          }}
+        >
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Nombre</Text>
-            <TextInput value={name} onChangeText={setName} placeholder="Nombre" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, fontFamily: 'CrimsonText-Regular', color: Colors.black }} />
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 6,
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+              }}
+            >
+              Nombre
+            </Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Nombre"
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 6,
+                padding: 8,
+                fontFamily: "CrimsonText-Regular",
+                color: Colors.black,
+              }}
+            />
           </View>
 
-          <View style={{ flex: 1, width: windowWidth < 520 ? '100%' : undefined }}>
-            <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Material</Text>
-            <TextInput value={material} onChangeText={setMaterial} placeholder="Material" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, fontFamily: 'CrimsonText-Regular', color: Colors.black }} />
+          <View
+            style={{ flex: 1, width: windowWidth < 520 ? "100%" : undefined }}
+          >
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 6,
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+              }}
+            >
+              Material
+            </Text>
+            <TextInput
+              value={material}
+              onChangeText={setMaterial}
+              placeholder="Material"
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 6,
+                padding: 8,
+                fontFamily: "CrimsonText-Regular",
+                color: Colors.black,
+              }}
+            />
           </View>
         </View>
 
+        {/* observación */}
         <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Observación</Text>
-          <TextInput multiline value={observation} onChangeText={setObservation} placeholder="Observación de la pieza" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, minHeight: 80, fontFamily: 'CrimsonText-Regular', color: Colors.black }} />
+          <Text
+            style={{
+              fontWeight: "700",
+              marginBottom: 6,
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Observación
+          </Text>
+          <TextInput
+            multiline
+            value={observation}
+            onChangeText={setObservation}
+            placeholder="Observación de la pieza"
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 6,
+              padding: 8,
+              minHeight: 80,
+              fontFamily: "CrimsonText-Regular",
+              color: Colors.black,
+            }}
+          />
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <Text style={{ fontWeight: '700', fontFamily: 'MateSC-Regular', color: Colors.black }}>Disponible</Text>
+        {/* disponible */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontWeight: "700",
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Disponible
+          </Text>
           <Switch value={available} onValueChange={setAvailable} />
         </View>
 
-        <View style={{ flexDirection: windowWidth < 520 ? 'column' : 'row', gap: 12, marginBottom: 12 }}>
+        {/* Colección (modal) */}
+        <View style={{ marginBottom: 12 }}>
+          <Text
+            style={{
+              fontWeight: "700",
+              marginBottom: 6,
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Asociar pieza a una colección
+          </Text>
+          <SimpleSelectRow
+            label="Sin colección"
+            value={
+              collectionId
+                ? collections.find((c) => c.id === collectionId)?.name ??
+                  "Sin colección"
+                : "Sin colección"
+            }
+            onPress={() => setCollPickerOpen(true)}
+          />
+        </View>
+
+        {/* Arqueólogo (modal) */}
+        <View style={{ marginBottom: 12 }}>
+          <Text
+            style={{
+              fontWeight: "700",
+              marginBottom: 6,
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Asociar pieza a un arqueólogo
+          </Text>
+          <SimpleSelectRow
+            label="Seleccionar arqueólogo"
+            value={
+              archaeologistId
+                ? (() => {
+                    const a = archaeologists.find((x) => x.id === archaeologistId);
+                    return a ? `${a.firstname} ${a.lastname}` : "Seleccionar arqueólogo";
+                  })()
+                : "Seleccionar arqueólogo"
+            }
+            onPress={() => setArchPickerOpen(true)}
+          />
+        </View>
+
+        {/* Sitio (placeholder) + Estantería (modal) */}
+        <View
+          style={{
+            flexDirection: windowWidth < 520 ? "column" : "row",
+            gap: 12,
+            marginBottom: 12,
+          }}
+        >
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Clasificador</Text>
-            <View style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8 }}>
-              <Text style={{ fontFamily: 'CrimsonText-Regular', color: Colors.black }}>{classifier}</Text>
-            </View>
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 6,
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+              }}
+            >
+              Asociar pieza a un sitio arqueológico
+            </Text>
+            <SimpleSelectRow label="Seleccionar sitio" subdued />
           </View>
-          <View style={{ flex: 1, width: windowWidth < 520 ? '100%' : undefined }}>
-            <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Color</Text>
-            <TextInput value={color} onChangeText={setColor} placeholder="Seleccione el color" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, fontFamily: 'CrimsonText-Regular', color: Colors.black }} />
+
+          <View style={{ width: windowWidth < 520 ? "100%" : 140 }}>
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 6,
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+              }}
+            >
+              Estantería
+            </Text>
+
+            {/* Selector (abre modal reutilizable) */}
+            <SimpleSelectRow
+              label="Seleccionar estantería"
+              value={shelfCode ? `Estantería ${shelfCode}` : undefined}
+              onPress={() => setShelfPickerOpen(true)}
+            />
+
+            {/* Link: Crear nueva Estantería */}
+            <TouchableOpacity
+              style={{
+                paddingVertical: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+              onPress={() => router.push("/(tabs)/archaeological-Pieces/New_shelf")}
+              accessibilityRole="button"
+              accessibilityLabel="Crear nueva Estantería"
+            >
+              <Text
+                style={{
+                  color: "#A68B5B",
+                  marginRight: 6,
+                  fontFamily: "MateSC-Regular",
+                }}
+              >
+                Crear nueva Estantería
+              </Text>
+              <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+            </TouchableOpacity>
           </View>
         </View>
 
+        {/* Foto y Ficha */}
         <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Foto</Text>
-          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-            <TouchableOpacity onPress={pickImage} style={{ width: 96, height: 96, backgroundColor: '#FFF', borderRadius: 6, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#DDD' }}>
+          <Text
+            style={{
+              fontWeight: "700",
+              marginBottom: 6,
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Foto
+          </Text>
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={pickImage}
+              style={{
+                width: 96,
+                height: 96,
+                backgroundColor: "#FFF",
+                borderRadius: 6,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#DDD",
+              }}
+            >
               {photoUri ? (
                 // @ts-ignore
-                <Image source={{ uri: photoUri }} style={{ width: 92, height: 92, borderRadius: 6 }} />
+                <Image
+                  source={{ uri: photoUri }}
+                  style={{ width: 92, height: 92, borderRadius: 6 }}
+                />
               ) : null}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={pickImage} style={{ paddingVertical: 10, paddingHorizontal: 12, backgroundColor: Colors.green, borderRadius: 6 }}>
-              <Text style={{ color: '#fff', fontFamily: 'CrimsonText-Regular' }}>SUBIR IMAGEN</Text>
+            <TouchableOpacity
+              onPress={pickImage}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                backgroundColor: Colors.green,
+                borderRadius: 6,
+              }}
+            >
+              <Text style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}>
+                SUBIR IMAGEN
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={pickFile} style={{ paddingVertical: 10, paddingHorizontal: 12, backgroundColor: Colors.brown, borderRadius: 6 }}>
-              <Text style={{ color: '#fff', fontFamily: 'CrimsonText-Regular' }}>SUBIR FICHA</Text>
+            <TouchableOpacity
+              onPress={pickFile}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                backgroundColor: Colors.brown,
+                borderRadius: 6,
+              }}
+            >
+              <Text style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}>
+                SUBIR FICHA
+              </Text>
             </TouchableOpacity>
 
-            {Platform.OS === 'web' && (
-              // hidden file inputs for web
+            {Platform.OS === "web" && (
               <>
-                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleWebFile} />
-                <input ref={fileInputRef2} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleWebFile2} />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleWebFile}
+                />
+                <input
+                  ref={fileInputRef2}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  style={{ display: "none" }}
+                  onChange={handleWebFile2}
+                />
               </>
             )}
           </View>
           {fileName ? (
-            <Text style={{ marginTop: 8, fontFamily: 'CrimsonText-Regular', color: Colors.black }}>Archivo: {fileName}</Text>
+            <Text
+              style={{
+                marginTop: 8,
+                fontFamily: "CrimsonText-Regular",
+                color: Colors.black,
+              }}
+            >
+              Archivo: {fileName}
+            </Text>
           ) : null}
         </View>
 
+        {/* Descripción */}
         <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Descripción</Text>
-          <TextInput multiline placeholder="Descripción detallada de la pieza" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, minHeight: 100, fontFamily: 'CrimsonText-Regular', color: Colors.black }} />
-        </View>
-
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Asociar pieza a una colección</Text>
-          <View style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8 }}>
-            <Text>Sin Colección</Text>
-          </View>
-        </View>
-
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Asociar pieza a un arqueólogo</Text>
-          <View style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8 }}>
-            <Text>Seleccionar Arqueólogo</Text>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: windowWidth < 520 ? 'column' : 'row', gap: 12, marginBottom: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Asociar pieza a un sitio arqueológico</Text>
-            <View style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8 }}>
-              <Text>Seleccionar sitio</Text>
-            </View>
-          </View>
-          <View style={{ width: windowWidth < 520 ? '100%' : 100 }}>
-            <Text style={{ fontWeight: '700', marginBottom: 6, fontFamily: 'MateSC-Regular', color: Colors.black }}>Estantería</Text>
-            <TextInput value={shelf} onChangeText={setShelf} style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, fontFamily: 'CrimsonText-Regular', color: Colors.black }} />
-          </View>
+          <Text
+            style={{
+              fontWeight: "700",
+              marginBottom: 6,
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Descripción
+          </Text>
+          <TextInput
+            multiline
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Descripción detallada de la pieza"
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 6,
+              padding: 8,
+              minHeight: 100,
+              fontFamily: "CrimsonText-Regular",
+              color: Colors.black,
+            }}
+          />
         </View>
 
         {/* Ubicación física de la pieza */}
-  <View style={{ marginBottom: 8, backgroundColor: '#fff', padding: 8, borderRadius: 6 }}>
-          <Text style={{ fontFamily: 'MateSC-Regular', fontWeight: '700', textAlign: 'center', marginBottom: 8, color: Colors.black }}>UBICACIÓN FÍSICA DE LA PIEZA</Text>
+        <View
+          style={{
+            marginBottom: 8,
+            backgroundColor: "#fff",
+            padding: 8,
+            borderRadius: 6,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "MateSC-Regular",
+              fontWeight: "700",
+              textAlign: "center",
+              marginBottom: 8,
+              color: Colors.black,
+            }}
+          >
+            UBICACIÓN FÍSICA DE LA PIEZA
+          </Text>
 
-          <View style={{ marginBottom: 8, alignItems: 'center' }}>
-            <View style={{ width: containerWidth, alignItems: 'flex-start' }}>
-              <View style={{ backgroundColor: Colors.green, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
-                <Text style={{ color: Colors.cremit, fontFamily: 'CrimsonText-Regular' }}>ESTANTERIA {shelf}</Text>
+          <View style={{ marginBottom: 8, alignItems: "center" }}>
+            <View style={{ width: containerWidth, alignItems: "flex-start" }}>
+              <View
+                style={{
+                  backgroundColor: Colors.green,
+                  alignSelf: "flex-start",
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: Colors.cremit,
+                    fontFamily: "CrimsonText-Regular",
+                  }}
+                >
+                  ESTANTERIA {shelfCode || "--"}
+                </Text>
               </View>
             </View>
           </View>
 
-          <View style={{ width: containerWidth, marginBottom: 6, alignSelf: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+          {/* encabezado columnas */}
+          <View
+            style={{ width: containerWidth, marginBottom: 6, alignSelf: "center" }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", width: "100%" }}
+            >
               <View style={{ width: leftLabelWidth }} />
-              <View style={{ flexDirection: 'row' }}>
+              <View style={{ flexDirection: "row" }}>
                 {columns.map((c, ci) => (
-                  <View key={c} style={{ width: cellSize, paddingHorizontal: gap / 2, alignItems: 'center', marginRight: ci < columns.length - 1 ? gap : 0 }}>
-                    <View style={{ backgroundColor: '#2F2F2F', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 6 }}>
-                      <Text style={{ color: Colors.cremit, fontFamily: 'CrimsonText-Regular', fontSize: 11 }}>{c}</Text>
+                  <View
+                    key={c}
+                    style={{
+                      width: cellSize,
+                      paddingHorizontal: gap / 2,
+                      alignItems: "center",
+                      marginRight: ci < columns.length - 1 ? gap : 0,
+                    }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: "#2F2F2F",
+                        paddingHorizontal: 6,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: Colors.cremit,
+                          fontFamily: "CrimsonText-Regular",
+                          fontSize: 11,
+                        }}
+                      >
+                        COLUMNA {c}
+                      </Text>
                     </View>
                   </View>
                 ))}
@@ -317,21 +895,68 @@ export default function EditPiece() {
             </View>
           </View>
 
+          {/* filas niveles */}
           <View>
             {levels.map((lvl, li) => (
-              <View key={lvl} style={{ width: containerWidth, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                <View style={{ width: leftLabelWidth, height: cellSize, justifyContent: 'center' }}>
-                  <View style={{ backgroundColor: Colors.brown, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6, alignSelf: 'flex-start' }}>
-                    <Text style={{ color: Colors.cremit, fontFamily: 'CrimsonText-Regular', fontSize: 12 }}>{lvl}</Text>
+              <View
+                key={lvl}
+                style={{
+                  width: containerWidth,
+                  alignSelf: "center",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <View
+                  style={{ width: leftLabelWidth, height: cellSize, justifyContent: "center" }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: Colors.brown,
+                      paddingVertical: 6,
+                      paddingHorizontal: 8,
+                      borderRadius: 6,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: Colors.cremit,
+                        fontFamily: "CrimsonText-Regular",
+                        fontSize: 12,
+                      }}
+                    >
+                      NIVEL {lvl}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={{ flexDirection: 'row' }}>
+                <View style={{ flexDirection: "row" }}>
                   {columns.map((c, ci) => {
-                    const isSelected = selectedLevel === li && selectedColumn === ci;
+                    const isSelected =
+                      selectedLevel === li && selectedColumn === ci;
                     return (
-                      <View key={c} style={{ width: cellSize, paddingHorizontal: gap / 2, marginRight: ci < columns.length - 1 ? gap : 0 }}>
-                        <TouchableOpacity onPress={() => { setSelectedLevel(li); setSelectedColumn(ci); }} style={{ width: cellSize, height: cellSize, borderRadius: 6, backgroundColor: isSelected ? Colors.brown : '#EADFCB' }} />
+                      <View
+                        key={c}
+                        style={{
+                          width: cellSize,
+                          paddingHorizontal: gap / 2,
+                          marginRight: ci < columns.length - 1 ? gap : 0,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedLevel(li);
+                            setSelectedColumn(ci);
+                          }}
+                          style={{
+                            width: cellSize,
+                            height: cellSize,
+                            borderRadius: 6,
+                            backgroundColor: isSelected ? Colors.brown : "#EADFCB",
+                          }}
+                        />
                       </View>
                     );
                   })}
@@ -339,33 +964,124 @@ export default function EditPiece() {
               </View>
             ))}
           </View>
+
+          <Text
+            style={{
+              marginTop: 8,
+              fontFamily: "CrimsonText-Regular",
+              color: Colors.black,
+            }}
+          >
+            Ubicación física ID seleccionado: {physicalLocationId ?? "—"}
+          </Text>
         </View>
 
         {/* Menciones: formulario para agregar + lista */}
-        <View style={{ marginTop: 16, backgroundColor: '#fff', padding: 12, borderRadius: 8 }}>
-          <Text style={{ fontFamily: 'MateSC-Regular', fontWeight: '700', marginBottom: 8, color: Colors.black }}>MENCIONES DE LA PIEZA ARQUEOLÓGICA (OPCIONAL)</Text>
+        <View
+          style={{ marginTop: 16, backgroundColor: "#fff", padding: 12, borderRadius: 8 }}
+        >
+          <Text
+            style={{
+              fontFamily: "MateSC-Regular",
+              fontWeight: "700",
+              marginBottom: 8,
+              color: Colors.black,
+            }}
+          >
+            MENCIONES DE LA PIEZA ARQUEOLÓGICA (OPCIONAL)
+          </Text>
 
           {/* inputs: nombre + enlace */}
           {/** Stack vertically on small screens to avoid layout breakage **/}
-          <View style={{ flexDirection: windowWidth < 520 ? 'column' : 'row', gap: 12, marginBottom: 8 }}>
+          <View
+            style={{
+              flexDirection: windowWidth < 520 ? "column" : "row",
+              gap: 12,
+              marginBottom: 8,
+            }}
+          >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: 'MateSC-Regular', color: Colors.black, marginBottom: 6 }}>NOMBRE</Text>
-              <TextInput value={mentionName} onChangeText={setMentionName} placeholder="Nombre" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#E6DAC4' }} />
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  color: Colors.black,
+                  marginBottom: 6,
+                }}
+              >
+                NOMBRE
+              </Text>
+              <TextInput
+                value={mentionName}
+                onChangeText={setMentionName}
+                placeholder="Nombre"
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 6,
+                  padding: 8,
+                  borderWidth: 1,
+                  borderColor: "#E6DAC4",
+                }}
+              />
             </View>
-            <View style={{ width: windowWidth < 520 ? '100%' : 200 }}>
-              <Text style={{ fontFamily: 'MateSC-Regular', color: Colors.black, marginBottom: 6 }}>ENLACE</Text>
-              <TextInput value={mentionLink} onChangeText={setMentionLink} placeholder="Enlace" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#E6DAC4' }} />
+            <View style={{ width: windowWidth < 520 ? "100%" : 200 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  color: Colors.black,
+                  marginBottom: 6,
+                }}
+              >
+                ENLACE
+              </Text>
+              <TextInput
+                value={mentionLink}
+                onChangeText={setMentionLink}
+                placeholder="Enlace"
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 6,
+                  padding: 8,
+                  borderWidth: 1,
+                  borderColor: "#E6DAC4",
+                }}
+              />
             </View>
           </View>
 
           <View style={{ marginBottom: 8 }}>
-            <Text style={{ fontFamily: 'MateSC-Regular', color: Colors.black, marginBottom: 6 }}>DESCRIPCIÓN</Text>
-            <TextInput multiline value={mentionDescription} onChangeText={setMentionDescription} placeholder="Descripción" style={{ backgroundColor: '#fff', borderRadius: 6, padding: 8, minHeight: 80, borderWidth: 1, borderColor: '#E6DAC4' }} />
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+                marginBottom: 6,
+              }}
+            >
+              DESCRIPCIÓN
+            </Text>
+            <TextInput
+              multiline
+              value={mentionDescription}
+              onChangeText={setMentionDescription}
+              placeholder="Descripción"
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 6,
+                padding: 8,
+                minHeight: 80,
+                borderWidth: 1,
+                borderColor: "#E6DAC4",
+              }}
+            />
           </View>
 
-          <View style={{ alignItems: 'flex-end', marginBottom: 12 }}>
+          <View style={{ alignItems: "flex-end", marginBottom: 12 }}>
             <TouchableOpacity
-              style={{ backgroundColor: Colors.green, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+              style={{
+                backgroundColor: Colors.green,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 8,
+              }}
               onPress={() => {
                 const name = mentionName.trim();
                 const link = mentionLink.trim();
@@ -373,36 +1089,102 @@ export default function EditPiece() {
                 if (!name && !link) return;
                 const m = { id: Date.now(), name, link, description: desc };
                 setMentions((prev) => [m, ...prev]);
-                setMentionName('');
-                setMentionLink('');
-                setMentionDescription('');
+                setMentionName("");
+                setMentionLink("");
+                setMentionDescription("");
               }}
             >
-              <Text style={{ color: Colors.cremit, fontFamily: 'CrimsonText-Regular' }}>AGREGAR MENCIÓN</Text>
+              <Text
+                style={{
+                  color: Colors.cremit,
+                  fontFamily: "CrimsonText-Regular",
+                }}
+              >
+                AGREGAR MENCIÓN
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* tabla/lista de menciones */}
-          <View style={{ borderWidth: 1, borderColor: '#E6DAC4', borderRadius: 8, overflow: 'hidden' }}>
-            <View style={{ flexDirection: 'row', backgroundColor: '#EADFCB', padding: 8 }}>
-              <Text style={{ flex: 2, fontFamily: 'MateSC-Regular' }}>NOMBRE</Text>
-              <Text style={{ flex: 2, fontFamily: 'MateSC-Regular' }}>ENLACE</Text>
-              <Text style={{ flex: 3, fontFamily: 'MateSC-Regular' }}>DESCRIPCIÓN</Text>
-              <Text style={{ width: 80, textAlign: 'center', fontFamily: 'MateSC-Regular' }}>ACCIONES</Text>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: "#EADFCB",
+                padding: 8,
+              }}
+            >
+              <Text style={{ flex: 2, fontFamily: "MateSC-Regular" }}>
+                NOMBRE
+              </Text>
+              <Text style={{ flex: 2, fontFamily: "MateSC-Regular" }}>
+                ENLACE
+              </Text>
+              <Text style={{ flex: 3, fontFamily: "MateSC-Regular" }}>
+                DESCRIPCIÓN
+              </Text>
+              <Text
+                style={{ width: 80, textAlign: "center", fontFamily: "MateSC-Regular" }}
+              >
+                ACCIONES
+              </Text>
             </View>
             {mentions.length === 0 ? (
               <View style={{ padding: 12 }}>
-                <Text style={{ fontFamily: 'CrimsonText-Regular', color: Colors.black }}>No hay menciones agregadas.</Text>
+                <Text
+                  style={{ fontFamily: "CrimsonText-Regular", color: Colors.black }}
+                >
+                  No hay menciones agregadas.
+                </Text>
               </View>
             ) : (
               mentions.map((m) => (
-                <View key={m.id} style={{ flexDirection: 'row', padding: 8, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0E6DB' }}>
-                  <Text style={{ flex: 2, fontFamily: 'CrimsonText-Regular' }}>{m.name}</Text>
-                  <Text style={{ flex: 2, fontFamily: 'CrimsonText-Regular', color: '#2B6CB0' }}>{m.link}</Text>
-                  <Text style={{ flex: 3, fontFamily: 'CrimsonText-Regular' }}>{m.description}</Text>
-                  <View style={{ width: 80, alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => setMentions((prev) => prev.filter((x) => x.id !== m.id))} style={{ padding: 6, backgroundColor: '#F3D6C1', borderRadius: 6 }}>
-                      <Text style={{ fontFamily: 'CrimsonText-Regular' }}>Eliminar</Text>
+                <View
+                  key={m.id}
+                  style={{
+                    flexDirection: "row",
+                    padding: 8,
+                    alignItems: "center",
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#F0E6DB",
+                  }}
+                >
+                  <Text style={{ flex: 2, fontFamily: "CrimsonText-Regular" }}>
+                    {m.name}
+                  </Text>
+                  <Text
+                    style={{
+                      flex: 2,
+                      fontFamily: "CrimsonText-Regular",
+                      color: "#2B6CB0",
+                    }}
+                  >
+                    {m.link}
+                  </Text>
+                  <Text style={{ flex: 3, fontFamily: "CrimsonText-Regular" }}>
+                    {m.description}
+                  </Text>
+                  <View style={{ width: 80, alignItems: "center" }}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setMentions((prev) => prev.filter((x) => x.id !== m.id))
+                      }
+                      style={{
+                        padding: 6,
+                        backgroundColor: "#F3D6C1",
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text style={{ fontFamily: "CrimsonText-Regular" }}>
+                        Eliminar
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -411,11 +1193,56 @@ export default function EditPiece() {
           </View>
         </View>
 
-        {/* botón Guardar debajo de las menciones */}
+        {/* botón Guardar */}
         <View style={{ marginTop: 12 }}>
-          <Button title="Guardar cambios" onPress={handleSave} className="bg-[#6B705C] rounded-lg py-3 items-center" textClassName="text-white" />
+          <Button
+            title="Guardar cambios"
+            onPress={handleSave}
+            className="bg-[#6B705C] rounded-lg py-3 items-center"
+            textClassName="text-white"
+          />
         </View>
       </ScrollView>
+
+      {/* Modal Estantería */}
+      <SimplePickerModal
+        visible={shelfPickerOpen}
+        title="Seleccionar estantería"
+        items={shelfItems}
+        selectedValue={shelfIdFromCode ?? null}
+        onSelect={(value) => {
+          const selectedShelf = shelfs.find((s) => s.id === Number(value));
+          if (selectedShelf) setShelfCode(String(selectedShelf.code));
+          setShelfPickerOpen(false);
+        }}
+        onClose={() => setShelfPickerOpen(false)}
+      />
+
+      {/* Modal Arqueólogo */}
+      <SimplePickerModal
+        visible={archPickerOpen}
+        title="Seleccionar arqueólogo"
+        items={archItems}
+        selectedValue={archaeologistId ?? null}
+        onSelect={(value) => {
+          setArchaeologistId(Number(value));
+          setArchPickerOpen(false);
+        }}
+        onClose={() => setArchPickerOpen(false)}
+      />
+
+      {/* Modal Colección */}
+      <SimplePickerModal
+        visible={collPickerOpen}
+        title="Seleccionar colección"
+        items={collItems}
+        selectedValue={collectionId ?? null}
+        onSelect={(value) => {
+          setCollectionId(Number(value));
+          setCollPickerOpen(false);
+        }}
+        onClose={() => setCollPickerOpen(false)}
+      />
     </View>
   );
 }
