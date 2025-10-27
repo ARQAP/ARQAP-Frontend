@@ -1,14 +1,82 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
-export default function New_Region() {
-  const [regionName, setRegionName] = useState("");
-  const router = useRouter();
+// --- Importar Hooks y Tipos ---
+import { useAllCountries } from "../../../hooks/useCountry";
+import { useCreateRegion } from "../../../hooks/useRegion";
+import { Country } from "../../../repositories/countryRepository"; // Para tipar los países
+import { CreateRegionPayload } from "../../../repositories/regionRepository";
 
-  const handleCrear = () => {};
+export default function New_Region() {
+  const router = useRouter();
+  
+  // ESTADO DE LA REGIÓN
+  const [regionName, setRegionName] = useState("");
+  
+  // ESTADO DEL PAÍS ASOCIADO
+  const [countrySearch, setCountrySearch] = useState("");
+  const [selectedCountryId, setSelectedCountryId] = useState<number | undefined>(undefined);
+  const [selectedCountryName, setSelectedCountryName] = useState<string>("");
+  const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
+  
+  // --- Conexión con Hooks ---
+  const { mutate, isPending: isCreating } = useCreateRegion();
+  const { data: allCountries = [], isLoading: isCountriesLoading } = useAllCountries();
+
+  // --- Lógica de Búsqueda de País ---
+  const handleCountrySearchChange = (text: string) => {
+    setCountrySearch(text);
+    // Limpiamos la selección si el usuario empieza a escribir de nuevo
+    setSelectedCountryId(undefined); 
+    setSelectedCountryName("");
+    setShowCountrySuggestions(text.length > 0);
+  };
+
+  const handleCountrySuggestionSelect = (country: Country) => {
+    setSelectedCountryId(country.id);
+    setSelectedCountryName(country.name);
+    setCountrySearch(country.name);
+    setShowCountrySuggestions(false);
+  };
+
+  const countrySuggestions = countrySearch.length > 0
+    ? allCountries
+        .filter((country: Country) => 
+            country.name.toLowerCase().includes(countrySearch.toLowerCase()))
+        .slice(0, 5)
+    : [];
+
+  const handleCrear = () => {
+    const trimmedName = regionName.trim();
+
+    if (!trimmedName) {
+      return Alert.alert("Error", "El nombre de la región no puede estar vacío.");
+    }
+    if (selectedCountryId === undefined) {
+      return Alert.alert("Error", "Debe seleccionar un País para asociar la región.");
+    }
+
+    // --- 2. Crear la Carga Útil (Payload) ---
+    const newRegionPayload: CreateRegionPayload = {
+      name: trimmedName,
+      countryId: selectedCountryId, // ¡Ahora enviamos el ID!
+    };
+
+    // --- 3. Ejecutar la Mutación ---
+    mutate(newRegionPayload, {
+      onSuccess: () => {
+        Alert.alert("Éxito", `La región '${trimmedName}' fue creada y asociada a ${selectedCountryName}.`);
+        router.push("/(tabs)/location/New_location"); 
+      },
+      onError: (error) => {
+        Alert.alert("Error de Creación", `Fallo al crear la región: ${error.message}`);
+      }
+    });
+  };
+
   const handleCancelar = () => {
     router.push("/(tabs)/location/New_location");
   };
@@ -24,29 +92,85 @@ export default function New_Region() {
         />
       </View>
       <View className="w-full max-w-[500px] items-center self-center px-4">
+        {/* ... (Título del formulario) ... */}
         <Text
           className="text-center text-lg mt-3 mb-2 text-[#222]"
           style={{ fontFamily: "CrimsonText-Regular" }}
         >
           Ingrese los datos de la nueva región
         </Text>
-        <View className="mb-2 w-full">
+        
+        {/* --- INPUT NOMBRE DE LA REGIÓN --- */}
+        <View className="mb-4 w-full">
           <Text
             className="text-[16px] font-bold mb-2 text-[#3d2c13]"
             style={{ fontFamily: "MateSC-Regular" }}
           >
-            Nombre
+            Nombre de la Región
           </Text>
           <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full font-crimson placeholder:text-[#A68B5B]"
+            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base w-full placeholder:text-[#A68B5B]"
             placeholder="Ingrese el nombre"
             value={regionName}
             onChangeText={setRegionName}
             style={{ fontFamily: "CrimsonText-Regular" }}
+            editable={!isCreating}
           />
         </View>
+
+        {/* --- INPUT Y BÚSQUEDA DE PAÍS (Implementando useAllCountries) --- */}
+        <View className="mb-6 w-full relative">
+            <Text
+                className="text-[16px] font-bold mb-2 text-[#3d2c13]"
+                style={{ fontFamily: "MateSC-Regular" }}
+            >
+                Asociar a País {isCountriesLoading && <ActivityIndicator size="small" color="#A68B5B" />}
+            </Text>
+            <TextInput
+                className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base w-full placeholder:text-[#A68B5B]"
+                placeholder="Buscar o seleccionar un País"
+                value={countrySearch}
+                onChangeText={handleCountrySearchChange}
+                editable={!isCreating}
+                style={{ fontFamily: "CrimsonText-Regular" }}
+            />
+            
+            {/* Bloque de Sugerencias de País */}
+            {showCountrySuggestions && countrySuggestions.length > 0 && (
+                <View
+                    className="absolute bg-white border-2 border-[#A67C52] rounded-lg shadow-lg max-h-[200px] w-full"
+                    style={{
+                        top: 75, // Ajusta la posición debajo del TextInput
+                        zIndex: 10,
+                    }}
+                >
+                    <ScrollView nestedScrollEnabled>
+                        {countrySuggestions.map((country: Country, index: number) => (
+                            <TouchableOpacity
+                                key={country.id || index}
+                                className="p-3 border-b border-[#E2D1B2]"
+                                onPress={() => handleCountrySuggestionSelect(country)}
+                            >
+                                <Text className="text-[16px] text-[#3d2c13]" style={{ fontFamily: "CrimsonText-Regular" }}>
+                                    {country.name}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+            
+            {/* Mostrar País Seleccionado */}
+            {selectedCountryId !== undefined && (
+                <Text className="text-[14px] text-[#3d2c13] mt-2" style={{ fontFamily: "CrimsonText-Regular" }}>
+                    País Seleccionado: <Text className="font-bold">{selectedCountryName}</Text>
+                </Text>
+            )}
+        </View>
+
+        {/* --- Botones --- */}
         <Button
-          title="Crear Región"
+          title={isCreating ? "Creando..." : "Crear Región"}
           onPress={handleCrear}
           className="w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
           textClassName="text-base font-bold text-white"
