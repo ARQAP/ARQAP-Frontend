@@ -98,7 +98,7 @@ export default function NewLoan() {
               className="text-[16px] font-bold mb-2 text-[#3d2c13]"
               style={{ fontFamily: "MateSC-Regular" }}
             >
-              Asociar Pieza a un Arqueólogo
+              Asociar Pieza a un Solicitante
             </Text>
             <View className="w-full">
               <View style={{ flexDirection: "row", alignItems: "center" }}>

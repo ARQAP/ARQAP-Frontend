@@ -9,13 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": { "NSPhotoLibraryUsageDescription": "Necesitamos acceder a tus fotos." }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": ["READ_EXTERNAL_STORAGE"],
       "edgeToEdgeEnabled": true
     },
     "web": {
