@@ -1,6 +1,7 @@
+import { useAllLoans, useUpdateLoan } from "@/hooks/useloan";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
@@ -8,7 +9,31 @@ import Navbar from "../Navbar";
 export default function FinalizeLoan() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  // const { id } = params; // use this id to load loan details
+  const { id } = params as any;
+
+  const { data: loans } = useAllLoans();
+  const updateMutation = useUpdateLoan();
+
+  const loan = useMemo(
+    () => (loans || []).find((l: any) => String(l.id) === String(id)) || null,
+    [loans, id]
+  );
+
+  const [fecha, setFecha] = useState<string>(loan?.FechaDevolucion ?? "");
+  const [hora, setHora] = useState<string>(loan?.HoraDevolucion ?? "");
+
+  const handleFinalize = async () => {
+    if (!loan) return;
+    try {
+      await updateMutation.mutateAsync({
+        id: Number(id),
+        payload: { ...loan, FechaDevolucion: fecha, HoraDevolucion: hora },
+      } as any);
+      router.push("/(tabs)/loan/View_loan");
+    } catch (e) {
+      alert("No se pudo finalizar el préstamo.");
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F5ECD6" }}>
@@ -55,6 +80,8 @@ export default function FinalizeLoan() {
               />
               <TextInput
                 placeholder="DD/MM/AAAA"
+                value={fecha}
+                onChangeText={setFecha}
                 style={{
                   flex: 1,
                   backgroundColor: "#E2D3B3",
@@ -81,6 +108,8 @@ export default function FinalizeLoan() {
               />
               <TextInput
                 placeholder="--:--"
+                value={hora}
+                onChangeText={setHora}
                 style={{
                   flex: 1,
                   backgroundColor: "#E2D3B3",
@@ -97,6 +126,7 @@ export default function FinalizeLoan() {
           title="FINALIZAR PRESTAMO"
           className="bg-[#6B705C] rounded-lg py-3 items-center mb-2 w-full"
           textClassName="text-white text-[16px]"
+          onPress={handleFinalize}
         />
         <Button
           title="CANCELAR"

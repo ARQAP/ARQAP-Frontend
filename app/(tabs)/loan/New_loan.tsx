@@ -1,3 +1,4 @@
+import { useCreateLoan } from "@/hooks/useloan";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -8,7 +9,9 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
+  Platform,
 } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
@@ -26,10 +29,49 @@ export default function NewLoan() {
   >([]);
   const [filtroPieza, setFiltroPieza] = useState("");
   const [filtroSolicitante, setFiltroSolicitante] = useState("");
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Open native picker on mobile, fallback to browser <input type="date"> on web
+  const openDatePicker = async () => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const date = await new Promise<Date | null>((resolve) => {
+        const input = document.createElement("input");
+        input.type = "date";
+        input.style.position = "absolute";
+        input.style.opacity = "0";
+        input.style.pointerEvents = "none";
+        document.body.appendChild(input);
+        input.focus();
+        input.onchange = () => {
+          const val = input.value; // YYYY-MM-DD
+          if (val) {
+            const [y, m, d] = val.split("-");
+            const dt = new Date(Number(y), Number(m) - 1, Number(d));
+            resolve(dt);
+          } else {
+            resolve(null);
+          }
+          setTimeout(() => document.body.removeChild(input), 0);
+        };
+        input.onblur = () => {
+          resolve(null);
+          if (document.body.contains(input)) document.body.removeChild(input);
+        };
+        // trigger the picker
+        input.click();
+      });
+
+      if (date) setSelectedDate(date);
+    } else {
+      setIsDatePickerVisible(true);
+    }
+  };
 
   const { width } = useWindowDimensions();
   const isNarrow = width < 700;
   const router = useRouter();
+  const createMutation = useCreateLoan();
 
   const toggleSeleccion = (
     arr: string[],
@@ -59,7 +101,6 @@ export default function NewLoan() {
           Registra un nuevo prestamo de piezas
         </Text>
 
-        {/* Row: two columns on wide screens, stacked on narrow screens */}
         <View
           style={{
             width: "100%",
@@ -119,7 +160,6 @@ export default function NewLoan() {
           </View>
         </View>
 
-        {/* Row: date and time */}
         <View
           style={{
             width: "100%",
@@ -136,16 +176,20 @@ export default function NewLoan() {
               Fecha de Prestamo
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <FontAwesome
-                name="calendar"
-                size={20}
-                color="#222"
-                style={{ marginRight: 8 }}
-              />
+              <TouchableOpacity onPress={() => openDatePicker()}>
+                <FontAwesome
+                  name="calendar"
+                  size={20}
+                  color="#222"
+                  style={{ marginRight: 8 }}
+                />
+              </TouchableOpacity>
               <TextInput
                 className="flex-1 rounded-lg p-2 bg-[#F7F5F2] text-[16px]"
                 placeholder="DD/MM/AAAA"
                 placeholderTextColor="#A68B5B"
+                value={selectedDate ? formatDate(selectedDate) : ""}
+                onFocus={() => openDatePicker()}
                 style={{ fontFamily: "MateSC-Regular" }}
               />
             </View>
@@ -180,6 +224,17 @@ export default function NewLoan() {
             title="CREAR PRESTAMO"
             className="bg-[#6B705C] rounded-lg py-3 items-center mb-2 w-full"
             textClassName="text-white text-[16px]"
+            onPress={async () => {
+              try {
+                await createMutation.mutateAsync({
+                  FechaPrestamo: (selectedDate || new Date()).toISOString(),
+                  HoraPrestamo: "--:--",
+                } as any);
+                router.push("/(tabs)/loan/View_loan");
+              } catch (e) {
+                alert("Error al crear el préstamo");
+              }
+            }}
           />
           <Button
             title="CANCELAR"
@@ -189,6 +244,22 @@ export default function NewLoan() {
           />
         </View>
       </View>
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={(date: Date) => {
+          setSelectedDate(date);
+          setIsDatePickerVisible(false);
+        }}
+        onCancel={() => setIsDatePickerVisible(false)}
+      />
     </ScrollView>
   );
+}
+
+function formatDate(d: Date) {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }

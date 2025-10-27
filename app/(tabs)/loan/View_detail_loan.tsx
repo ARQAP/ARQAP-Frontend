@@ -1,48 +1,44 @@
+import { useAllLoans, useDeleteLoan } from "@/hooks/useloan";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
-
-type Loan = {
-  id: number;
-  startDate: string;
-  startTime: string;
-  endDate?: string;
-  endTime?: string;
-  requester: string;
-};
 
 export default function ViewDetailLoan() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { id } = params as any;
-  const [loan, setLoan] = useState<Loan | null>(null);
 
-  useEffect(() => {
-    // Mock fetch: replace with real API call
-    const mockLoans: Loan[] = [
-      {
-        id: 0,
-        startDate: "20/07/2024",
-        startTime: "18:32",
-        endDate: "24/07/2024",
-        endTime: "11:03",
-        requester:
-          "Exhibicion 22-07-2024 / Departamento 10 / Horacio Rodriguez",
-      },
-      {
-        id: 1,
-        startDate: "01/08/2024",
-        startTime: "10:00",
-        requester: "Departamento 5 / Juan Perez",
-      },
-    ];
-    const found =
-      mockLoans.find((m) => String(m.id) === String(id)) || mockLoans[0];
-    setLoan(found);
-  }, [id]);
+  const { data: loans } = useAllLoans();
+  const deleteMutation = useDeleteLoan();
+
+  const loan = useMemo(() => {
+    return (loans || []).find((l: any) => String(l.id) === String(id)) || null;
+  }, [loans, id]);
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Confirmar eliminación",
+      "¿Estás seguro que deseas eliminar este préstamo?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteMutation.mutateAsync(Number(id));
+              router.push("/(tabs)/loan/View_loan");
+            } catch (e) {
+              Alert.alert("Error", "No se pudo eliminar el préstamo.");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F5ECD6" }}>
@@ -112,7 +108,9 @@ export default function ViewDetailLoan() {
               >
                 Fecha de Prestamo
               </Text>
-              <Text style={{ color: "#222", marginTop: 6 }}>20/07/2024</Text>
+              <Text style={{ color: "#222", marginTop: 6 }}>
+                {loan?.FechaPrestamo ?? "-"}
+              </Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -124,7 +122,9 @@ export default function ViewDetailLoan() {
               >
                 Hora de Prestamo
               </Text>
-              <Text style={{ color: "#222", marginTop: 6 }}>18:32</Text>
+              <Text style={{ color: "#222", marginTop: 6 }}>
+                {loan?.HoraPrestamo ?? "-"}
+              </Text>
             </View>
           </View>
 
@@ -145,7 +145,9 @@ export default function ViewDetailLoan() {
               >
                 Fecha Fin de Prestamo
               </Text>
-              <Text style={{ color: "#222", marginTop: 6 }}>24/07/2024</Text>
+              <Text style={{ color: "#222", marginTop: 6 }}>
+                {loan?.FechaDevolucion ?? "-"}
+              </Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -157,7 +159,9 @@ export default function ViewDetailLoan() {
               >
                 Hora fin del prestamo
               </Text>
-              <Text style={{ color: "#222", marginTop: 6 }}>11:03</Text>
+              <Text style={{ color: "#222", marginTop: 6 }}>
+                {loan?.HoraDevolucion ?? "-"}
+              </Text>
             </View>
           </View>
 
@@ -172,7 +176,7 @@ export default function ViewDetailLoan() {
             >
               Solicitante
             </Text>
-            <Text style={{ color: "#222" }}>{loan ? loan.requester : ""}</Text>
+            <Text style={{ color: "#222" }}>{loan?.Solicitante ?? "-"}</Text>
           </View>
         </View>
 
@@ -180,23 +184,7 @@ export default function ViewDetailLoan() {
           title="ELIMINAR PRESTAMO"
           className="bg-[#6B705C] rounded-lg py-3 items-center mb-2 w-full"
           textClassName="text-white text-[16px]"
-          onPress={() => {
-            Alert.alert(
-              "Confirmar eliminación",
-              "¿Estás seguro que deseas eliminar este préstamo?",
-              [
-                { text: "Cancelar", style: "cancel" },
-                {
-                  text: "Eliminar",
-                  style: "destructive",
-                  onPress: () => {
-                    // TODO: call API to delete
-                    router.push("/(tabs)/loan/View_loan");
-                  },
-                },
-              ]
-            );
-          }}
+          onPress={handleDelete}
         />
         <Button
           title="CANCELAR"

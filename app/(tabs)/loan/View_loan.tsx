@@ -1,3 +1,4 @@
+import { useAllLoans } from "@/hooks/useloan";
 import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
@@ -6,10 +7,10 @@ import Navbar from "../Navbar";
 
 export default function ViewLoan() {
   const router = useRouter();
+  const { data: loans, isLoading, error } = useAllLoans();
 
-  // Dummy data for demonstration
-  const ongoingLoans = Array(7).fill("Prestamo (codigo piezas)");
-  const finishedLoans = Array(7).fill("Prestamo (codigo piezas)");
+  const ongoingLoans = (loans || []).filter((l: any) => !l.FechaDevolucion);
+  const finishedLoans = (loans || []).filter((l: any) => l.FechaDevolucion);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F5ECD6" }}>
@@ -35,9 +36,13 @@ export default function ViewLoan() {
             En curso
           </Text>
           <ScrollView style={{ maxHeight: 180, marginBottom: 16 }}>
-            {ongoingLoans.map((loan, idx) => (
+            {isLoading && <Text>Cargando...</Text>}
+            {!isLoading && ongoingLoans.length === 0 && (
+              <Text style={{ color: "#222" }}>No hay préstamos en curso</Text>
+            )}
+            {ongoingLoans.map((loan: any) => (
               <View
-                key={idx}
+                key={String(loan.id)}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -47,7 +52,9 @@ export default function ViewLoan() {
                   padding: 8,
                 }}
               >
-                <Text style={{ flex: 1, color: "#222" }}>{loan}</Text>
+                <Text
+                  style={{ flex: 1, color: "#222" }}
+                >{`#${loan.id} — ${loan.FechaPrestamo || "-"}`}</Text>
                 <Button
                   title="Finalizar"
                   className="bg-[#6B705C] rounded-lg px-4 py-2"
@@ -55,7 +62,7 @@ export default function ViewLoan() {
                   onPress={() =>
                     router.push({
                       pathname: "/(tabs)/loan/Finalize_loan",
-                      params: { id: idx },
+                      params: { id: loan.id },
                     })
                   }
                 />
@@ -73,9 +80,14 @@ export default function ViewLoan() {
             Finalizados
           </Text>
           <ScrollView style={{ maxHeight: 180, marginBottom: 16 }}>
-            {finishedLoans.map((loan, idx) => (
+            {!isLoading && finishedLoans.length === 0 && (
+              <Text style={{ color: "#222" }}>
+                No hay préstamos finalizados
+              </Text>
+            )}
+            {finishedLoans.map((loan: any) => (
               <View
-                key={idx}
+                key={String(loan.id)}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -85,7 +97,9 @@ export default function ViewLoan() {
                   padding: 8,
                 }}
               >
-                <Text style={{ flex: 1, color: "#222" }}>{loan}</Text>
+                <Text
+                  style={{ flex: 1, color: "#222" }}
+                >{`#${loan.id} — ${loan.FechaPrestamo || "-"}`}</Text>
                 <Button
                   title="Ver detalle"
                   className="bg-[#6B705C] rounded-lg px-4 py-2"
@@ -93,7 +107,7 @@ export default function ViewLoan() {
                   onPress={() =>
                     router.push({
                       pathname: "/(tabs)/loan/View_detail_loan",
-                      params: { id: idx },
+                      params: { id: loan.id },
                     })
                   }
                 />

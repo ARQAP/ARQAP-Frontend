@@ -1,59 +1,96 @@
+import { useAllLoans, useUpdateLoan } from "@/hooks/useloan";
+import { FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { Alert, Text, TextInput, TouchableOpacity, View, Platform } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
-
-type Loan = {
-  id: number;
-  startDate: string;
-  startTime: string;
-  endDate?: string;
-  endTime?: string;
-  requester: string;
-};
 
 export default function EditLoan() {
   const router = useRouter();
   const params = useLocalSearchParams() as any;
   const { id } = params || {};
-  const [loan, setLoan] = useState<Loan | null>(null);
 
-  useEffect(() => {
-    const mockLoans: Loan[] = [
-      {
-        id: 0,
-        startDate: "20/07/2024",
-        startTime: "18:32",
-        endDate: "24/07/2024",
-        endTime: "11:03",
-        requester:
-          "Exhibicion 22-07-2024 / Departamento 10 / Horacio Rodriguez",
-      },
-      {
-        id: 1,
-        startDate: "01/08/2024",
-        startTime: "10:00",
-        requester: "Departamento 5 / Juan Perez",
-      },
-    ];
-    const found =
-      mockLoans.find((m) => String(m.id) === String(id)) || mockLoans[0];
-    setLoan(found);
-  }, [id]);
+  const { data: loans } = useAllLoans();
+  const updateMutation = useUpdateLoan();
 
-  const handleSave = () => {
-    // Replace with API call to save
-    Alert.alert("Guardado", "Los cambios fueron guardados (mock).", [
-      {
-        text: "OK",
-        onPress: () =>
-          router.push({
-            pathname: "/(tabs)/loan/View_detail_loan",
-            params: { id },
-          }),
-      },
-    ]);
+  const found = useMemo(() => {
+    return (loans || []).find((l: any) => String(l.id) === String(id)) || null;
+  }, [loans, id]);
+
+  const [loan, setLoan] = useState<any>(found);
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const openDatePicker = async () => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const date = await new Promise<Date | null>((resolve) => {
+        const input = document.createElement("input");
+        input.type = "date";
+        input.style.position = "absolute";
+        input.style.opacity = "0";
+        input.style.pointerEvents = "none";
+        document.body.appendChild(input);
+        input.focus();
+        input.onchange = () => {
+          const val = input.value; // YYYY-MM-DD
+          if (val) {
+            const [y, m, d] = val.split("-");
+            const dt = new Date(Number(y), Number(m) - 1, Number(d));
+            resolve(dt);
+          } else {
+            resolve(null);
+          }
+          setTimeout(() => document.body.removeChild(input), 0);
+        };
+        input.onblur = () => {
+          resolve(null);
+          if (document.body.contains(input)) document.body.removeChild(input);
+        };
+        input.click();
+      });
+
+      if (date) {
+        setSelectedDate(date);
+        setLoan({ ...loan, FechaPrestamo: date.toISOString() });
+      }
+    } else {
+      setIsDatePickerVisible(true);
+    }
+  };
+
+  React.useEffect(() => setLoan(found), [found]);
+  React.useEffect(() => {
+    if (found && found.FechaPrestamo) {
+      try {
+        setSelectedDate(new Date(found.FechaPrestamo));
+      } catch (e) {
+        setSelectedDate(null);
+      }
+    }
+  }, [found]);
+
+  const handleSave = async () => {
+    if (!loan) return;
+    try {
+      await updateMutation.mutateAsync({
+        id: Number(id),
+        payload: loan,
+      } as any);
+      Alert.alert("Guardado", "Los cambios fueron guardados.", [
+        {
+          text: "OK",
+          onPress: () =>
+            router.push({
+              pathname: "/(tabs)/loan/View_detail_loan",
+              params: { id },
+            }),
+        },
+      ]);
+    } catch (e) {
+      Alert.alert("Error", "No se pudo guardar el préstamo.");
+    }
   };
 
   if (!loan) return null;
@@ -83,23 +120,39 @@ export default function EditLoan() {
         <Text style={{ fontWeight: "700", marginBottom: 6 }}>
           Fecha de Prestamo
         </Text>
-        <TextInput
-          value={loan.startDate}
-          onChangeText={(t) => setLoan({ ...loan, startDate: t })}
-          style={{
-            backgroundColor: "#E2D3B3",
-            padding: 8,
-            borderRadius: 6,
-            marginBottom: 8,
-          }}
-        />
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+    <TouchableOpacity onPress={() => openDatePicker()}>
+            <FontAwesome
+              name="calendar"
+              size={20}
+              color="#222"
+              style={{ marginRight: 8 }}
+            />
+          </TouchableOpacity>
+          <TextInput
+            value={
+              selectedDate
+                ? formatDate(selectedDate)
+                : String(loan.FechaPrestamo ?? "")
+            }
+            onFocus={() => openDatePicker()}
+            onChangeText={(t) => setLoan({ ...loan, FechaPrestamo: t })}
+            style={{
+              backgroundColor: "#E2D3B3",
+              padding: 8,
+              borderRadius: 6,
+              marginBottom: 8,
+              flex: 1,
+            }}
+          />
+        </View>
 
         <Text style={{ fontWeight: "700", marginBottom: 6 }}>
           Hora de Prestamo
         </Text>
         <TextInput
-          value={loan.startTime}
-          onChangeText={(t) => setLoan({ ...loan, startTime: t })}
+          value={loan.HoraPrestamo}
+          onChangeText={(t) => setLoan({ ...loan, HoraPrestamo: t })}
           style={{
             backgroundColor: "#E2D3B3",
             padding: 8,
@@ -112,8 +165,8 @@ export default function EditLoan() {
           Fecha Fin de Prestamo
         </Text>
         <TextInput
-          value={loan.endDate}
-          onChangeText={(t) => setLoan({ ...loan, endDate: t })}
+          value={loan.FechaDevolucion}
+          onChangeText={(t) => setLoan({ ...loan, FechaDevolucion: t })}
           style={{
             backgroundColor: "#E2D3B3",
             padding: 8,
@@ -126,8 +179,8 @@ export default function EditLoan() {
           Hora Fin de Prestamo
         </Text>
         <TextInput
-          value={loan.endTime}
-          onChangeText={(t) => setLoan({ ...loan, endTime: t })}
+          value={loan.HoraDevolucion}
+          onChangeText={(t) => setLoan({ ...loan, HoraDevolucion: t })}
           style={{
             backgroundColor: "#E2D3B3",
             padding: 8,
@@ -138,8 +191,8 @@ export default function EditLoan() {
 
         <Text style={{ fontWeight: "700", marginBottom: 6 }}>Solicitante</Text>
         <TextInput
-          value={loan.requester}
-          onChangeText={(t) => setLoan({ ...loan, requester: t })}
+          value={loan.Solicitante}
+          onChangeText={(t) => setLoan({ ...loan, Solicitante: t })}
           style={{
             backgroundColor: "#E2D3B3",
             padding: 8,
@@ -161,6 +214,23 @@ export default function EditLoan() {
           onPress={() => router.back()}
         />
       </View>
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={(date: Date) => {
+          setSelectedDate(date);
+          setLoan({ ...loan, FechaPrestamo: date.toISOString() });
+          setIsDatePickerVisible(false);
+        }}
+        onCancel={() => setIsDatePickerVisible(false)}
+      />
     </View>
   );
+}
+
+function formatDate(d: Date) {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
