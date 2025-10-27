@@ -19,6 +19,7 @@ import Badge from "../../../components/ui/Badge";
 import InfoRow from "../../../components/ui/InfoRow";
 import { useLocalSearchParams } from "expo-router";
 import { useArtefact } from "@/hooks/useArtefact";
+import { useMentionsByArtefactId } from "@/hooks/useMentions";
 import type { Artefact } from "@/repositories/artefactRepository";
 import { apiClient } from "@/lib/api";
 
@@ -66,6 +67,8 @@ export default function ViewPiece() {
 
   // -------- fetch pieza específica con TU hook ----------
   const { data, isLoading, isError, refetch } = useArtefact(id ?? undefined);
+
+  const { data: mentionsData = [] } = useMentionsByArtefactId(id ?? undefined);
 
   // util: hace absoluta una ruta si vino relativa
   const base = (apiClient.defaults.baseURL || "").replace(/\/+$/, "");
@@ -155,7 +158,6 @@ export default function ViewPiece() {
           .map((u: string) => abs(u))
       : [];
 
-    console.log("Artefact images:", images);
     const records = (a as any)?.historicalRecord ?? (a as any)?.records ?? [];
     const fichaHistorica = Array.isArray(records)
       ? records.map((r: any, idx: number) => ({
@@ -165,15 +167,15 @@ export default function ViewPiece() {
         }))
       : [];
 
-    // menciones (si tuvieras)
-    const mentions: Piece["mentions"] =
-      (a as any)?.mentions && Array.isArray((a as any)?.mentions)
-        ? (a as any)?.mentions.map((m: any, idx: number) => ({
-            id: Number(m?.id ?? idx + 1),
-            title: m?.title ?? m?.name ?? "Mención",
-            url: m?.url ? abs(m?.url) : undefined,
-          }))
-        : [];
+    console.log("menciones:", mentionsData);
+    
+    const mentions: Piece["mentions"] = Array.isArray(mentionsData)
+      ? mentionsData.map((m: any, idx: number) => ({
+          id: Number(m?.id ?? idx + 1),
+          title: m?.title,
+          url: m?.url ? abs(m?.url) : m?.link ? abs(m?.link) : undefined,
+        }))
+      : [];
 
     return {
       id: Number(a.id!),
@@ -193,7 +195,7 @@ export default function ViewPiece() {
       selectedLevel,
       selectedColumn: columnIndex,
     };
-  }, [data, base]);
+  }, [data, base, mentionsData]);
 
   if (isLoading) {
     return (
@@ -727,7 +729,7 @@ export default function ViewPiece() {
               style={{
                 width: Math.min(windowWidth * 0.95, 1000),
                 height: undefined,
-                aspectRatio: 1, // o quitá esto si querés tamaño “natural”
+                aspectRatio: 1,
                 maxHeight:
                   0.9 * (Platform.OS === "web" ? window.innerHeight : 800),
               }}

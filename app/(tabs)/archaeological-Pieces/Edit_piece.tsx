@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCollections } from "../../../hooks/useCollections";
 import { useArchaeologists } from "../../../hooks/useArchaeologist";
 import { useShelves } from "../../../hooks/useShelf";
+import { useMentionsByArtefactId } from "@/hooks/useMentions";
 import {
   usePhysicalLocations,
   useCreatePhysicalLocation,
@@ -38,6 +39,15 @@ import {
   useUploadArtefactHistoricalRecord,
   useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
+
+// ---- Tipos locales ----
+type MentionUI = {
+  localId: number; // id para la UI
+  id?: number; // id del backend (opcional)
+  title: string;
+  link: string;
+  description: string;
+};
 
 // Reemplazá tu helper por este:
 function getUpdatedId(updated: unknown, fallbackId: number): number {
@@ -79,13 +89,12 @@ export default function EditPiece() {
   const [selectedLevel, setSelectedLevel] = useState<number | null>(2);
   const [selectedColumn, setSelectedColumn] = useState<number | null>(2);
 
-  // -------- menciones (sin persistencia aún) ----------
-  const [mentionName, setMentionName] = useState("");
+  // -------- menciones ----------
+  const [mentionTitle, setMentionTitle] = useState("");
   const [mentionLink, setMentionLink] = useState("");
   const [mentionDescription, setMentionDescription] = useState("");
-  const [mentions, setMentions] = useState<
-    Array<{ id: number; name: string; link: string; description: string }>
-  >([]);
+  const [mentions, setMentions] = useState<MentionUI[]>([]);
+  const [editingLocalId, setEditingLocalId] = useState<number | null>(null);
 
   // -------- data remota ----------
   const { data: collections = [] } = useCollections();
@@ -196,6 +205,87 @@ export default function EditPiece() {
       })),
     [shelfs]
   );
+
+  // -------- obtener menciones existentes ----------
+  const {
+    data: mentionsData = [],
+    isLoading: mentionsLoading,
+    refetch: refetchMentions,
+  } = useMentionsByArtefactId(artefactId ?? undefined);
+
+  const originalMentionsRef = useRef<
+    Array<{ id: number; title: string; link: string; description: string }>
+  >([]);
+
+  useEffect(() => {
+    if (!mentionsData) return;
+    // map a tu shape local, con localId para keys de UI
+    const normalized: MentionUI[] = (mentionsData as any[]).map((m, idx) => ({
+      localId: Date.now() + idx, // key local
+      id: m.id ? Number(m.id) : undefined,
+      title: m.title ?? "",
+      link: m.url ?? m.link ?? "",
+      description: m.description ?? "",
+    }));
+    setMentions(normalized);
+    // snapshot original sólo con los que tienen id
+    originalMentionsRef.current = normalized
+      .filter((m) => m.id != null)
+      .map((m) => ({
+        id: m.id!, // seguro por el filtro
+        title: m.title,
+        link: m.link,
+        description: m.description,
+      }));
+  }, [mentionsData]);
+
+  const addMention = (title: string, link: string, description: string) => {
+    if (!title && !link) return;
+    setMentions((prev) => [
+      {
+        localId: Date.now(),
+        title: title.trim(),
+        link: link.trim(),
+        description: description.trim(),
+      },
+      ...prev,
+    ]);
+  };
+
+  const removeMentionLocal = (localId: number) => {
+    setMentions((prev) => prev.filter((m) => m.localId !== localId));
+  };
+
+  function startEditMention(m: MentionUI) {
+    setEditingLocalId(m.localId);
+    setMentionTitle(m.title);
+    setMentionLink(m.link);
+    setMentionDescription(m.description);
+  }
+
+  function cancelEditMention() {
+    setEditingLocalId(null);
+    setMentionTitle("");
+    setMentionLink("");
+    setMentionDescription("");
+  }
+
+  function commitEditMention() {
+    if (!editingLocalId) return;
+    const title = mentionTitle.trim();
+    const link = mentionLink.trim();
+    const desc = mentionDescription.trim();
+    if (!title && !link) return;
+
+    setMentions((prev) =>
+      prev.map((x) =>
+        x.localId === editingLocalId
+          ? { ...x, title, link, description: desc }
+          : x
+      )
+    );
+    cancelEditMention(); // limpia y sale de modo edición
+  }
 
   // -------- artefacto por id ----------
   const { data, isLoading, isError, refetch } = useQuery({
@@ -382,7 +472,6 @@ export default function EditPiece() {
   }
 
   // -------- guardar ----------
-  // -------- guardar ----------
   async function handleSave() {
     try {
       if (!artefactId) {
@@ -477,6 +566,54 @@ export default function EditPiece() {
           // @ts-ignore
           (fd as any).get("document")
         );
+      }
+
+      const originals = originalMentionsRef.current;
+      const current = mentions;
+
+      // nuevas (sin id)
+      const toCreate = current.filter(
+        (m) => m.id == null && (m.title || m.link)
+      );
+
+      // eliminadas (id estaba y desapareció)
+      const toDelete = originals.filter(
+        (om) => !current.some((cm) => cm.id === om.id)
+      );
+
+      // posibles updates (compara por id)
+      const toMaybeUpdate = current.filter((cm) => cm.id != null);
+      const toUpdate = toMaybeUpdate.filter((cm) => {
+        const orig = originals.find((o) => o.id === cm.id);
+        if (!orig) return false;
+        return (
+          (orig.title ?? "") !== (cm.title ?? "") ||
+          (orig.link ?? "") !== (cm.link ?? "") ||
+          (orig.description ?? "") !== (cm.description ?? "")
+        );
+      });
+
+      // persistir
+      for (const m of toCreate) {
+        await ArtefactRepository.createMention({
+          title: m.title,
+          link: m.link,
+          description: m.description,
+          artefactId: artefactId,
+        });
+      }
+
+      for (const m of toUpdate) {
+        await ArtefactRepository.updateMention(artefactId, m.id!, {
+          title: m.title,
+          url: m.link,
+          link: m.link,
+          description: m.description,
+        });
+      }
+
+      for (const m of toDelete) {
+        await ArtefactRepository.deleteMention(artefactId, m.id);
       }
 
       Alert.alert("OK", "Pieza actualizada correctamente.");
@@ -1094,7 +1231,6 @@ export default function EditPiece() {
           </Text>
 
           {/* inputs: nombre + enlace */}
-          {/** Stack vertically on small screens to avoid layout breakage **/}
           <View
             style={{
               flexDirection: windowWidth < 520 ? "column" : "row",
@@ -1113,8 +1249,8 @@ export default function EditPiece() {
                 NOMBRE
               </Text>
               <TextInput
-                value={mentionName}
-                onChangeText={setMentionName}
+                value={mentionTitle}
+                onChangeText={setMentionTitle}
                 placeholder="Nombre"
                 style={{
                   backgroundColor: "#fff",
@@ -1176,35 +1312,88 @@ export default function EditPiece() {
             />
           </View>
 
-          <View style={{ alignItems: "flex-end", marginBottom: 12 }}>
-            <TouchableOpacity
-              style={{
-                backgroundColor: Colors.green,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                const name = mentionName.trim();
-                const link = mentionLink.trim();
-                const desc = mentionDescription.trim();
-                if (!name && !link) return;
-                const m = { id: Date.now(), name, link, description: desc };
-                setMentions((prev) => [m, ...prev]);
-                setMentionName("");
-                setMentionLink("");
-                setMentionDescription("");
-              }}
-            >
-              <Text
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
+            {editingLocalId == null ? (
+              <TouchableOpacity
                 style={{
-                  color: Colors.cremit,
-                  fontFamily: "CrimsonText-Regular",
+                  backgroundColor: Colors.green,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                }}
+                onPress={() => {
+                  const title = mentionTitle.trim();
+                  const link = mentionLink.trim();
+                  const desc = mentionDescription.trim();
+                  if (!title && !link) return;
+                  const m: MentionUI = {
+                    localId: Date.now(),
+                    title,
+                    link,
+                    description: desc,
+                  };
+                  setMentions((prev) => [m, ...prev]);
+                  setMentionTitle("");
+                  setMentionLink("");
+                  setMentionDescription("");
                 }}
               >
-                AGREGAR MENCIÓN
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={{
+                    color: Colors.cremit,
+                    fontFamily: "CrimsonText-Regular",
+                  }}
+                >
+                  AGREGAR MENCIÓN
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: Colors.brown,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                  }}
+                  onPress={commitEditMention}
+                >
+                  <Text
+                    style={{
+                      color: Colors.cremit,
+                      fontFamily: "CrimsonText-Regular",
+                    }}
+                  >
+                    ACTUALIZAR MENCIÓN
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#ccc",
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                  }}
+                  onPress={cancelEditMention}
+                >
+                  <Text
+                    style={{
+                      color: Colors.black,
+                      fontFamily: "CrimsonText-Regular",
+                    }}
+                  >
+                    CANCELAR
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           {/* tabla/lista de menciones */}
@@ -1256,7 +1445,7 @@ export default function EditPiece() {
             ) : (
               mentions.map((m) => (
                 <View
-                  key={m.id}
+                  key={m.localId} // <-- corregido
                   style={{
                     flexDirection: "row",
                     padding: 8,
@@ -1266,7 +1455,7 @@ export default function EditPiece() {
                   }}
                 >
                   <Text style={{ flex: 2, fontFamily: "CrimsonText-Regular" }}>
-                    {m.name}
+                    {m.title}
                   </Text>
                   <Text
                     style={{
@@ -1280,11 +1469,31 @@ export default function EditPiece() {
                   <Text style={{ flex: 3, fontFamily: "CrimsonText-Regular" }}>
                     {m.description}
                   </Text>
-                  <View style={{ width: 80, alignItems: "center" }}>
+
+                  <View
+                    style={{
+                      width: 140,
+                      alignItems: "center",
+                      flexDirection: "row",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                  >
                     <TouchableOpacity
-                      onPress={() =>
-                        setMentions((prev) => prev.filter((x) => x.id !== m.id))
-                      }
+                      onPress={() => startEditMention(m)}
+                      style={{
+                        padding: 6,
+                        backgroundColor: "#D7E3FC",
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text style={{ fontFamily: "CrimsonText-Regular" }}>
+                        Editar
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => removeMentionLocal(m.localId)}
                       style={{
                         padding: 6,
                         backgroundColor: "#F3D6C1",

@@ -71,11 +71,11 @@ export default function NewPiece() {
   >(null);
 
   // --------    menciones     ----------
-  const [mentionName, setMentionName] = useState("");
+  const [mentionTitle, setMentionTitle] = useState("");
   const [mentionLink, setMentionLink] = useState("");
   const [mentionDescription, setMentionDescription] = useState("");
   const [mentions, setMentions] = useState<
-    Array<{ id: number; name: string; link: string; description: string }>
+    Array<{ id: number; title: string; link: string; description: string }>
   >([]);
 
   // -------- data remota ----------
@@ -374,6 +374,29 @@ export default function NewPiece() {
         await ArtefactRepository.uploadHistoricalRecord(
           created.id!,
           (fd as any).get("document") as any
+        );
+      }
+
+      const norm = (s: string) =>
+        !s ? null : /^https?:\/\//i.test(s) ? s : `https://${s}`;
+
+      if (mentions?.length) {
+        console.log("Creating mentions", mentions);
+        await Promise.all(
+          mentions.map((m) => {
+            const payload = {
+              localId: null,
+              artefactId: created.id!,
+              title: (m.title ?? "").trim(),
+              link: norm(m.link),
+              description: (m.description ?? "").trim() || null,
+            };
+
+            return ArtefactRepository.createMention(payload).then((res) => {
+              console.log("Created mention", payload, res);
+              return res;
+            });
+          })
         );
       }
 
@@ -1061,8 +1084,8 @@ export default function NewPiece() {
                 NOMBRE
               </Text>
               <TextInput
-                value={mentionName}
-                onChangeText={setMentionName}
+                value={mentionTitle}
+                onChangeText={setMentionTitle}
                 placeholder="Nombre"
                 style={{
                   backgroundColor: "#fff",
@@ -1134,16 +1157,16 @@ export default function NewPiece() {
               }}
               onPress={() => {
                 // add mention
-                const name = mentionName.trim();
+                const title = mentionTitle.trim();
                 const link = mentionLink.trim();
                 const desc = mentionDescription.trim();
-                if (!name && !link) {
+                if (!title && !link) {
                   // require at least a name or link
                   return;
                 }
-                const m = { id: Date.now(), name, link, description: desc };
+                const m = { id: Date.now(), title, link, description: desc };
                 setMentions((prev) => [m, ...prev]);
-                setMentionName("");
+                setMentionTitle("");
                 setMentionLink("");
                 setMentionDescription("");
               }}
@@ -1219,7 +1242,7 @@ export default function NewPiece() {
                   }}
                 >
                   <Text style={{ flex: 2, fontFamily: "CrimsonText-Regular" }}>
-                    {m.name}
+                    {m.title}
                   </Text>
                   <Text
                     style={{

@@ -47,6 +47,14 @@ export type Artefact = {
   physicalLocation?: unknown | null;
 };
 
+export type Mention = {
+  id?: number;
+  artefactId: number;
+  title: string;
+  link?: string | null;
+  description?: string | null;
+};
+
 // src/repositories/artefactRepository.ts
 export const ArtefactRepository = {
   getAll: async () => {
@@ -55,7 +63,7 @@ export const ArtefactRepository = {
   },
 
   create: async (payload: Artefact) => {
-    const { data } = await apiClient.post("/artefacts/", payload)
+    const { data } = await apiClient.post("/artefacts/", payload);
     return data as Artefact;
   },
 
@@ -66,7 +74,9 @@ export const ArtefactRepository = {
 
   remove: async (id: number) => {
     const { data, status } = await apiClient.delete(`/artefacts/${id}`);
-    return (data as { ok?: boolean } | { message: string }) ?? { ok: status === 200 };
+    return (
+      (data as { ok?: boolean } | { message: string }) ?? { ok: status === 200 }
+    );
   },
 
   getById: async (id: number) => {
@@ -77,18 +87,57 @@ export const ArtefactRepository = {
   uploadPicture: async (id: number, file: File) => {
     const formData = new FormData();
     formData.append("picture", file);
-    const { data } = await apiClient.post(`/artefacts/${id}/picture`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await apiClient.post(
+      `/artefacts/${id}/picture`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     return data as Picture;
   },
 
   uploadHistoricalRecord: async (id: number, file: File) => {
     const formData = new FormData();
     formData.append("document", file);
-    const { data } = await apiClient.post(`/artefacts/${id}/historical-record`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await apiClient.post(
+      `/artefacts/${id}/historical-record`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     return data as HistoricalRecord;
+  },
+
+  createMention: async (payload: Omit<Mention, "id">) => {
+    const { data } = await apiClient.post("/mentions/", payload);
+    return data as Mention;
+  },
+
+  getMentionsByArtefactId: async (artefactId: number) => {
+    const { data } = await apiClient.get(`/mentions/by-artefact/${artefactId}`);
+    return data as Mention[];
+  },
+
+  updateMention: async (
+    artefactId: number,
+    mentionId: number,
+    payload: {
+      title?: string;
+      url?: string;
+      link?: string;
+      description?: string;
+    }
+  ) => {
+    const { data } = await apiClient.put(
+      `/mentions/${mentionId}`,
+      payload
+    );
+    return data;
+  },
+
+  deleteMention: async (artefactId: number, mentionId: number) => {
+    await apiClient.delete(`/mentions/${mentionId}`);
   },
 };
