@@ -76,27 +76,26 @@ export default function New_shelf() {
         </View>
 
         <Button
-        title={isBusy ? "Creando..." : "Crear Estantería"}
-        onPress={() => {
-            if (isBusy) return;          // bloquea mientras muta
+          title={isBusy ? "Creando..." : "Crear Estantería"}
+          onPress={() => {
+            if (isBusy) return; // bloquea mientras muta
             handleCrear();
-        }}
-        className={`w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center ${isBusy ? "opacity-60" : ""}`}
-        textClassName="text-base font-bold text-white"
-        textStyle={{ fontFamily: "MateSC-Regular" }}
+          }}
+          className={`w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center ${isBusy ? "opacity-60" : ""}`}
+          textClassName="text-base font-bold text-white"
+          textStyle={{ fontFamily: "MateSC-Regular" }}
         />
 
         <Button
-        title="Cancelar"
-        onPress={() => {
-            if (isBusy) return;          // bloquea mientras muta
+          title="Cancelar"
+          onPress={() => {
+            if (isBusy) return; // bloquea mientras muta
             handleCancelar();
-        }}
-        className={`w-full self-center bg-[#D9C6A5] rounded-lg py-3 items-center ${isBusy ? "opacity-60" : ""}`}
-        textClassName="text-base text-white"
-        textStyle={{ fontFamily: "MateSC-Regular" }}
+          }}
+          className={`w-full self-center bg-[#D9C6A5] rounded-lg py-3 items-center ${isBusy ? "opacity-60" : ""}`}
+          textClassName="text-base text-white"
+          textStyle={{ fontFamily: "MateSC-Regular" }}
         />
-
       </View>
     </View>
   );

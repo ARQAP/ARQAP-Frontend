@@ -17,12 +17,17 @@ import Navbar from "../Navbar";
 import Button from "../../../components/ui/Button";
 import Colors from "../../../constants/Colors";
 import { Feather } from "@expo/vector-icons";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
 import { useCollections } from "../../../hooks/useCollections";
 import { useArchaeologists } from "../../../hooks/useArchaeologist";
 import { useShelves } from "../../../hooks/useShelf";
-import { usePhysicalLocations } from "../../../hooks/usePhysicalLocation";
+import {
+  usePhysicalLocations,
+  useCreatePhysicalLocation,
+  indexToLevel,
+  indexToColumn,
+} from "../../../hooks/usePhysicalLocation";
 
 import SimplePickerModal, {
   SimplePickerItem,
@@ -55,13 +60,13 @@ export default function EditPiece() {
   const [observation, setObservation] = useState("");
   const [description, setDescription] = useState("");
   const [available, setAvailable] = useState(true);
-  const [classifier, setClassifier] = useState('INAPL');
-  const [color, setColor] = useState('');
-  const [collection, setCollection] = useState('');
-  const [archaeologist, setArchaeologist] = useState('');
-  const [site, setSite] = useState('');
+  const [classifier, setClassifier] = useState("INAPL");
+  const [color, setColor] = useState("");
+  const [collection, setCollection] = useState("");
+  const [archaeologist, setArchaeologist] = useState("");
+  const [site, setSite] = useState("");
 
-  const [shelf, setShelf] = useState(''); // string con el code (p.ej. "07")
+  const [shelf, setShelf] = useState(""); // string con el code (p.ej. "07")
   // -------- pickers (modales) ----------
   const [archPickerOpen, setArchPickerOpen] = useState(false);
   const [collPickerOpen, setCollPickerOpen] = useState(false);
@@ -98,8 +103,16 @@ export default function EditPiece() {
   // refs y hooks de upload (si corresponde)
   const pictureFileRef = useRef<File | null>(null); // web
   const recordFileRef = useRef<File | null>(null); // web
-  const nativePictureRef = useRef<{ uri: string; name: string; type: string } | null>(null);
-  const nativeRecordRef = useRef<{ uri: string; name: string; type: string } | null>(null);
+  const nativePictureRef = useRef<{
+    uri: string;
+    name: string;
+    type: string;
+  } | null>(null);
+  const nativeRecordRef = useRef<{
+    uri: string;
+    name: string;
+    type: string;
+  } | null>(null);
   const uploadPicture = useUploadArtefactPicture();
   const uploadRecord = useUploadArtefactHistoricalRecord();
 
@@ -150,6 +163,8 @@ export default function EditPiece() {
     columns,
   ]);
 
+  const createPhysicalLocation = useCreatePhysicalLocation();
+
   // -------- items para modales ----------
   const archItems: SimplePickerItem<(typeof archaeologists)[number]>[] =
     useMemo(
@@ -182,9 +197,9 @@ export default function EditPiece() {
     [shelfs]
   );
 
-  // -------- fetch artefacto por id ----------
+  // -------- artefacto por id ----------
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['artefact', artefactId],
+    queryKey: ["artefact", artefactId],
     queryFn: () => ArtefactRepository.getById(artefactId as number),
     enabled: Number.isFinite(artefactId as number),
   });
@@ -193,48 +208,74 @@ export default function EditPiece() {
   useEffect(() => {
     if (!data) return;
     const a = data as any;
-    console.log('Cargando artefacto para edición:', a);
-    setName(a?.name ?? '');
-    setMaterial(a?.material ?? '');
-    setObservation(a?.observation ?? '');
-    setDescription(a?.description ?? '');
+    console.log("Cargando artefacto para edición:", a);
+    setName(a?.name ?? "");
+    setMaterial(a?.material ?? "");
+    setObservation(a?.observation ?? "");
+    setDescription(a?.description ?? "");
     setAvailable(!!a?.available);
 
     // clasificador/color: solo para UI de edición, si vinieran del backend ajustá aquí
-    setClassifier('INAPL');
-    setColor(a?.internalClassifier?.color ?? '');
+    setClassifier("INAPL");
+    setColor(a?.internalClassifier?.color ?? "");
 
     // Colección
-    setCollection(a?.collection?.name ?? a?.collection?.Nombre ?? '');
+    setCollection(a?.collection?.name ?? a?.collection?.Nombre ?? "");
     setCollectionId(a?.collection?.id ?? null);
 
     // Arqueólogo
     const arch = a?.archaeologist;
-    setArchaeologist(arch?.name ?? [arch?.firstname, arch?.lastname].filter(Boolean).join(' '));
+    setArchaeologist(
+      arch?.name ?? [arch?.firstname, arch?.lastname].filter(Boolean).join(" ")
+    );
     setArchaeologistId(arch?.id ?? null);
 
     // Sitio (placeholder)
     const siteObj = a?.archaeologicalSite;
-    setSite(siteObj?.name ?? siteObj?.Nombre ?? '');
+    setSite(siteObj?.name ?? siteObj?.Nombre ?? "");
 
     // Estantería: guardamos el code
-    const shelfObj = a?.physicalLocation?.shelf ?? a?.physicalLocation?.estanteria ?? a?.shelf ?? null;
-    console.log('shelfObj', shelfObj);
-    const shelfCodeVal = typeof shelfObj === 'object' ? (shelfObj?.id ?? shelfObj?.code) : shelfObj;
-    setShelf(shelfCodeVal != null ? String(shelfCodeVal).padStart(2, '0') : '');
-    setShelfCode(shelfCodeVal != null ? String(shelfCodeVal).padStart(2, '0') : '');
+    const shelfObj =
+      a?.physicalLocation?.shelf ??
+      a?.physicalLocation?.estanteria ??
+      a?.shelf ??
+      null;
+    console.log("shelfObj", shelfObj);
+    const shelfCodeVal =
+      typeof shelfObj === "object"
+        ? (shelfObj?.id ?? shelfObj?.code)
+        : shelfObj;
+    setShelf(shelfCodeVal != null ? String(shelfCodeVal).padStart(2, "0") : "");
+    setShelfCode(
+      shelfCodeVal != null ? String(shelfCodeVal).padStart(2, "0") : ""
+    );
 
     // level/column a índices (0..3)
-    const levelRaw = a?.physicalLocation?.level ?? a?.physicalLocation?.nivel ?? null;
-    const columnRaw = a?.physicalLocation?.column ?? a?.physicalLocation?.columna ?? null;
+    const levelRaw =
+      a?.physicalLocation?.level ?? a?.physicalLocation?.nivel ?? null;
+    const columnRaw =
+      a?.physicalLocation?.column ?? a?.physicalLocation?.columna ?? null;
 
-    const levelIndex = levelRaw != null && !Number.isNaN(Number(levelRaw))
-      ? Math.max(0, Math.min(3, Number(levelRaw) - 1))
-      : null;
+    const levelIndex =
+      levelRaw != null && !Number.isNaN(Number(levelRaw))
+        ? Math.max(0, Math.min(3, Number(levelRaw) - 1))
+        : null;
     setSelectedLevel(levelIndex);
 
-    const colLetter = String(columnRaw ?? '').toUpperCase().replace(/[^A-D]/g, '').charAt(0);
-    const colIndex = colLetter === 'A' ? 0 : colLetter === 'B' ? 1 : colLetter === 'C' ? 2 : colLetter === 'D' ? 3 : null;
+    const colLetter = String(columnRaw ?? "")
+      .toUpperCase()
+      .replace(/[^A-D]/g, "")
+      .charAt(0);
+    const colIndex =
+      colLetter === "A"
+        ? 0
+        : colLetter === "B"
+          ? 1
+          : colLetter === "C"
+            ? 2
+            : colLetter === "D"
+              ? 3
+              : null;
     setSelectedColumn(colIndex);
   }, [data]);
   // -------- pickers / uploads ----------
@@ -341,6 +382,7 @@ export default function EditPiece() {
   }
 
   // -------- guardar ----------
+  // -------- guardar ----------
   async function handleSave() {
     try {
       if (!artefactId) {
@@ -352,57 +394,88 @@ export default function EditPiece() {
         return;
       }
 
+      // ---- Resolver physicalLocationId (find-or-create con TUS hooks) ----
+      let finalPhysicalLocationId: number | null = null;
+
+      const hasGridSelection =
+        shelfIdFromCode && selectedLevel != null && selectedColumn != null;
+
+      if (hasGridSelection) {
+        const levelNumber = indexToLevel(selectedLevel!); // 1..4 (enum)
+        const columnLetter = indexToColumn(selectedColumn!); // "A".."D" (enum)
+
+        // 1) Buscar en cache local de usePhysicalLocations()
+        const existing = locations.find(
+          (l) =>
+            Number(l.shelfId) === shelfIdFromCode &&
+            Number(l.level) === Number(levelNumber) &&
+            String(l.column) === String(columnLetter)
+        );
+
+        if (existing?.id) {
+          finalPhysicalLocationId = Number(existing.id);
+        } else {
+          // 2) Crear con tu mutation y usar el id devuelto
+          const created = await createPhysicalLocation.mutateAsync({
+            shelfId: shelfIdFromCode!,
+            level: levelNumber,
+            column: columnLetter,
+          });
+          // tu repo debe devolver el objeto creado con id
+          const newId = Number((created as any)?.id);
+          if (!newId)
+            throw new Error(
+              "No se pudo obtener el id de la nueva ubicación física."
+            );
+          finalPhysicalLocationId = newId;
+        }
+      }
+
       const payload: any = {
         name: name.trim(),
         material: material.trim() || null,
         observation: observation.trim() || null,
         available,
         description: description.trim() || null,
-
-        // relaciones (aquí solo enviamos los ids si los tenés en tu API)
         collectionId: collectionId ?? null,
         archaeologistId: archaeologistId ?? null,
-
-        // ubicación física (si existe)
-        physicalLocationId: physicalLocationId ?? null,
-
-        // aún no implementado:
+        physicalLocationId: finalPhysicalLocationId, // <- garantizado o null si no hay selección
         archaeologicalSiteId: null,
         inplClassifierId: null,
       };
 
-      const updated = await ArtefactRepository.update(artefactId, payload);
-      const updatedId = getUpdatedId(updated, artefactId); // <-- ya no explota
+      await ArtefactRepository.update(artefactId, payload);
 
-      // subir foto si corresponde
       if (Platform.OS === "web" && pictureFileRef.current) {
         await uploadPicture.mutateAsync({
-          id: updatedId,
+          id: artefactId,
           file: pictureFileRef.current,
         });
       } else if (Platform.OS !== "web" && nativePictureRef.current) {
-        // @ts-ignore RN FormData shape
         const fd = new FormData();
+        // @ts-ignore RN FormData shape
         fd.append("picture", nativePictureRef.current as any);
         await ArtefactRepository.uploadPicture(
-          updatedId,
-          (fd as any).get("picture") as any
+          artefactId,
+          // @ts-ignore
+          (fd as any).get("picture")
         );
       }
 
       // subir ficha/documento si corresponde
       if (Platform.OS === "web" && recordFileRef.current) {
         await uploadRecord.mutateAsync({
-          id: updatedId,
+          id: artefactId,
           file: recordFileRef.current,
         });
       } else if (Platform.OS !== "web" && nativeRecordRef.current) {
-        // @ts-ignore RN FormData shape
         const fd = new FormData();
+        // @ts-ignore RN FormData shape
         fd.append("document", nativeRecordRef.current as any);
         await ArtefactRepository.uploadHistoricalRecord(
-          updatedId,
-          (fd as any).get("document") as any
+          artefactId,
+          // @ts-ignore
+          (fd as any).get("document")
         );
       }
 
@@ -584,8 +657,8 @@ export default function EditPiece() {
             label="Sin colección"
             value={
               collectionId
-                ? collections.find((c) => c.id === collectionId)?.name ??
-                  "Sin colección"
+                ? (collections.find((c) => c.id === collectionId)?.name ??
+                  "Sin colección")
                 : "Sin colección"
             }
             onPress={() => setCollPickerOpen(true)}
@@ -609,8 +682,12 @@ export default function EditPiece() {
             value={
               archaeologistId
                 ? (() => {
-                    const a = archaeologists.find((x) => x.id === archaeologistId);
-                    return a ? `${a.firstname} ${a.lastname}` : "Seleccionar arqueólogo";
+                    const a = archaeologists.find(
+                      (x) => x.id === archaeologistId
+                    );
+                    return a
+                      ? `${a.firstname} ${a.lastname}`
+                      : "Seleccionar arqueólogo";
                   })()
                 : "Seleccionar arqueólogo"
             }
@@ -667,7 +744,9 @@ export default function EditPiece() {
                 alignItems: "center",
                 justifyContent: "flex-end",
               }}
-              onPress={() => router.push("/(tabs)/archaeological-Pieces/New_shelf")}
+              onPress={() =>
+                router.push("/(tabs)/archaeological-Pieces/New_shelf")
+              }
               accessibilityRole="button"
               accessibilityLabel="Crear nueva Estantería"
             >
@@ -729,7 +808,9 @@ export default function EditPiece() {
                 borderRadius: 6,
               }}
             >
-              <Text style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}>
+              <Text
+                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+              >
                 SUBIR IMAGEN
               </Text>
             </TouchableOpacity>
@@ -743,7 +824,9 @@ export default function EditPiece() {
                 borderRadius: 6,
               }}
             >
-              <Text style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}>
+              <Text
+                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+              >
                 SUBIR FICHA
               </Text>
             </TouchableOpacity>
@@ -854,10 +937,18 @@ export default function EditPiece() {
 
           {/* encabezado columnas */}
           <View
-            style={{ width: containerWidth, marginBottom: 6, alignSelf: "center" }}
+            style={{
+              width: containerWidth,
+              marginBottom: 6,
+              alignSelf: "center",
+            }}
           >
             <View
-              style={{ flexDirection: "row", alignItems: "center", width: "100%" }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+              }}
             >
               <View style={{ width: leftLabelWidth }} />
               <View style={{ flexDirection: "row" }}>
@@ -909,7 +1000,11 @@ export default function EditPiece() {
                 }}
               >
                 <View
-                  style={{ width: leftLabelWidth, height: cellSize, justifyContent: "center" }}
+                  style={{
+                    width: leftLabelWidth,
+                    height: cellSize,
+                    justifyContent: "center",
+                  }}
                 >
                   <View
                     style={{
@@ -954,7 +1049,9 @@ export default function EditPiece() {
                             width: cellSize,
                             height: cellSize,
                             borderRadius: 6,
-                            backgroundColor: isSelected ? Colors.brown : "#EADFCB",
+                            backgroundColor: isSelected
+                              ? Colors.brown
+                              : "#EADFCB",
                           }}
                         />
                       </View>
@@ -978,7 +1075,12 @@ export default function EditPiece() {
 
         {/* Menciones: formulario para agregar + lista */}
         <View
-          style={{ marginTop: 16, backgroundColor: "#fff", padding: 12, borderRadius: 8 }}
+          style={{
+            marginTop: 16,
+            backgroundColor: "#fff",
+            padding: 12,
+            borderRadius: 8,
+          }}
         >
           <Text
             style={{
@@ -1131,7 +1233,11 @@ export default function EditPiece() {
                 DESCRIPCIÓN
               </Text>
               <Text
-                style={{ width: 80, textAlign: "center", fontFamily: "MateSC-Regular" }}
+                style={{
+                  width: 80,
+                  textAlign: "center",
+                  fontFamily: "MateSC-Regular",
+                }}
               >
                 ACCIONES
               </Text>
@@ -1139,7 +1245,10 @@ export default function EditPiece() {
             {mentions.length === 0 ? (
               <View style={{ padding: 12 }}>
                 <Text
-                  style={{ fontFamily: "CrimsonText-Regular", color: Colors.black }}
+                  style={{
+                    fontFamily: "CrimsonText-Regular",
+                    color: Colors.black,
+                  }}
                 >
                   No hay menciones agregadas.
                 </Text>

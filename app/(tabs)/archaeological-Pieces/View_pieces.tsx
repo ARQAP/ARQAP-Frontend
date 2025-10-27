@@ -26,15 +26,15 @@ type Piece = {
   site?: string;
   archaeologist?: string;
   collection?: string;
-  shelf?: string; 
-  level?: string; 
-  column?: string; 
+  shelf?: string;
+  level?: string;
+  column?: string;
 };
 
 export default function ViewPieces() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useArtefacts();
-
+  console.log("Artefacts data:", data);
   const [query, setQuery] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");
   const [filterCollection, setFilterCollection] = useState("");
@@ -45,41 +45,32 @@ export default function ViewPieces() {
     const list = (data ?? []) as Artefact[];
 
     return list.map((a) => {
-      const siteName =
-        (a as any)?.archaeologicalSite?.name ??
-        (a as any)?.archaeologicalSite?.Nombre ??
-        undefined;
+      const siteName = (a as any)?.archaeologicalSite?.Name ?? undefined;
 
       const arch = (a as any)?.archaeologist;
       const archaeologistName =
         arch?.name ??
-        ([arch?.firstname, arch?.lastname].filter(Boolean).join(" ") || undefined);
+        ([arch?.firstname, arch?.lastname].filter(Boolean).join(" ") ||
+          undefined);
 
-      const collectionName =
-        (a as any)?.collection?.name ??
-        undefined;
+      const collectionName = (a as any)?.collection?.name ?? undefined;
 
-      const shelfRaw =
-        (a as any)?.physicalLocation?.id ??
-        undefined;
+      const shelfRaw = (a as any)?.physicalLocation?.shelf.code ?? undefined;
 
-      const levelRaw =
-        (a as any)?.physicalLocation?.level ??
-        undefined;
+      const levelRaw = (a as any)?.physicalLocation?.level ?? undefined;
 
-      const columnRaw =
-        (a as any)?.physicalLocation?.column ??
-        undefined;
+      const columnRaw = (a as any)?.physicalLocation?.column ?? undefined;
 
       const shelf =
         shelfRaw == null
           ? undefined
           : typeof shelfRaw === "object"
-          ? (shelfRaw.code != null ? `Estantería ${String(shelfRaw.code)}` : undefined)
-          : `Estantería ${String(shelfRaw)}`;
+            ? shelfRaw.code != null
+              ? `Estantería ${String(shelfRaw.code)}`
+              : undefined
+            : `Estantería ${String(shelfRaw)}`;
 
-      const level =
-        levelRaw == null ? undefined : `Nivel ${String(levelRaw)}`;
+      const level = levelRaw == null ? undefined : `Nivel ${String(levelRaw)}`;
 
       const column =
         columnRaw == null ? undefined : `Columna ${String(columnRaw)}`;
@@ -100,21 +91,49 @@ export default function ViewPieces() {
 
   const filtered = useMemo(() => {
     return pieces.filter((p) => {
-      if (query && !p.name.toLowerCase().includes(query.toLowerCase())) return false;
-      if (filterMaterial && !(p.material || "").toLowerCase().includes(filterMaterial.toLowerCase())) return false;
-      if (filterCollection && !(p.collection || "").toLowerCase().includes(filterCollection.toLowerCase())) return false;
-      if (filterSite && !(p.site || "").toLowerCase().includes(filterSite.toLowerCase())) return false;
-      if (filterCategory && !(p.name || "").toLowerCase().includes(filterCategory.toLowerCase())) return false; // placeholder
+      if (query && !p.name.toLowerCase().includes(query.toLowerCase()))
+        return false;
+      if (
+        filterMaterial &&
+        !(p.material || "").toLowerCase().includes(filterMaterial.toLowerCase())
+      )
+        return false;
+      if (
+        filterCollection &&
+        !(p.collection || "")
+          .toLowerCase()
+          .includes(filterCollection.toLowerCase())
+      )
+        return false;
+      if (
+        filterSite &&
+        !(p.site || "").toLowerCase().includes(filterSite.toLowerCase())
+      )
+        return false;
+      if (
+        filterCategory &&
+        !(p.name || "").toLowerCase().includes(filterCategory.toLowerCase())
+      )
+        return false; // placeholder
       return true;
     });
-  }, [pieces, query, filterMaterial, filterCollection, filterSite, filterCategory]);
+  }, [
+    pieces,
+    query,
+    filterMaterial,
+    filterCollection,
+    filterSite,
+    filterCategory,
+  ]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
       <Navbar title="Piezas arqueologicas" showBackArrow backToHome />
 
       {isLoading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator />
         </View>
       ) : isError ? (
@@ -125,17 +144,28 @@ export default function ViewPieces() {
           <Button title="Reintentar" onPress={() => refetch()} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}>
+        <ScrollView
+          contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
+        >
           <View style={{ width: "90%", maxWidth: 700, padding: 16 }}>
             <Button
               title="REGISTRAR PIEZA ARQUEOLÓGICA"
               className="bg-[#6B705C] rounded-lg py-3 items-center mb-4"
               textClassName="text-white"
-              onPress={() => router.push("/(tabs)/archaeological-Pieces/New_piece")}
+              onPress={() =>
+                router.push("/(tabs)/archaeological-Pieces/New_piece")
+              }
             />
 
             {/* Filtros */}
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
               <TextInput
                 placeholder="Filtrar por nombre"
                 value={query}
@@ -207,7 +237,9 @@ export default function ViewPieces() {
                 <TouchableOpacity
                   key={p.id}
                   onPress={() =>
-                    router.push(`/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`)
+                    router.push(
+                      `/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`
+                    )
                   }
                   activeOpacity={0.9}
                   style={{
@@ -263,10 +295,26 @@ export default function ViewPieces() {
                       </Text>
 
                       <View style={{ marginBottom: 6 }}>
-                        <InfoRow icon="cube" label="MATERIAL" value={p.material} />
-                        <InfoRow icon="map-marker" label="SITIO ARQUEOLOGICO" value={p.site} />
-                        <InfoRow icon="user" label="ARQUEOLOGO" value={p.archaeologist} />
-                        <InfoRow icon="archive" label="COLECCION" value={p.collection} />
+                        <InfoRow
+                          icon="cube"
+                          label="MATERIAL"
+                          value={p.material}
+                        />
+                        <InfoRow
+                          icon="map-marker"
+                          label="SITIO ARQUEOLOGICO"
+                          value={p.site}
+                        />
+                        <InfoRow
+                          icon="user"
+                          label="ARQUEOLOGO"
+                          value={p.archaeologist}
+                        />
+                        <InfoRow
+                          icon="archive"
+                          label="COLECCION"
+                          value={p.collection}
+                        />
                       </View>
                     </View>
 
@@ -283,7 +331,11 @@ export default function ViewPieces() {
                         style={{ padding: 8 }}
                         accessibilityLabel={`Editar pieza ${p.name}`}
                       >
-                        <FontAwesome name="pencil" size={18} color={Colors.black} />
+                        <FontAwesome
+                          name="pencil"
+                          size={18}
+                          color={Colors.black}
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>

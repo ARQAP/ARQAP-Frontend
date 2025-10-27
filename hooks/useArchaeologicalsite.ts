@@ -6,10 +6,11 @@ const KEY = ["archaeologicalsites"];
 
 export const useAllArchaeologicalSites = () => {
   const { data: token } = useIsAuthenticated();
-  return useQuery({
+  return useQuery<ArchaeologicalSite[]>({
     queryKey: KEY,
     queryFn: ArchaeologicalSiteRepository.getAll,
     enabled: !!token,
+    staleTime: 60_000,
   });
 };
 
