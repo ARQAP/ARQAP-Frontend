@@ -14,7 +14,7 @@ export type PhysicalLocation = {
 
 export const PhysicalLocationRepository = {
   getAll: async () => {
-    const { data } = await apiClient.get("/physical-locations"); // protegida
+    const { data } = await apiClient.get("/physical-locations/"); // protegida
     return data as PhysicalLocation[];
   },
 

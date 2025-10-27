@@ -9,7 +9,7 @@ export type Collection = {
 
 export const CollectionRepository = {
   getAll: async () => {
-    const { data } = await apiClient.get("/collections");
+    const { data } = await apiClient.get("/collections/");
     return data as Collection[];
   },
 

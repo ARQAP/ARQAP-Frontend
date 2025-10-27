@@ -7,7 +7,7 @@ export type Shelf = {
 
 export const ShelfRepository = {
   getAll: async () => {
-    const { data } = await apiClient.get("/shelfs"); // protegida
+    const { data } = await apiClient.get("/shelfs/");
     return data as Shelf[];
   },
 
@@ -17,7 +17,7 @@ export const ShelfRepository = {
   },
 
   create: async (payload: Shelf) => {
-    const { data } = await apiClient.post("/shelfs", payload);
+    const { data } = await apiClient.post("/shelfs/", payload);
     return data as Shelf;
   },
 

@@ -24,6 +24,9 @@ import { useArchaeologists } from "@/hooks/useArchaeologist";
 import { useShelf, useShelves } from "../../../hooks/useShelf";
 import { usePhysicalLocations } from "@/hooks/usePhysicalLocation";
 import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
+import { Feather } from "@expo/vector-icons";
+
+import SimplePickerModal, { SimplePickerItem } from "../../../components/ui/SimpleModal";
 
 export default function NewPiece() {
   const router = useRouter();
@@ -35,13 +38,27 @@ export default function NewPiece() {
   const [description, setDescription] = useState("");
   const [available, setAvailable] = useState(true);
 
+  // -------- modales pickers ----------
+  const [archPickerOpen, setArchPickerOpen] = useState(false);
+  const [collPickerOpen, setCollPickerOpen] = useState(false);
+  const [intClsPickerOpen, setIntClsPickerOpen] = useState(false);
+  const [shelfPickerOpen, setShelfPickerOpen] = useState(false);
+
   // -------- relaciones (IDs) ----------
   const [collectionId, setCollectionId] = useState<number | null>(null);
   const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
   const [internalClassifierId, setInternalClassifierId] = useState<number | null>(null);
-  const [shelfCode, setShelfCode] = useState<string>("07"); // lo mostramos como texto, pero resolvemos ID real a partir del hook de shelves
+  const [shelfCode, setShelfCode] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<number>(2); // 0..3 → NIVEL 3 por defecto
   const [selectedColumn, setSelectedColumn] = useState<number>(2); // 0..3 → C por defecto
+
+  // --------    menciones     ----------
+  const [mentionName, setMentionName] = useState("");
+  const [mentionLink, setMentionLink] = useState("");
+  const [mentionDescription, setMentionDescription] = useState("");
+  const [mentions, setMentions] = useState<
+    Array<{ id: number; name: string; link: string; description: string }>
+  >([]);
 
   // NO IMPLEMENTADO AÚN:
   const archaeologicalSiteId = null;
@@ -57,10 +74,8 @@ export default function NewPiece() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [docName, setDocName] = useState<string | null>(null);
 
-  // guardamos los archivos reales para enviar al backend
   const pictureFileRef = useRef<File | null>(null); // web
   const recordFileRef = useRef<File | null>(null); // web
-  // en móvil RN usamos { uri, name, type }
   const nativePictureRef = useRef<{ uri: string; name: string; type: string } | null>(null);
   const nativeRecordRef = useRef<{ uri: string; name: string; type: string } | null>(null);
 
@@ -98,6 +113,47 @@ export default function NewPiece() {
     );
     return found?.id ?? null;
   }, [locations, shelfIdFromCode, selectedLevel, selectedColumn]);
+
+  // -------- mapeos a items para los modales (reutilizable) ----------
+  const archItems: SimplePickerItem<(typeof archaeologists)[number]>[] = useMemo(
+    () =>
+      archaeologists.map((a) => ({
+        value: a.id!,
+        label: `${a.firstname} ${a.lastname}`,
+        raw: a,
+      })),
+    [archaeologists]
+  );
+
+  const collItems: SimplePickerItem<(typeof collections)[number]>[] = useMemo(
+    () =>
+      collections.map((c) => ({
+        value: c.id!,
+        label: c.name,
+        raw: c,
+      })),
+    [collections]
+  );
+
+  const intClsItems: SimplePickerItem<(typeof internalClassifiers)[number]>[] = useMemo(
+    () =>
+      internalClassifiers.map((ic) => ({
+        value: ic.id!,
+        label: `#${ic.number} (${ic.color})`,
+        raw: ic,
+      })),
+    [internalClassifiers]
+  );
+
+  const shelfItems: SimplePickerItem<(typeof shelfs)[number]>[] = useMemo(
+    () =>
+      shelfs.map((s) => ({
+        value: s.id!,
+        label: `Estantería ${s.code}`,
+        raw: s,
+      })),
+    [shelfs]
+  );
 
   // -------- pickers / uploads ----------
   async function pickImage() {
@@ -321,14 +377,7 @@ export default function NewPiece() {
                     })()
                   : "Seleccionar clasificador"
               }
-              onPress={() => {
-                // selector mínimo: alternar entre el primero o limpiar (podés reemplazar por un modal propio)
-                if (!internalClassifierId && internalClassifiers.length > 0) {
-                  setInternalClassifierId(internalClassifiers[0].id ?? null);
-                } else {
-                  setInternalClassifierId(null);
-                }
-              }}
+              onPress={() => setIntClsPickerOpen(true)} // abrir modal reutilizable
             />
           </View>
 
@@ -395,11 +444,7 @@ export default function NewPiece() {
                 ? collections.find((c) => c.id === collectionId)?.name ?? "Sin colección"
                 : "Sin colección"
             }
-            onPress={() => {
-              // selector mínimo: alternar primero / limpiar
-              if (!collectionId && collections.length > 0) setCollectionId(collections[0].id ?? null);
-              else setCollectionId(null);
-            }}
+            onPress={() => setCollPickerOpen(true)} // abrir modal reutilizable
           />
         </View>
 
@@ -416,10 +461,7 @@ export default function NewPiece() {
                   })()
                 : "Seleccionar arqueólogo"
             }
-            onPress={() => {
-              if (!archaeologistId && archaeologists.length > 0) setArchaeologistId(archaeologists[0].id ?? null);
-              else setArchaeologistId(null);
-            }}
+            onPress={() => setArchPickerOpen(true)} // abrir modal reutilizable
           />
         </View>
 
@@ -432,17 +474,36 @@ export default function NewPiece() {
             <SimpleSelectRow label="Próximamente" subdued />
           </View>
 
-          <View style={{ width: windowWidth < 520 ? "100%" : 140 }}>
-            <Text style={{ fontWeight: "700", marginBottom: 6, fontFamily: "MateSC-Regular", color: Colors.black }}>Estantería</Text>
-            <TextInput
-              value={shelfCode}
-              onChangeText={setShelfCode}
-              placeholder="Código (p.ej. 07)"
-              keyboardType="number-pad"
-              style={{ backgroundColor: "#fff", borderRadius: 6, padding: 8, fontFamily: "CrimsonText-Regular", color: Colors.black }}
-            />
-          </View>
+        <View style={{ width: windowWidth < 520 ? "100%" : 140 }}>
+          <Text style={{ fontWeight: "700", marginBottom: 6, fontFamily: "MateSC-Regular", color: Colors.black }}>
+            Estantería
+          </Text>
+
+          {/* Selector (abre modal reutilizable) */}
+          <SimpleSelectRow
+            label="Seleccionar estantería"
+            value={shelfIdFromCode ? `Estantería ${shelfCode}` : undefined}
+            onPress={() => setShelfPickerOpen(true)}
+          />
+
+          {/* Link: Crear nueva Estantería */}
+          <TouchableOpacity
+            style={{ paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "flex-end" }}
+            onPress={() => {
+              router.push("/(tabs)/archaeological-Pieces/New_shelf");
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nueva Estantería"
+          >
+            <Text style={{ color: "#A68B5B", marginRight: 6, fontFamily: "MateSC-Regular" }}>
+              Crear nueva Estantería
+            </Text>
+            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+          </TouchableOpacity>
         </View>
+
+        </View>
+
 
         {/* Ubicación física (grid) */}
         <View style={{ marginBottom: 8, backgroundColor: "#fff", padding: 8, borderRadius: 6 }}>
@@ -527,15 +588,105 @@ export default function NewPiece() {
           </Text>
         </View>
 
-        {/* Menciones (placeholder local) */}
+        {/* Menciones: formulario para agregar + lista */}
         <View style={{ marginTop: 16, backgroundColor: "#fff", padding: 12, borderRadius: 8 }}>
           <Text style={{ fontFamily: "MateSC-Regular", fontWeight: "700", marginBottom: 8, color: Colors.black }}>
-            MENCIONES (local, opcional)
+            MENCIONES DE LA PIEZA ARQUEOLÓGICA (OPCIONAL)
           </Text>
-          <Text style={{ fontFamily: "CrimsonText-Regular", color: Colors.black, opacity: 0.7 }}>
-            * Aún no estamos persistiendo menciones en el backend.
-          </Text>
+
+          {/* inputs: nombre + enlace */}
+          {/* Stack vertically on small screens to avoid layout breakage */}
+          <View style={{ flexDirection: windowWidth < 520 ? "column" : "row", gap: 12, marginBottom: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: "MateSC-Regular", color: Colors.black, marginBottom: 6 }}>NOMBRE</Text>
+              <TextInput
+                value={mentionName}
+                onChangeText={setMentionName}
+                placeholder="Nombre"
+                style={{ backgroundColor: "#fff", borderRadius: 6, padding: 8, borderWidth: 1, borderColor: "#E6DAC4" }}
+              />
+            </View>
+            <View style={{ width: windowWidth < 520 ? "100%" : 200 }}>
+              <Text style={{ fontFamily: "MateSC-Regular", color: Colors.black, marginBottom: 6 }}>ENLACE</Text>
+              <TextInput
+                value={mentionLink}
+                onChangeText={setMentionLink}
+                placeholder="Enlace"
+                style={{ backgroundColor: "#fff", borderRadius: 6, padding: 8, borderWidth: 1, borderColor: "#E6DAC4" }}
+              />
+            </View>
+          </View>
+
+          <View style={{ marginBottom: 8 }}>
+            <Text style={{ fontFamily: "MateSC-Regular", color: Colors.black, marginBottom: 6 }}>DESCRIPCIÓN</Text>
+            <TextInput
+              multiline
+              value={mentionDescription}
+              onChangeText={setMentionDescription}
+              placeholder="Descripción"
+              style={{ backgroundColor: "#fff", borderRadius: 6, padding: 8, minHeight: 80, borderWidth: 1, borderColor: "#E6DAC4" }}
+            />
+          </View>
+
+          <View style={{ alignItems: "flex-end", marginBottom: 12 }}>
+            <TouchableOpacity
+              style={{ backgroundColor: Colors.green, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+              onPress={() => {
+                // add mention
+                const name = mentionName.trim();
+                const link = mentionLink.trim();
+                const desc = mentionDescription.trim();
+                if (!name && !link) {
+                  // require at least a name or link
+                  return;
+                }
+                const m = { id: Date.now(), name, link, description: desc };
+                setMentions((prev) => [m, ...prev]);
+                setMentionName("");
+                setMentionLink("");
+                setMentionDescription("");
+              }}
+            >
+              <Text style={{ color: Colors.cremit, fontFamily: "CrimsonText-Regular" }}>AGREGAR MENCIÓN</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* tabla/lista de menciones */}
+          <View style={{ borderWidth: 1, borderColor: "#E6DAC4", borderRadius: 8, overflow: "hidden" }}>
+            <View style={{ flexDirection: "row", backgroundColor: "#EADFCB", padding: 8 }}>
+              <Text style={{ flex: 2, fontFamily: "MateSC-Regular" }}>NOMBRE</Text>
+              <Text style={{ flex: 2, fontFamily: "MateSC-Regular" }}>ENLACE</Text>
+              <Text style={{ flex: 3, fontFamily: "MateSC-Regular" }}>DESCRIPCIÓN</Text>
+              <Text style={{ width: 80, textAlign: "center", fontFamily: "MateSC-Regular" }}>ACCIONES</Text>
+            </View>
+
+            {mentions.length === 0 ? (
+              <View style={{ padding: 12 }}>
+                <Text style={{ fontFamily: "CrimsonText-Regular", color: Colors.black }}>No hay menciones agregadas.</Text>
+              </View>
+            ) : (
+              mentions.map((m) => (
+                <View
+                  key={m.id}
+                  style={{ flexDirection: "row", padding: 8, alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#F0E6DB" }}
+                >
+                  <Text style={{ flex: 2, fontFamily: "CrimsonText-Regular" }}>{m.name}</Text>
+                  <Text style={{ flex: 2, fontFamily: "CrimsonText-Regular", color: "#2B6CB0" }}>{m.link}</Text>
+                  <Text style={{ flex: 3, fontFamily: "CrimsonText-Regular" }}>{m.description}</Text>
+                  <View style={{ width: 80, alignItems: "center" }}>
+                    <TouchableOpacity
+                      onPress={() => setMentions((prev) => prev.filter((x) => x.id !== m.id))}
+                      style={{ padding: 6, backgroundColor: "#F3D6C1", borderRadius: 6 }}
+                    >
+                      <Text style={{ fontFamily: "CrimsonText-Regular" }}>Eliminar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
         </View>
+
 
         {/* Guardar */}
         <View style={{ marginTop: 12 }}>
@@ -547,6 +698,59 @@ export default function NewPiece() {
           />
         </View>
       </ScrollView>
+
+      <SimplePickerModal
+        visible={shelfPickerOpen}
+        title="Seleccionar estantería"
+        items={shelfItems}
+        selectedValue={shelfIdFromCode ?? null}
+        onSelect={(value) => {
+          const selectedShelf = shelfs.find((s) => s.id === Number(value));
+          if (selectedShelf) {
+            setShelfCode(String(selectedShelf.code));
+          }
+          setShelfPickerOpen(false);
+        }}
+        onClose={() => setShelfPickerOpen(false)}
+      />
+
+      <SimplePickerModal
+        visible={archPickerOpen}
+        title="Seleccionar arqueólogo"
+        items={archItems}
+        selectedValue={archaeologistId ?? null}
+        onSelect={(value) => {
+          setArchaeologistId(Number(value));
+          setArchPickerOpen(false);
+        }}
+        onClose={() => setArchPickerOpen(false)}
+      />
+
+      {/* Modal Colección */}
+      <SimplePickerModal
+        visible={collPickerOpen}
+        title="Seleccionar colección"
+        items={collItems}
+        selectedValue={collectionId ?? null}
+        onSelect={(value) => {
+          setCollectionId(Number(value));
+          setCollPickerOpen(false);
+        }}
+        onClose={() => setCollPickerOpen(false)}
+      />
+
+      {/* Modal Clasificador Interno */}
+      <SimplePickerModal
+        visible={intClsPickerOpen}
+        title="Seleccionar clasificador interno"
+        items={intClsItems}
+        selectedValue={internalClassifierId ?? null}
+        onSelect={(value) => {
+          setInternalClassifierId(Number(value));
+          setIntClsPickerOpen(false);
+        }}
+        onClose={() => setIntClsPickerOpen(false)}
+      />
     </View>
   );
 }

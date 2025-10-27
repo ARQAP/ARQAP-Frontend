@@ -8,7 +8,7 @@ export type InternalClassifier = {
 
 export const InternalClassifierRepository = {
   getAll: async () => {
-    const { data } = await apiClient.get("/internalClassifiers"); // protegida
+    const { data } = await apiClient.get("/internalClassifiers/"); // protegida
     return data as InternalClassifier[];
   },
 
