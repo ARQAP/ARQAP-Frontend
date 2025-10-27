@@ -16,7 +16,7 @@ export type INPLClassifierDTO = {
 
 export const INPLRepository = {
   getAll: async (preload: boolean = true) => {
-    const { data } = await apiClient.get(`/inplClassifiers`, {
+    const { data } = await apiClient.get(`/inplClassifiers/`, {
       params: { preload },
     });
     return data as INPLClassifierDTO[];
@@ -27,12 +27,10 @@ export const INPLRepository = {
     return data as INPLClassifierDTO;
   },
 
-  create: async (files: File[]) => {
+  create: async (files: File[] | any[]) => {
     const form = new FormData();
     files.forEach((f) => form.append("fichas[]", f));
-    const { data } = await apiClient.post(`/inplClassifiers`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await apiClient.post(`/inplClassifiers/`, form);
     return data as INPLClassifierDTO;
   },
 
@@ -46,19 +44,20 @@ export const INPLRepository = {
     return data as INPLClassifierDTO;
   },
 
-  addFichas: async (classifierId: number, files: File[]) => {
+  addFichas: async (classifierId: number, files: File[] | any[]) => {
     const form = new FormData();
     files.forEach((f) => form.append("fichas[]", f));
     const { data } = await apiClient.post(
-      `/inplClassifiers/${classifierId}/fichas`,
-      form,
-      { headers: { "Content-Type": "multipart/form-data" } }
+      `/inplClassifiers/${classifierId}/fichas/`,
+      form
     );
     return data as INPLClassifierDTO;
   },
 
   listFichasByClassifier: async (classifierId: number) => {
-    const { data } = await apiClient.get(`/inplClassifiers/${classifierId}/fichas`);
+    const { data } = await apiClient.get(
+      `/inplClassifiers/${classifierId}/fichas`
+    );
     return data as INPLFichaDTO[];
   },
 

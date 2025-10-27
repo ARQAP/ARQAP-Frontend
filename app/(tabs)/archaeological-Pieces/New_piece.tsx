@@ -18,6 +18,7 @@ import Colors from "../../../constants/Colors";
 
 import { useRouter } from "expo-router";
 import { ArtefactRepository } from "@/repositories/artefactRepository";
+import { INPLRepository } from "@/repositories/inplClassifierRepository";
 import {
   useCreateArtefact,
   useUploadArtefactHistoricalRecord,
@@ -102,6 +103,14 @@ export default function NewPiece() {
     name: string;
     type: string;
   } | null>(null);
+
+  // -------- uploads INPL ----------
+  const [inplDocName, setInplDocName] = useState<string | null>(null);
+
+  const inplFilesRef = useRef<File[] | null>(null); // web - múltiples
+  const nativeINPLRefs = useRef<
+    { uri: string; name: string; type: string }[] | null
+  >(null); // nativo - múltiples
 
   // -------- hooks de mutación ----------
   const createArtefact = useCreateArtefact();
@@ -294,6 +303,73 @@ export default function NewPiece() {
     }
   }
 
+  async function pickFileINPL() {
+    try {
+      if (Platform.OS === "web") {
+        // ⬅️ ahora dispara el input exclusivo de INPL
+        (document.getElementById("file-inpl") as HTMLInputElement)?.click();
+        return;
+      }
+      let DocumentPicker: any;
+      try {
+        DocumentPicker = await import("expo-document-picker");
+      } catch {
+        Alert.alert(
+          "Falta dependencia",
+          "Instalá expo-document-picker para elegir archivos."
+        );
+        return;
+      }
+
+      // ⬅️ permite múltiples en nativo
+      const res = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      // En SDKs recientes viene en res.assets, en otros puede venir como array
+      const assets = (res?.assets ?? (Array.isArray(res) ? res : [])) as any[];
+
+      if (assets?.length) {
+        nativeINPLRefs.current = assets.map((a) => ({
+          uri: a.uri,
+          name: a.name || "inpl.pdf",
+          type:
+            a.mimeType ||
+            (a.name?.toLowerCase().endsWith(".pdf")
+              ? "application/pdf"
+              : "image/jpeg"),
+        }));
+        setInplDocName(
+          assets.length === 1
+            ? assets[0].name || "archivo"
+            : `${assets.length} archivos`
+        );
+      }
+    } catch (e) {
+      console.warn("pickFileINPL error", e);
+    }
+  }
+
+  function onWebInplChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const files: File[] = Array.from(input?.files ?? []);
+    if (!files.length) {
+      input.value = "";
+      return;
+    }
+
+    inplFilesRef.current = files;
+    setInplDocName(
+      files.length === 1
+        ? files[0].name
+        : `${files.length} archivos seleccionados`
+    );
+
+    // permite volver a elegir los mismos archivos
+    input.value = "";
+  }
+
   function onWebDocChange(e: any) {
     const file: File | undefined = e?.target?.files?.[0];
     if (!file) return;
@@ -309,8 +385,8 @@ export default function NewPiece() {
         return;
       }
 
+      // 1) asegurar ubicación física como ya lo hacías ...
       let ensuredPhysicalLocationId = physicalLocationId ?? null;
-
       if (!ensuredPhysicalLocationId) {
         if (!shelfIdFromCode) {
           Alert.alert(
@@ -319,18 +395,53 @@ export default function NewPiece() {
           );
           return;
         }
-        const levelNumber = levels[selectedLevel] as 1 | 2 | 3 | 4; // 1..4
-        const columnLetter = columns[selectedColumn] as "A" | "B" | "C" | "D"; // "A".."D"
-
+        const levelNumber = levels[selectedLevel] as 1 | 2 | 3 | 4;
+        const columnLetter = columns[selectedColumn] as "A" | "B" | "C" | "D";
         const createdLoc = await createPhysicalLocation.mutateAsync({
           level: levelNumber,
           column: columnLetter,
           shelfId: shelfIdFromCode,
         });
-
         ensuredPhysicalLocationId = createdLoc.id!;
       }
 
+      // 2) si hay archivos INPL seleccionados, crear el INPL Classifier ya mismo
+      let inplClassifierIdToUse: number | null = null;
+      try {
+        if (Platform.OS === "web" && inplFilesRef.current?.length) {
+          const createdINPL = await INPLRepository.create(
+            inplFilesRef.current as any
+          );
+          inplClassifierIdToUse = createdINPL.id;
+        } else if (Platform.OS !== "web" && nativeINPLRefs.current?.length) {
+          const createdINPL = await INPLRepository.create(
+            nativeINPLRefs.current as any
+          );
+          inplClassifierIdToUse = createdINPL.id;
+        }
+      } catch (err) {
+        console.warn(
+          "[INPL] no se pudo crear el classifier, sigo sin INPL:",
+          err
+        );
+      }
+
+      // web
+      if (Platform.OS === "web" && inplFilesRef.current?.length) {
+        const createdINPL = await INPLRepository.create(inplFilesRef.current);
+        inplClassifierIdToUse = createdINPL.id;
+      }
+
+      // nativo
+      if (Platform.OS !== "web" && nativeINPLRefs.current?.length) {
+        // RN FormData acepta objetos { uri, name, type }, el repo hace append("fichas[]", f)
+        const createdINPL = await INPLRepository.create(
+          nativeINPLRefs.current as any
+        );
+        inplClassifierIdToUse = createdINPL.id;
+      }
+
+      // 3) crear la pieza con el inplClassifierId si lo tenemos
       const payload = {
         name: name.trim(),
         material: material.trim() || null,
@@ -344,11 +455,12 @@ export default function NewPiece() {
         physicalLocationId: ensuredPhysicalLocationId ?? null,
 
         archaeologicalSiteId,
-        inplClassifierId: null,
+        inplClassifierId: inplClassifierIdToUse, // ⬅️ ahora sí
       };
 
       const created = await createArtefact.mutateAsync(payload);
 
+      // 4) subir imagen y ficha histórica (igual que antes)
       if (Platform.OS === "web" && pictureFileRef.current) {
         await uploadPicture.mutateAsync({
           id: created.id!,
@@ -377,6 +489,7 @@ export default function NewPiece() {
         );
       }
 
+      // 5) menciones (sin cambios)
       const norm = (s: string) =>
         !s ? null : /^https?:\/\//i.test(s) ? s : `https://${s}`;
 
@@ -401,7 +514,7 @@ export default function NewPiece() {
       }
 
       Alert.alert("OK", "Pieza creada correctamente.");
-      router.back();
+      router.push("/(tabs)/archaeological-Pieces/View_pieces");
     } catch (e: any) {
       console.warn(e);
       Alert.alert("Error", e?.message ?? "No se pudo crear la pieza.");
@@ -594,6 +707,32 @@ export default function NewPiece() {
               }
               onPress={() => setIntClsPickerOpen(true)} // abrir modal reutilizable
             />
+            <TouchableOpacity
+              style={{
+                paddingVertical: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+              onPress={() => {
+                router.push(
+                  "/(tabs)/archaeological-Pieces/New_internal-classifier"
+                );
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Crear nuevo Clasificador Interno"
+            >
+              <Text
+                style={{
+                  color: "#A68B5B",
+                  marginRight: 6,
+                  fontFamily: "MateSC-Regular",
+                }}
+              >
+                Crear nuevo Clasificador Interno
+              </Text>
+              <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+            </TouchableOpacity>
           </View>
 
           {/* descripción */}
@@ -694,7 +833,22 @@ export default function NewPiece() {
               <Text
                 style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
               >
-                SUBIR FICHA
+                SUBIR FICHA HISTORICA
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={pickFileINPL}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                backgroundColor: Colors.lightBrown,
+                borderRadius: 6,
+              }}
+            >
+              <Text
+                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+              >
+                SUBIR FICHA INPL
               </Text>
             </TouchableOpacity>
 
@@ -714,6 +868,14 @@ export default function NewPiece() {
                   style={{ display: "none" }}
                   onChange={onWebDocChange}
                 />
+                <input
+                  id="file-inpl"
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  style={{ display: "none" }}
+                  onChange={onWebInplChange}
+                />
               </>
             ) : null}
           </View>
@@ -726,6 +888,18 @@ export default function NewPiece() {
               }}
             >
               Archivo: {docName}
+            </Text>
+          ) : null}
+
+          {inplDocName ? (
+            <Text
+              style={{
+                marginTop: 4,
+                fontFamily: "CrimsonText-Regular",
+                color: Colors.black,
+              }}
+            >
+              INPL: {inplDocName}
             </Text>
           ) : null}
         </View>
