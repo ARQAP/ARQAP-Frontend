@@ -26,7 +26,7 @@ const Card_archaeologist: React.FC<CardArchaeologistProps> = ({ id, nombre, apel
     setMenuVisible(false);
     if (isDisabled || !id) return;
     router.push({
-      pathname: "/(tabs)/Edit_archaeologist",
+      pathname: "/(tabs)/archaeologist/Edit_archaeologist",
       params: { id: String(id), nombre, apellido },
     });
   };

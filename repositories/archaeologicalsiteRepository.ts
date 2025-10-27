@@ -1,34 +1,33 @@
-import axios from 'axios';
-const API_URL = 'http://localhost:8080';
+import { apiClient } from "@/lib/api";
+import { Region } from './regionRepository';
 
-// Tipos/Modelos TypeScript para las entidades usadas aquí
 export type ArchaeologicalSite = {
     id?: number;
-    name: string;
-    description: string;
-    location: string;
-    regionId?: number;
-    region?: any; // ajustar tipo si se dispone del modelo Region
+    Name: string;
+    Description: string;
+    Location: string;
+    regionId: Region['id'];
+    region: Region;
 };
 
 export const ArchaeologicalSiteRepository = {
-    getArchaeologicalSites: async () => {
-        const response = await axios.get(`${API_URL}/archaeologicalSites`);
+    getAll: async () => {
+        const response = await apiClient.get(`/archaeologicalSites/`);
         return response.data;
     },
 
-    createArchaeologicalSite: async (newSite: ArchaeologicalSite) => {
-        const response = await axios.post(`${API_URL}/archaeologicalSites`, newSite);
+    create: async (newSite: ArchaeologicalSite) => {
+        const response = await apiClient.post(`/archaeologicalSites/`, newSite);
         return response.data;
     },
 
-    updateArchaeologicalSite: async (id: number, updatedSite: ArchaeologicalSite) => {
-        const response = await axios.put(`${API_URL}/archaeologicalSites/${id}`, updatedSite);
+    update: async (id: number, updatedSite: ArchaeologicalSite) => {
+        const response = await apiClient.put(`/archaeologicalSites/${id}`, updatedSite);
         return response.data;
     },
 
-    deleteArchaeologicalSite: async (id: number) => {
-        const response = await axios.delete(`${API_URL}/archaeologicalSites/${id}`);
+    delete: async (id: number) => {
+        const response = await apiClient.delete(`/archaeologicalSites/${id}`);
         return response.data;
     }
 };

@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator, // Importado para el estado de carga
   ScrollView,
   Text,
   TextInput,
@@ -11,65 +12,25 @@ import {
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 import ArchaeologicalSite from "./Archaeological_Site";
+// Importar el hook de lectura de la API y el tipo
+import { useAllArchaeologicalSites } from "../../../hooks/useArchaeologicalsite";
+import { ArchaeologicalSite as SiteType } from "../../../repositories/archaeologicalsiteRepository";
+
 
 export default function Location() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const allSites = [
-    {
-      name: "Cueva De Las Manos",
-      province: "Provincia de Santa Cruz",
-      region: "La Patagonia",
-      country: "Argentina",
-      antiquity: "Más de 9,000 años",
-      description:
-        "Sitio arqueológico con pinturas rupestres, famoso por siluetas de manos y escenas de caza",
-    },
-    {
-      name: "Cueva Pucará de Tilcara",
-      province: "Provincia de Jujuy",
-      region: "Norte Argentino",
-      country: "Argentina",
-      antiquity: "Más de 1,000 años",
-      description:
-        "Fortaleza precolombina construida por los pueblos originarios",
-    },
-    {
-      name: "Cueva de Altamira",
-      province: "Provincia de Cantabria",
-      region: "Norte de España",
-      country: "España",
-      antiquity: "Más de 36,000 años",
-      description: "Famous por sus pinturas rupestres paleolíticas",
-    },
-    {
-      name: "Macchu Picchu",
-      province: "Región de Cusco",
-      region: "Sierra Sur",
-      country: "Perú",
-      antiquity: "Más de 500 años",
-      description: "Ciudadela inca en los Andes peruanos",
-    },
-    {
-      name: "Quilmes",
-      province: "Provincia de Tucumán",
-      region: "Noroeste Argentino",
-      country: "Argentina",
-      antiquity: "Más de 1,400 años",
-      description: "Ruinas de la ciudad fortificada más grande de Argentina",
-    },
-    {
-      name: "Cueva del Milodón",
-      province: "Región de Magallanes",
-      region: "Patagonia Chilena",
-      country: "Chile",
-      antiquity: "Más de 10,000 años",
-      description: "Sitio paleontológico con restos de megafauna extinta",
-    },
-  ];
+  // --- 1. CONEXIÓN CON EL HOOK DE LA API ---
+  const { 
+    data: allSites = [], 
+    isLoading, 
+    isError, 
+    error 
+  } = useAllArchaeologicalSites();
 
+  // Mantenemos la lógica de búsqueda y filtros con los datos de la API
   const handleSearchChange = (text: string) => {
     setSearchTerm(text);
     setShowSuggestions(text.length > 0);
@@ -85,21 +46,44 @@ export default function Location() {
     setShowSuggestions(false);
   };
 
+  // La lógica de filtro usa el campo 'name' del tipo SiteType
   const suggestions =
     searchTerm.length > 0
       ? allSites
-          .filter((site) =>
-            site.name.toLowerCase().includes(searchTerm.toLowerCase())
+          .filter((site: SiteType) =>
+            site.Name.toLowerCase().includes(searchTerm.toLowerCase())
           )
           .slice(0, 5)
       : [];
 
   const filteredSites =
     searchTerm.length > 0
-      ? allSites.filter((site) =>
-          site.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ? allSites.filter((site: SiteType) =>
+          site.Name.toLowerCase().includes(searchTerm.toLowerCase())
         )
       : allSites;
+  
+  // --- 2. MANEJO DE ESTADOS DE CARGA Y ERROR ---
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-[#F3E9DD] items-center justify-center">
+        <ActivityIndicator size="large" color="#6B705C" />
+        <Text style={{ fontFamily: "CrimsonText-Regular", marginTop: 10 }}>Cargando sitios arqueológicos...</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View className="flex-1 bg-[#F3E9DD] items-center justify-center p-5">
+        <Text style={{ fontFamily: "MateSC-Regular", color: 'red', textAlign: 'center' }}>
+          Error al cargar los sitios: {error?.message}.
+        </Text>
+      </View>
+    );
+  }
+  
+  const showNoSitesMessage = !isLoading && !isError && filteredSites.length === 0 && searchTerm.length === 0;
 
   return (
     <View className="flex-1 bg-[#F3E9DD]">
@@ -113,6 +97,7 @@ export default function Location() {
           textStyle={{ fontFamily: "MateSC-Regular" }}
         />
 
+        {/* ... (Bloque de Búsqueda y TextInput) ... */}
         <View className="mb-4 relative">
           <Text
             className="text-[16px] font-bold mb-2 text-[#3d2c13]"
@@ -152,30 +137,33 @@ export default function Location() {
           <View className="w-full max-w-full mx-auto self-center">
             {filteredSites.length > 0 ? (
               <View className="flex-row flex-wrap justify-center w-full">
-                {filteredSites.map((site, index) => (
-                  <React.Fragment key={index}>
+                {/* --- 3. MAPEANDO DATOS REALES DEL API AL COMPONENTE CARD --- */}
+                {/* SOLUCIÓN: Pasamos el objeto 'region' completo, que es lo que espera la interfaz */}
+                {filteredSites.map((site: SiteType) => (
+                  <React.Fragment key={site.id}>
                     <ArchaeologicalSite
-                      name={site.name}
-                      province={site.province}
-                      region={site.region}
-                      country={site.country}
-                      antiquity={site.antiquity}
-                      description={site.description}
+                      // Las props coinciden exactamente con ArchaeologicalSiteProps
+                      id={site.id!} 
+                      Name={site.Name}
+                      Description={site.Description}
+                      Location={site.Location}
+                      regionId={site.regionId} // Propiedad necesaria de la interfaz
+                      region={site.region}     // Propiedad necesaria de la interfaz
                     />
-                    {index < filteredSites.length - 1 && (
-                      <View className="w-12" />
-                    )}
+                    <View className="w-12" /> 
                   </React.Fragment>
                 ))}
               </View>
-            ) : searchTerm.length > 0 ? (
+            ) : searchTerm.length > 0 || showNoSitesMessage ? (
               <View className="items-center justify-center py-8">
                 <Text
                   className="text-[18px] text-[#A68B5B] text-center"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                 >
-                  No se encontraron sitios arqueológicos que coincidan con "
-                  {searchTerm}"
+                  {showNoSitesMessage
+                    ? "No hay sitios arqueológicos registrados aún."
+                    : `No se encontraron sitios arqueológicos que coincidan con "${searchTerm}"`
+                  }
                 </Text>
                 <Text
                   className="text-[14px] text-[#A68B5B] text-center mt-2"
@@ -189,6 +177,7 @@ export default function Location() {
         </ScrollView>
       </View>
 
+      {/* --- Bloque de Sugerencias (Uso de datos anidados) --- */}
       {showSuggestions && suggestions.length > 0 && (
         <View
           className="absolute bg-white border-2 border-[#A67C52] rounded-lg shadow-lg max-h-[200px]"
@@ -203,23 +192,24 @@ export default function Location() {
           }}
         >
           <ScrollView nestedScrollEnabled>
-            {suggestions.map((site, index) => (
+            {suggestions.map((site: SiteType, index: number) => (
               <TouchableOpacity
-                key={index}
+                key={site.id || index}
                 className="p-3 border-b border-[#E2D1B2]"
-                onPress={() => handleSuggestionSelect(site.name)}
+                onPress={() => handleSuggestionSelect(site.Name)}
               >
                 <Text
                   className="text-[16px] text-[#3d2c13]"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                 >
-                  {site.name}
+                  {site.Name}
                 </Text>
                 <Text
                   className="text-[12px] text-[#A68B5B] mt-1"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                 >
-                  {site.province}, {site.country}
+                  {/* Muestra la ubicación y el nombre de la región */}
+                  {site.Location}, {site.region.name}
                 </Text>
               </TouchableOpacity>
             ))}
