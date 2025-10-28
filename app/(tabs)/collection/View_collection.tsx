@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
+    Platform,
     Pressable,
     ScrollView,
     Text,
@@ -12,37 +14,7 @@ import {
     View,
 } from "react-native";
 import Navbar from "../Navbar";
-
-interface Collection {
-    id: string;
-    name: string;
-    description: string;
-    archaeologist: string;
-    discoveryDate: string;
-    site: string;
-}
-
-// Datos de ejemplo - TODO: Reemplazar con datos reales de la API
-const mockCollections: Collection[] = [
-    {
-        id: "1",
-        name: "Pucará de tilcara",
-        description:
-            "Sitio arqueológico preincaico en la Quebrada de Humahuaca, con ruinas de una antigua fortaleza.",
-        archaeologist: "Juan Bautista Ambrosetti",
-        discoveryDate: "01/2017",
-        site: "Cueva de las Manos",
-    },
-    {
-        id: "2",
-        name: "Pucará de tilcara",
-        description:
-            "Sitio arqueológico preincaico en la Quebrada de Humahuaca, con ruinas de una antigua fortaleza.",
-        archaeologist: "Juan Bautista Ambrosetti",
-        discoveryDate: "01/2017",
-        site: "Cueva de las Manos",
-    },
-];
+import { useCollections, useDeleteCollection } from "../../../hooks/useCollections";
 
 export default function ViewCollection() {
     const [fontsLoaded] = useFonts({
@@ -52,31 +24,78 @@ export default function ViewCollection() {
 
     const router = useRouter();
     const [searchText, setSearchText] = useState("");
-    const [collections] = useState<Collection[]>(mockCollections);
     const [menuVisible, setMenuVisible] = useState<string | null>(null);
+    
+    // Hooks de react-query
+    const { data: collections = [], isLoading, isError, error } = useCollections();
+    const deleteMutation = useDeleteCollection();
 
     const filteredCollections = collections.filter((collection) =>
         collection.name.toLowerCase().includes(searchText.toLowerCase())
     );
 
-    const handleEdit = (id: string) => {
+    const handleEdit = (id: number) => {
         setMenuVisible(null);
         router.push({
             pathname: "/(tabs)/collection/Edit_collection",
-            params: { id },
+            params: { id: String(id) },
         });
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (id: number) => {
         setMenuVisible(null);
-        // TODO: Lógica de eliminación
-        console.log("Eliminar colección:", id);
+        
+        const collection = collections.find(c => c.id === id);
+        const collectionName = collection?.name || "esta colección";
+
+        const doDelete = () => {
+            deleteMutation.mutate(id, {
+                onSuccess: () => {
+                    Alert.alert("Éxito", "Colección eliminada correctamente.");
+                },
+                onError: (error) => {
+                    const errorMessage = (error as Error).message || "Error al eliminar la colección.";
+                    Alert.alert("Error", errorMessage);
+                },
+            });
+        };
+
+        if (Platform.OS === "web") {
+            const confirmed = window.confirm(
+                `¿Eliminar ${collectionName}? Esta acción es irreversible.`
+            );
+            if (confirmed) doDelete();
+            return;
+        }
+
+        Alert.alert(
+            "Eliminar",
+            `¿Eliminar ${collectionName}? Esta acción es irreversible.`,
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Eliminar", style: "destructive", onPress: doDelete },
+            ],
+            { cancelable: true }
+        );
     };
 
-    if (!fontsLoaded) {
+    if (!fontsLoaded || isLoading) {
         return (
             <View className="flex-1 justify-center items-center bg-[#F3E9DD]">
                 <ActivityIndicator size="large" color="#8B5E3C" />
+            </View>
+        );
+    }
+
+    if (isError) {
+        return (
+            <View className="flex-1 bg-[#F3E9DD] justify-center items-center px-4">
+                <Text style={{ fontFamily: "MateSC-Regular", color: 'red', marginBottom: 8 }}>
+                    Error al cargar las colecciones
+                </Text>
+                <Text style={{ fontFamily: "CrimsonText-Regular", color: '#666' }}>
+                    {(error as Error)?.message}
+                </Text>
             </View>
         );
     }
@@ -133,12 +152,10 @@ export default function ViewCollection() {
                         className="text-[#8B5E3C] text-base"
                         style={{ fontFamily: "MateSC-Regular" }}
                     >
-                        {filteredCollections.length} Colecciones Arqueológicas
-                        encontradas
+                        {filteredCollections.length} Colecciones Arqueológicas encontradas
                     </Text>
                 </View>
 
-                {/* Lista de colecciones */}
                 <Pressable
                     className="px-5 mt-4 pb-8"
                     onPress={() => menuVisible && setMenuVisible(null)}
@@ -161,9 +178,9 @@ export default function ViewCollection() {
                                     className="p-2"
                                     onPress={() =>
                                         setMenuVisible(
-                                            menuVisible === collection.id
+                                            menuVisible === String(collection.id)
                                                 ? null
-                                                : collection.id
+                                                : String(collection.id)
                                         )
                                     }
                                 >
@@ -175,20 +192,14 @@ export default function ViewCollection() {
                                 </TouchableOpacity>
                             </View>
 
-                            {menuVisible === collection.id && (
+                            {menuVisible === String(collection.id) && (
                                 <View
                                     className="absolute right-4 top-12 bg-white rounded-lg shadow-lg w-40"
                                     style={{ elevation: 10, zIndex: 1000 }}
                                 >
                                     <TouchableOpacity
                                         className="flex-row items-center px-4 py-3 border-b border-gray-200"
-                                        onPress={() => {
-                                            console.log(
-                                                "Edit clicked for ID:",
-                                                collection.id
-                                            );
-                                            handleEdit(collection.id);
-                                        }}
+                                        onPress={() => handleEdit(collection.id!)}
                                     >
                                         <FontAwesome
                                             name="edit"
@@ -208,13 +219,7 @@ export default function ViewCollection() {
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         className="flex-row items-center px-4 py-3"
-                                        onPress={() => {
-                                            console.log(
-                                                "Delete clicked for ID:",
-                                                collection.id
-                                            );
-                                            handleDelete(collection.id);
-                                        }}
+                                        onPress={() => handleDelete(collection.id!)}
                                     >
                                         <FontAwesome
                                             name="trash"
@@ -243,91 +248,39 @@ export default function ViewCollection() {
                                         fontFamily: "CrimsonText-Regular",
                                     }}
                                 >
-                                    {collection.description}
+                                    {collection.description || "Sin descripción"}
                                 </Text>
                             </View>
 
-                            {/* Arqueólogo */}
-                            <View className="bg-[#8B5E3C] rounded-lg p-3 mb-2 flex-row items-center">
-                                <FontAwesome
-                                    name="user"
-                                    size={18}
-                                    color="#FFF"
-                                    style={{ marginRight: 10 }}
-                                />
-                                <View className="flex-1">
-                                    <Text
-                                        className="text-white text-xs opacity-80"
-                                        style={{
-                                            fontFamily: "CrimsonText-Regular",
-                                        }}
-                                    >
-                                        Arqueólogos
-                                    </Text>
-                                    <Text
-                                        className="text-white text-base"
-                                        style={{
-                                            fontFamily: "CrimsonText-Regular",
-                                        }}
-                                    >
-                                        {collection.archaeologist}
-                                    </Text>
+                            {/* Año */}
+                            {collection.year && (
+                                <View className="bg-[#6B705C] rounded-lg p-3 mb-2 flex-row items-center">
+                                    <FontAwesome
+                                        name="calendar"
+                                        size={18}
+                                        color="#FFF"
+                                        style={{ marginRight: 10 }}
+                                    />
+                                    <View className="flex-1">
+                                        <Text
+                                            className="text-white text-xs opacity-80"
+                                            style={{
+                                                fontFamily: "CrimsonText-Regular",
+                                            }}
+                                        >
+                                            Año
+                                        </Text>
+                                        <Text
+                                            className="text-white text-base"
+                                            style={{
+                                                fontFamily: "CrimsonText-Regular",
+                                            }}
+                                        >
+                                            {collection.year}
+                                        </Text>
+                                    </View>
                                 </View>
-                            </View>
-
-                            <View className="bg-[#6B705C] rounded-lg p-3 mb-2 flex-row items-center">
-                                <FontAwesome
-                                    name="calendar"
-                                    size={18}
-                                    color="#FFF"
-                                    style={{ marginRight: 10 }}
-                                />
-                                <View className="flex-1">
-                                    <Text
-                                        className="text-white text-xs opacity-80"
-                                        style={{
-                                            fontFamily: "CrimsonText-Regular",
-                                        }}
-                                    >
-                                        Mes y Año de descubrimiento
-                                    </Text>
-                                    <Text
-                                        className="text-white text-base"
-                                        style={{
-                                            fontFamily: "CrimsonText-Regular",
-                                        }}
-                                    >
-                                        {collection.discoveryDate}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <View className="bg-[#D9C6A5] border-2 border-[#8B5E3C] rounded-lg p-3 flex-row items-center">
-                                <FontAwesome
-                                    name="map-marker"
-                                    size={18}
-                                    color="#8B5E3C"
-                                    style={{ marginRight: 10 }}
-                                />
-                                <View className="flex-1">
-                                    <Text
-                                        className="text-[#8B5E3C] text-xs opacity-80"
-                                        style={{
-                                            fontFamily: "CrimsonText-Regular",
-                                        }}
-                                    >
-                                        Sitio Arqueológico
-                                    </Text>
-                                    <Text
-                                        className="text-[#8B5E3C] text-base"
-                                        style={{
-                                            fontFamily: "CrimsonText-Regular",
-                                        }}
-                                    >
-                                        {collection.site}
-                                    </Text>
-                                </View>
-                            </View>
+                            )}
                         </Pressable>
                     ))}
                 </Pressable>

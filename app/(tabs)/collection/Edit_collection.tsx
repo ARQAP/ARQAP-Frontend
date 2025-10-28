@@ -10,54 +10,62 @@ import {
 } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
+import { useUpdateCollection, useCollections } from "../../../hooks/useCollections";
 
 export default function EditCollection() {
     const router = useRouter();
-    const { id } = useLocalSearchParams<{ id: string }>();
-
+    const params = useLocalSearchParams();
+    const id = Number(Array.isArray(params.id) ? params.id[0] : params.id);
+    
     const [nombre, setNombre] = useState("");
     const [descripcion, setDescripcion] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [year, setYear] = useState("");
+    
+    const { data: collections = [], isLoading } = useCollections();
+    const updateMutation = useUpdateCollection();
 
-    // Cargar datos de la colección al montar el componente
+    // Cargar datos de la colección
     useEffect(() => {
-        // TODO: Llamada a la API para obtener los datos
-        // Ejemplo con datos mock:
-        const loadCollectionData = async () => {
-            try {
-                // const response = await fetchCollectionById(id);
-                // Datos de ejemplo:
-                setNombre("Colección Ambrosetti en Tiwanaku, Enero de 2005");
-                setDescripcion("Descripcion...");
-                setIsLoading(false);
-            } catch (error) {
-                Alert.alert("Error", "No se pudo cargar la colección");
-                setIsLoading(false);
-            }
-        };
-
-        if (id) {
-            loadCollectionData();
+        const collection = collections.find(c => c.id === id);
+        if (collection) {
+            setNombre(collection.name);
+            setDescripcion(collection.description || "");
+            setYear(collection.year ? String(collection.year) : "");
         }
-    }, [id]);
+    }, [collections, id]);
 
     const handleEditar = () => {
-        if (!nombre.trim() || !descripcion.trim()) {
-            Alert.alert("Error", "Por favor complete todos los campos.");
+        if (!nombre.trim()) {
+            Alert.alert("Error", "El nombre es obligatorio.");
             return;
         }
 
-        setIsEditing(true);
+        const yearNum = year.trim() ? parseInt(year) : undefined;
+        if (year.trim() && (isNaN(yearNum!) || yearNum! < 1000 || yearNum! > 9999)) {
+            Alert.alert("Error", "El año debe ser un número válido de 4 dígitos.");
+            return;
+        }
 
-        setTimeout(() => {
-            Alert.alert(
-                "Éxito",
-                "Colección arqueológica actualizada correctamente."
-            );
-            setIsEditing(false);
-            router.back();
-        }, 1000);
+        updateMutation.mutate(
+            {
+                id,
+                payload: {
+                    name: nombre.trim(),
+                    description: descripcion.trim() || undefined,
+                    year: yearNum,
+                },
+            },
+            {
+                onSuccess: () => {
+                    Alert.alert("Éxito", "Colección actualizada correctamente.");
+                    router.back();
+                },
+                onError: (error) => {
+                    const errorMessage = (error as Error).message || "Error al actualizar la colección.";
+                    Alert.alert("Error", errorMessage);
+                },
+            }
+        );
     };
 
     const handleCancelar = () => {
@@ -93,7 +101,7 @@ export default function EditCollection() {
                             className="text-[16px] font-bold mb-2 text-[#3d2c13]"
                             style={{ fontFamily: "MateSC-Regular" }}
                         >
-                            Nombre
+                            Nombre *
                         </Text>
                         <TextInput
                             className="border-2 border-[#8B5E3C] rounded-lg p-3 bg-white text-[16px]"
@@ -108,7 +116,7 @@ export default function EditCollection() {
                         />
                     </View>
 
-                    <View className="mb-6">
+                    <View className="mb-4">
                         <Text
                             className="text-[16px] font-bold mb-2 text-[#3d2c13]"
                             style={{ fontFamily: "MateSC-Regular" }}
@@ -119,7 +127,7 @@ export default function EditCollection() {
                             className="border-2 border-[#8B5E3C] rounded-lg p-3 bg-white text-[16px]"
                             style={{
                                 fontFamily: "CrimsonText-Regular",
-                                minHeight: 150,
+                                minHeight: 120,
                                 textAlignVertical: "top",
                             }}
                             placeholder="Descripción detallada de la colección"
@@ -128,14 +136,37 @@ export default function EditCollection() {
                             placeholderTextColor="#A68B5B"
                             selectionColor="#8B5E3C"
                             multiline
-                            numberOfLines={6}
+                            numberOfLines={5}
+                        />
+                    </View>
+
+                    <View className="mb-6">
+                        <Text
+                            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
+                            style={{ fontFamily: "MateSC-Regular" }}
+                        >
+                            Año
+                        </Text>
+                        <TextInput
+                            className="border-2 border-[#8B5E3C] rounded-lg p-3 bg-white text-[16px]"
+                            style={{
+                                fontFamily: "CrimsonText-Regular",
+                            }}
+                            placeholder="Ej: 2024"
+                            value={year}
+                            onChangeText={setYear}
+                            placeholderTextColor="#A68B5B"
+                            selectionColor="#8B5E3C"
+                            keyboardType="numeric"
+                            maxLength={4}
                         />
                     </View>
 
                     <Button
-                        title={isEditing ? "Editando..." : "EDITAR COLECCIÓN"}
+                        title={updateMutation.isPending ? "Guardando..." : "GUARDAR CAMBIOS"}
                         onPress={handleEditar}
-                        className="w-full mb-4 rounded-lg py-4 items-center bg-[#6B705C]"
+                        disabled={updateMutation.isPending}
+                        className={`w-full mb-4 rounded-lg py-4 items-center ${updateMutation.isPending ? 'bg-gray-400' : 'bg-[#6B705C]'}`}
                         textClassName="text-[16px] font-bold text-white"
                         textStyle={{ fontFamily: "MateSC-Regular" }}
                     />
