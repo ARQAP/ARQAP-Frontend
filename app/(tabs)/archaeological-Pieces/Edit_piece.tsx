@@ -19,6 +19,10 @@ import Colors from "../../../constants/Colors";
 import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 
+import {
+  INPLRepository,
+  INPLClassifierDTO,
+} from "@/repositories/inplClassifierRepository";
 import { useCollections } from "../../../hooks/useCollections";
 import { useArchaeologists } from "../../../hooks/useArchaeologist";
 import { useShelves } from "../../../hooks/useShelf";
@@ -48,6 +52,9 @@ type MentionUI = {
   link: string;
   description: string;
 };
+
+// Thumbnails seguros con blob:
+type InplThumb = { id: number; filename?: string; blobUrl: string };
 
 // Reemplazá tu helper por este:
 function getUpdatedId(updated: unknown, fallbackId: number): number {
@@ -88,6 +95,13 @@ export default function EditPiece() {
   const [shelfCode, setShelfCode] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<number | null>(2);
   const [selectedColumn, setSelectedColumn] = useState<number | null>(2);
+
+  // INPL
+  const [inplClassifierId, setInplClassifierId] = useState<number | null>(null);
+  const [inplThumbs, setInplThumbs] = useState<InplThumb[]>([]);
+  const inplAddInputRef = useRef<HTMLInputElement | null>(null);
+  const inplReplaceInputRef = useRef<HTMLInputElement | null>(null);
+  const [replaceTargetId, setReplaceTargetId] = useState<number | null>(null);
 
   // -------- menciones ----------
   const [mentionTitle, setMentionTitle] = useState("");
@@ -294,18 +308,43 @@ export default function EditPiece() {
     enabled: Number.isFinite(artefactId as number),
   });
 
-  // simple mock load cuando llega la data real del API
+  // -------- INPL: carga inicial y refresco de thumbnails --------
+  // Utilidad para revocar blob urls
+  function revokeAll(urls: string[]) {
+    urls.forEach((u) => {
+      try {
+        URL.revokeObjectURL(u);
+      } catch {}
+    });
+  }
+
+  // Refresca thumbs desde el clasificador
+  const refreshInplThumbs = async (clsId: number) => {
+    const fichas = await INPLRepository.listFichasByClassifier(clsId);
+    // revocar los anteriores
+    const prevUrls = inplThumbs.map((t) => t.blobUrl);
+    revokeAll(prevUrls);
+
+    const out: InplThumb[] = [];
+    for (const f of fichas) {
+      const blob = await INPLRepository.fetchFichaBlob(f.id);
+      const blobUrl = URL.createObjectURL(blob);
+      out.push({ id: f.id, filename: f.filename, blobUrl });
+    }
+    setInplThumbs(out);
+  };
+
+  // Cargar datos del artefacto y su INPL
   useEffect(() => {
     if (!data) return;
     const a = data as any;
-    console.log("Cargando artefacto para edición:", a);
+
+    // ----- Campos base del artefacto -----
     setName(a?.name ?? "");
     setMaterial(a?.material ?? "");
     setObservation(a?.observation ?? "");
     setDescription(a?.description ?? "");
     setAvailable(!!a?.available);
-
-    // clasificador/color: solo para UI de edición, si vinieran del backend ajustá aquí
     setClassifier("INAPL");
     setColor(a?.internalClassifier?.color ?? "");
 
@@ -330,7 +369,6 @@ export default function EditPiece() {
       a?.physicalLocation?.estanteria ??
       a?.shelf ??
       null;
-    console.log("shelfObj", shelfObj);
     const shelfCodeVal =
       typeof shelfObj === "object"
         ? (shelfObj?.id ?? shelfObj?.code)
@@ -367,7 +405,114 @@ export default function EditPiece() {
               ? 3
               : null;
     setSelectedColumn(colIndex);
+
+    // ----- INPL: detectar clasificador y armar thumbs -----
+    const clsId =
+      a?.inplClassifierId ??
+      a?.inplclassifierId ??
+      (typeof a?.inplClassifier === "number"
+        ? a.inplClassifier
+        : a?.inplClassifier?.id) ??
+      null;
+
+    setInplClassifierId(clsId ?? null);
+
+    let cancelled = false;
+    let createdUrls: string[] = [];
+
+    const loadThumbs = async () => {
+      if (!clsId) {
+        setInplThumbs([]);
+        return;
+      }
+      try {
+        const fichas = await INPLRepository.listFichasByClassifier(
+          Number(clsId)
+        );
+        const out: InplThumb[] = [];
+        for (const f of fichas) {
+          const blob = await INPLRepository.fetchFichaBlob(f.id);
+          const blobUrl = URL.createObjectURL(blob);
+          createdUrls.push(blobUrl);
+          out.push({ id: f.id, filename: f.filename, blobUrl });
+        }
+        if (!cancelled) setInplThumbs(out);
+      } catch {
+        if (!cancelled) setInplThumbs([]);
+      }
+    };
+
+    loadThumbs();
+
+    return () => {
+      cancelled = true;
+      revokeAll(createdUrls);
+    };
   }, [data]);
+
+  // -------- Handlers INPL (web) --------
+  async function handleDeleteInplFicha(fichaId: number) {
+    if (!inplClassifierId) return;
+    try {
+      await INPLRepository.deleteFicha(fichaId);
+      await refreshInplThumbs(inplClassifierId);
+    } catch (e) {
+      Alert.alert("Error", "No se pudo eliminar la ficha INPL.");
+    }
+  }
+
+  async function handleWebAddInplFiles(e: any) {
+    const files: File[] = Array.from(e?.target?.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    try {
+      let clsId = inplClassifierId;
+
+      // Si no hay clasificador: crearlo con las fichas
+      if (!clsId) {
+        const created = await INPLRepository.create(files); // <<-- tu método
+        clsId = Number((created as any)?.id);
+        if (!clsId) throw new Error("No se pudo crear el clasificador INPL.");
+
+        // Enlazar el artefacto con este clasificador
+        if (artefactId) {
+          await ArtefactRepository.update(artefactId, {
+            inplClassifierId: clsId,
+          });
+        }
+        setInplClassifierId(clsId);
+      } else {
+        // Ya existe: agregar fichas
+        await INPLRepository.addFichas(clsId, files);
+      }
+
+      // Refrescar thumbnails
+      await refreshInplThumbs(clsId!);
+    } catch (err) {
+      console.warn(err);
+      Alert.alert("Error", "No se pudieron cargar las fichas INPL.");
+    }
+  }
+
+  async function handleWebReplaceInplFile(e: any) {
+    const file: File | undefined = e?.target?.files?.[0];
+    e.target.value = "";
+    const fichaId = replaceTargetId;
+    setReplaceTargetId(null);
+    if (!file || !fichaId) return;
+
+    try {
+      await INPLRepository.replaceFicha(fichaId, file);
+      if (inplClassifierId) {
+        await refreshInplThumbs(inplClassifierId);
+      }
+    } catch (err) {
+      console.warn(err);
+      Alert.alert("Error", "No se pudo reemplazar la ficha INPL.");
+    }
+  }
+
   // -------- pickers / uploads ----------
   async function pickImage() {
     try {
@@ -422,6 +567,7 @@ export default function EditPiece() {
     const url = URL.createObjectURL(file);
     setPhotoUri(url);
     pictureFileRef.current = file;
+    e.target.value = "";
   }
 
   async function pickFile() {
@@ -469,6 +615,7 @@ export default function EditPiece() {
     setFileUri(url);
     setFileName(file.name || "archivo");
     recordFileRef.current = file;
+    e.target.value = "";
   }
 
   // -------- guardar ----------
@@ -530,7 +677,8 @@ export default function EditPiece() {
         archaeologistId: archaeologistId ?? null,
         physicalLocationId: finalPhysicalLocationId, // <- garantizado o null si no hay selección
         archaeologicalSiteId: null,
-        inplClassifierId: null,
+        // ⚠️ NO forzamos a null el INPL acá, se mantiene lo que ya tenga la pieza.
+        // inplClassifierId: null,
       };
 
       await ArtefactRepository.update(artefactId, payload);
@@ -1000,6 +1148,137 @@ export default function EditPiece() {
           ) : null}
         </View>
 
+        {/* INPL */}
+        <View
+          style={{
+            marginTop: 16,
+            backgroundColor: "#fff",
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "MateSC-Regular",
+              fontWeight: "700",
+              marginBottom: 8,
+              color: Colors.black,
+            }}
+          >
+            FICHA INPL
+          </Text>
+
+          {/* Grid de fichas existentes (thumbnails con blob) */}
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 12,
+            }}
+          >
+            {inplThumbs.length === 0 ? (
+              <Text style={{ fontFamily: "CrimsonText-Regular" }}>
+                No hay fichas INPL.
+              </Text>
+            ) : (
+              inplThumbs.map((f) => (
+                <View key={f.id} style={{ width: 160 }}>
+                  <Image
+                    source={{ uri: f.blobUrl }}
+                    style={{
+                      width: 160,
+                      height: 120,
+                      borderRadius: 6,
+                      borderWidth: 1,
+                      borderColor: "#E6DAC4",
+                    }}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={{ fontSize: 12, marginTop: 4 }}
+                  >
+                    {f.filename}
+                  </Text>
+
+                  <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setReplaceTargetId(f.id);
+                        if (Platform.OS === "web")
+                          inplReplaceInputRef.current?.click?.(); // en nativo: abrir DocumentPicker
+                      }}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 8,
+                        backgroundColor: "#D7E3FC",
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text>Reemplazar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={async () => {
+                        await handleDeleteInplFicha(f.id);
+                      }}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 8,
+                        backgroundColor: "#F3D6C1",
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text>Eliminar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+
+          {/* Botón Agregar fichas */}
+          <TouchableOpacity
+            onPress={() => {
+              if (Platform.OS === "web") inplAddInputRef.current?.click?.(); // en nativo abrir selector múltiple
+            }}
+            style={{
+              alignSelf: "flex-start",
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              backgroundColor: Colors.green,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ color: "#fff" }}>
+              {inplClassifierId
+                ? "AGREGAR FICHAS INPL"
+                : "CREAR CLASIFICADOR + AGREGAR FICHAS"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Inputs ocultos web */}
+          {Platform.OS === "web" && (
+            <>
+              <input
+                ref={inplAddInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={handleWebAddInplFiles}
+              />
+              <input
+                ref={inplReplaceInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleWebReplaceInplFile}
+              />
+            </>
+          )}
+        </View>
+
         {/* Descripción */}
         <View style={{ marginBottom: 12 }}>
           <Text
@@ -1445,7 +1724,7 @@ export default function EditPiece() {
             ) : (
               mentions.map((m) => (
                 <View
-                  key={m.localId} // <-- corregido
+                  key={m.localId}
                   style={{
                     flexDirection: "row",
                     padding: 8,
@@ -1561,6 +1840,47 @@ export default function EditPiece() {
         }}
         onClose={() => setCollPickerOpen(false)}
       />
+
+      {/* Inputs ocultos web (foto/ficha general) */}
+      {Platform.OS === "web" && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleWebFile}
+          />
+          <input
+            ref={fileInputRef2}
+            type="file"
+            accept="image/*,application/pdf"
+            style={{ display: "none" }}
+            onChange={handleWebFile2}
+          />
+        </>
+      )}
+
+      {/* Inputs ocultos web (INPL) */}
+      {Platform.OS === "web" && (
+        <>
+          <input
+            ref={inplAddInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={handleWebAddInplFiles}
+          />
+          <input
+            ref={inplReplaceInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleWebReplaceInplFile}
+          />
+        </>
+      )}
     </View>
   );
 }
