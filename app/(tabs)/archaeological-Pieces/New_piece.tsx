@@ -426,21 +426,6 @@ export default function NewPiece() {
         );
       }
 
-      // web
-      if (Platform.OS === "web" && inplFilesRef.current?.length) {
-        const createdINPL = await INPLRepository.create(inplFilesRef.current);
-        inplClassifierIdToUse = createdINPL.id;
-      }
-
-      // nativo
-      if (Platform.OS !== "web" && nativeINPLRefs.current?.length) {
-        // RN FormData acepta objetos { uri, name, type }, el repo hace append("fichas[]", f)
-        const createdINPL = await INPLRepository.create(
-          nativeINPLRefs.current as any
-        );
-        inplClassifierIdToUse = createdINPL.id;
-      }
-
       // 3) crear la pieza con el inplClassifierId si lo tenemos
       const payload = {
         name: name.trim(),
@@ -462,8 +447,11 @@ export default function NewPiece() {
 
       setPhotoUri(null);
       setDocName(null);
+      setInplDocName(null);
       pictureFileRef.current = null;
       nativePictureRef.current = null;
+      inplFilesRef.current = null;
+      nativeINPLRefs.current = null;
 
       // 4) subir imagen y ficha histórica (igual que antes)
       if (Platform.OS === "web" && pictureFileRef.current) {
