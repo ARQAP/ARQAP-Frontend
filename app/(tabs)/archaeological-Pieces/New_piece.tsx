@@ -349,6 +349,11 @@ export default function NewPiece() {
 
       const created = await createArtefact.mutateAsync(payload);
 
+      setPhotoUri(null);
+      setDocName(null);
+      pictureFileRef.current = null;
+      nativePictureRef.current = null;
+
       if (Platform.OS === "web" && pictureFileRef.current) {
         await uploadPicture.mutateAsync({
           id: created.id!,
