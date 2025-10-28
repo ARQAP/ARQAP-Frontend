@@ -18,7 +18,7 @@ export const InternalClassifierRepository = {
   },
 
   create: async (payload: InternalClassifier) => {
-    const { data } = await apiClient.post("/internalClassifiers", payload);
+    const { data } = await apiClient.post("/internalClassifiers/", payload);
     return data as InternalClassifier;
   },
 

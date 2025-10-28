@@ -565,69 +565,59 @@ export default function NewPiece() {
         </View>
 
         {/* clasificador interno (select simple) */}
-        <View
-          style={{
-            flexDirection: windowWidth < 520 ? "column" : "row",
-            gap: 12,
-            marginBottom: 12,
-          }}
-        >
-          <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontWeight: "700",
+              marginBottom: 6,
+              fontFamily: "MateSC-Regular",
+              color: Colors.black,
+            }}
+          >
+            Clasificador interno
+          </Text>
+          <SimpleSelectRow
+            label="Seleccionar clasificador"
+            value={
+              internalClassifierId
+                ? (() => {
+                    const ic = internalClassifiers.find(
+                      (x) => x.id === internalClassifierId
+                    );
+                    return ic
+                      ? `#${ic.number} (${ic.color})`
+                      : "Seleccionar clasificador";
+                  })()
+                : "Seleccionar clasificador"
+            }
+            onPress={() => setIntClsPickerOpen(true)} // abrir modal reutilizable
+          />
+          <TouchableOpacity
+            style={{
+              paddingVertical: 8,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+            onPress={() => {
+              router.push(
+                "/(tabs)/archaeological-Pieces/New_internal-classifier"
+              );
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nuevo Clasificador Interno"
+          >
             <Text
               style={{
-                fontWeight: "700",
-                marginBottom: 6,
+                color: "#A68B5B",
+                marginRight: 6,
                 fontFamily: "MateSC-Regular",
-                color: Colors.black,
               }}
             >
-              Clasificador interno
+              Crear nuevo Clasificador Interno
             </Text>
-            <SimpleSelectRow
-              label="Seleccionar clasificador"
-              value={
-                internalClassifierId
-                  ? (() => {
-                      const ic = internalClassifiers.find(
-                        (x) => x.id === internalClassifierId
-                      );
-                      return ic
-                        ? `#${ic.number} (${ic.color})`
-                        : "Seleccionar clasificador";
-                    })()
-                  : "Seleccionar clasificador"
-              }
-              onPress={() => setIntClsPickerOpen(true)} // abrir modal reutilizable
-            />
-          </View>
-
-          {/* descripción */}
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontWeight: "700",
-                marginBottom: 6,
-                fontFamily: "MateSC-Regular",
-                color: Colors.black,
-              }}
-            >
-              Descripción
-            </Text>
-            <TextInput
-              multiline
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Descripción detallada de la pieza"
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 6,
-                padding: 8,
-                minHeight: 56,
-                fontFamily: "CrimsonText-Regular",
-                color: Colors.black,
-              }}
-            />
-          </View>
+            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+          </TouchableOpacity>
         </View>
 
         {/* Imagen + Ficha */}

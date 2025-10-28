@@ -35,6 +35,7 @@ type Piece = {
   column?: string;
   description?: string;
   observation?: string;
+  internalClassifier?: string;
   images?: string[]; // URLs absolutas
   fichaHistorica?: { id: number; title: string; url?: string }[]; // URLs absolutas
   mentions?: { id: number; title: string; url?: string }[];
@@ -167,8 +168,19 @@ export default function ViewPiece() {
         }))
       : [];
 
-    console.log("menciones:", mentionsData);
-    
+    const internal =
+      (a as any)?.internalClassifier ?? (a as any)?.internalclassifier;
+    let internalClassifierLabel: string | undefined = undefined;
+
+    if (internal && (internal.number != null || internal.color != null)) {
+      const num = internal.number != null ? `#${internal.number}` : "";
+      const col = internal.color ? ` (${internal.color})` : "";
+      internalClassifierLabel = `${num}${col}`.trim();
+    } else if ((a as any)?.internalClassifierId != null) {
+      // Fallback si vino solo el ID y no la relación populada
+      internalClassifierLabel = `#${(a as any).internalClassifierId}`;
+    }
+
     const mentions: Piece["mentions"] = Array.isArray(mentionsData)
       ? mentionsData.map((m: any, idx: number) => ({
           id: Number(m?.id ?? idx + 1),
@@ -194,6 +206,7 @@ export default function ViewPiece() {
       mentions,
       selectedLevel,
       selectedColumn: columnIndex,
+      internalClassifier: internalClassifierLabel,
     };
   }, [data, base, mentionsData]);
 
@@ -316,6 +329,11 @@ export default function ViewPiece() {
                 icon="archive"
                 label="COLECCION"
                 value={piece.collection}
+              />
+              <InfoRow
+                icon="tag"
+                label="CLASIFICADOR INTERNO"
+                value={piece.internalClassifier}
               />
             </View>
             <Text
