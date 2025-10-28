@@ -79,6 +79,11 @@ export default function NewPiece() {
     Array<{ id: number; title: string; link: string; description: string }>
   >([]);
 
+  // WEB inputs refs
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
+  const inplInputRef = useRef<HTMLInputElement | null>(null);
+
   // -------- data remota ----------
   const { data: collections = [] } = useCollections();
   const { data: archaeologists = [] } = useArchaeologists();
@@ -219,8 +224,7 @@ export default function NewPiece() {
   async function pickImage() {
     try {
       if (Platform.OS === "web") {
-        // disparar input hidden
-        (document.getElementById("file-image") as HTMLInputElement)?.click();
+        imageInputRef.current?.click();
         return;
       }
       // nativo
@@ -258,13 +262,14 @@ export default function NewPiece() {
       }
     } catch (e) {
       console.warn("pickImage error", e);
+      Alert.alert("Error", "No se pudo abrir el selector de imágenes.");
     }
   }
 
   async function pickInplFicha() {
     try {
       if (Platform.OS === "web") {
-        (document.getElementById("file-inpl") as HTMLInputElement)?.click();
+        inplInputRef.current?.click();
         return;
       }
       let ImagePicker: any;
@@ -301,6 +306,7 @@ export default function NewPiece() {
       }
     } catch (e) {
       console.warn("pickInplFicha error", e);
+      Alert.alert("Error", "No se pudo abrir el selector de imágenes (INPL).");
     }
   }
 
@@ -323,7 +329,7 @@ export default function NewPiece() {
   async function pickFile() {
     try {
       if (Platform.OS === "web") {
-        (document.getElementById("file-doc") as HTMLInputElement)?.click();
+        docInputRef.current?.click();
         return;
       }
       let DocumentPicker: any;
@@ -344,7 +350,6 @@ export default function NewPiece() {
         nativeRecordRef.current = {
           uri: res.uri,
           name: res.name || "document.pdf",
-          // tipo aproximado
           type:
             res.mimeType ||
             (res.name?.toLowerCase().endsWith(".pdf")
@@ -354,6 +359,7 @@ export default function NewPiece() {
       }
     } catch (e) {
       console.warn("pickFile error", e);
+      Alert.alert("Error", "No se pudo abrir el selector de archivos.");
     }
   }
 
@@ -494,6 +500,9 @@ export default function NewPiece() {
       setDocName(null);
       pictureFileRef.current = null;
       nativePictureRef.current = null;
+      setInplPreviewUri(null);
+      inplFileWebRef.current = null;
+      inplFileNativeRef.current = null;
 
       Alert.alert("OK", "Pieza creada correctamente.");
       router.back();
@@ -786,6 +795,7 @@ export default function NewPiece() {
             {Platform.OS === "web" ? (
               <>
                 <input
+                  ref={imageInputRef}
                   id="file-image"
                   type="file"
                   accept="image/*"
@@ -793,11 +803,20 @@ export default function NewPiece() {
                   onChange={onWebImageChange}
                 />
                 <input
+                  ref={docInputRef}
                   id="file-doc"
                   type="file"
                   accept="image/*,application/pdf"
                   style={{ display: "none" }}
                   onChange={onWebDocChange}
+                />
+                <input
+                  ref={inplInputRef}
+                  id="file-inpl"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={onWebInplChange}
                 />
               </>
             ) : null}

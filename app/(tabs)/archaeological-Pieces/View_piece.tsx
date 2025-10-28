@@ -22,6 +22,10 @@ import { useArtefact } from "@/hooks/useArtefact";
 import { useMentionsByArtefactId } from "@/hooks/useMentions";
 import type { Artefact } from "@/repositories/artefactRepository";
 import { apiClient } from "@/lib/api";
+import {
+  INPLRepository,
+  INPLClassifierDTO,
+} from "@/repositories/inplClassifierRepository";
 
 type Piece = {
   id: number;
@@ -50,6 +54,10 @@ export default function ViewPiece() {
   const { width: windowWidth } = useWindowDimensions();
 
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+
+  type InplFichaView = { id: number; url: string; filename?: string };
+
+  const [inplFichas, setInplFichas] = useState<InplFichaView[]>([]);
 
   // grilla ubicación
   const columns = ["COLUMNA A", "COLUMNA B", "COLUMNA C", "COLUMNA D"];
@@ -209,6 +217,96 @@ export default function ViewPiece() {
       internalClassifier: internalClassifierLabel,
     };
   }, [data, base, mentionsData]);
+
+  async function buildViewableInplFichas(
+    dtoFichas: { id: number; filename: string; url: string }[]
+  ): Promise<InplFichaView[]> {
+    if (Platform.OS === "web") {
+      const out: InplFichaView[] = [];
+      for (const f of dtoFichas) {
+        try {
+          const blob = await INPLRepository.fetchFichaBlob(f.id); // usa axios con headers
+          const objUrl = URL.createObjectURL(blob);
+          out.push({ id: Number(f.id), url: objUrl, filename: f.filename });
+        } catch (e) {
+          console.warn("fetchFichaBlob error", e);
+          // fallback: si por alguna razón falla, intentamos con la URL directa
+          out.push({ id: Number(f.id), url: f.url, filename: f.filename });
+        }
+      }
+      return out;
+    }
+
+    // iOS/Android: devolvés directo
+    return dtoFichas.map((f) => ({
+      id: Number(f.id),
+      url: f.url,
+      filename: f.filename,
+    }));
+  }
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      const a = (data ?? null) as any;
+      if (!a) {
+        if (!cancelled) setInplFichas([]);
+        return;
+      }
+
+      const classifierId =
+        a.inplClassifierId ??
+        a.inplclassifierId ??
+        (typeof a.inplClassifier === "number" ? a.inplClassifier : null);
+
+      if (!classifierId) {
+        if (!cancelled) setInplFichas([]);
+        return;
+      }
+
+      try {
+        const dto: INPLClassifierDTO = await INPLRepository.getById(
+          Number(classifierId)
+        );
+
+        // 1) armamos una lista base con los campos del DTO
+        const baseList = (dto?.inplFichas ?? []).map((f) => ({
+          id: Number(f.id),
+          url: f.url, // viene como /inplFichas/:id/download
+          filename: f.filename,
+        }));
+
+        // 2) convertimos a URLs mostrables (web => blob, nativo => directa)
+        const viewables = await buildViewableInplFichas(baseList);
+
+        if (!cancelled) setInplFichas(viewables.filter((x) => !!x.url));
+      } catch (err) {
+        console.warn("INPL getById error", err);
+        if (!cancelled) setInplFichas([]);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
+
+  React.useEffect(() => {
+    // cleanup de blob URLs en web
+    return () => {
+      if (Platform.OS === "web") {
+        inplFichas.forEach((f) => {
+          if (f.url?.startsWith("blob:")) {
+            try {
+              URL.revokeObjectURL(f.url);
+            } catch {}
+          }
+        });
+      }
+    };
+  }, [inplFichas]);
 
   if (isLoading) {
     return (
@@ -455,6 +553,70 @@ export default function ViewPiece() {
                     </TouchableOpacity>
                   </View>
                 ))
+              ) : (
+                <Text
+                  style={{
+                    fontFamily: "CrimsonText-Regular",
+                    color: Colors.black,
+                  }}
+                >
+                  —
+                </Text>
+              )}
+            </View>
+            {/* Ficha INPL */}
+            <View style={{ marginBottom: 12 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  color: "#333",
+                  marginBottom: 6,
+                }}
+              >
+                FICHA INPL
+              </Text>
+
+              {inplFichas.length > 0 ? (
+                <View
+                  style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}
+                >
+                  {inplFichas.map((f) => (
+                    <TouchableOpacity
+                      key={f.id}
+                      onPress={() => setPreviewUri(f.url)}
+                      style={{ borderRadius: 6 }}
+                    >
+                      <Image
+                        source={{ uri: f.url }}
+                        style={{
+                          width: 140,
+                          height: 110,
+                          borderRadius: 6,
+                          borderWidth: 1,
+                          borderColor: "#E6DAC4",
+                          ...(Platform.OS === "web"
+                            ? { cursor: "zoom-in" as any }
+                            : {}),
+                        }}
+                        resizeMode="cover"
+                      />
+                      {!!f.filename && (
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            maxWidth: 140,
+                            marginTop: 4,
+                            fontSize: 12,
+                            fontFamily: "CrimsonText-Regular",
+                            color: Colors.black,
+                          }}
+                        >
+                          {f.filename}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
               ) : (
                 <Text
                   style={{
