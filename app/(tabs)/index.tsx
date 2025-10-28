@@ -18,6 +18,7 @@ export default function IndexScreen() {
   const [fontsLoaded] = useFonts({
     MateSC: require("../../assets/fonts/MateSC-Regular.ttf"),
     CrimsonText: require("../../assets/fonts/CrimsonText-Regular.ttf"),
+    ...MaterialIcons.font,
   });
 
   const router = useRouter();
@@ -71,17 +72,18 @@ export default function IndexScreen() {
             </Text>
 
             <View className="w-full mb-4">
-              <View className="flex-row items-center border-2 border-[#A68B5B] rounded-lg mb-2 px-2 bg-[#F7F5F2]">
+              <View className="flex-row items-center border-2 border-[#A68B5B] rounded-lg mb-2 bg-[#F7F5F2]">
                 <MaterialIcons
                   name="person"
                   size={22}
                   color="#A68B5B"
                   style={{ marginRight: 6 }}
+                  className="pl-2 mr-2"
                 />
                 <TextInput
                   placeholder="Ingresa tu usuario"
                   placeholderTextColor="#A68B5B"
-                  className="flex-1 h-10 text-base text-[#222]"
+                  className="flex-1 h-11 text-base text-[#222]"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                   autoCapitalize="none"
                   value={username}
@@ -89,18 +91,19 @@ export default function IndexScreen() {
                 />
               </View>
 
-              <View className="flex-row items-center border-2 border-[#A68B5B] rounded-lg px-2 bg-[#F7F5F2]">
+              <View className="flex-row items-center border-2 border-[#A68B5B] rounded-lg bg-[#F7F5F2]">
                 <MaterialIcons
                   name="lock"
                   size={22}
                   color="#A68B5B"
                   style={{ marginRight: 6 }}
+                  className="pl-2 mr-2"
                 />
                 <TextInput
                   placeholder="**************"
                   placeholderTextColor="#A68B5B"
                   secureTextEntry
-                  className="flex-1 h-10 text-base text-[#222]"
+                  className="flex-1 h-11 text-base text-[#222] pt-1"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                   value={password}
                   onChangeText={setPassword}
@@ -132,8 +135,9 @@ export default function IndexScreen() {
                 className="text-red-700 text-center mt-3"
                 style={{ fontFamily: "CrimsonText-Regular" }}
               >
-                {(loginMutation.error as Error).message ||
-                  "Error al iniciar sesión"}
+                {(loginMutation.error as Error).message === "Request failed with status code 401" 
+                  ? "Usuario o contraseña incorrectos"
+                  : (loginMutation.error as Error).message || "Error al iniciar sesión"}
               </Text>
             )}
           </View>
