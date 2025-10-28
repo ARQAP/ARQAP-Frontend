@@ -30,6 +30,8 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
       title === "Piezas arqueologicas"
     ) {
       router.push({ pathname: "/(tabs)/archaeological-Pieces/View_pieces" });
+    } else if (title === " Colecciones Arqueológicas" || /colección/i.test(title)) {
+      router.push({ pathname: "/(tabs)/collection/View_collection" });
     }
   };
   return (
