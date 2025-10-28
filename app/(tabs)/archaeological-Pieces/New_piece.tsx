@@ -445,14 +445,6 @@ export default function NewPiece() {
 
       const created = await createArtefact.mutateAsync(payload);
 
-      setPhotoUri(null);
-      setDocName(null);
-      setInplDocName(null);
-      pictureFileRef.current = null;
-      nativePictureRef.current = null;
-      inplFilesRef.current = null;
-      nativeINPLRefs.current = null;
-
       // 4) subir imagen y ficha histórica (igual que antes)
       if (Platform.OS === "web" && pictureFileRef.current) {
         await uploadPicture.mutateAsync({
@@ -505,6 +497,14 @@ export default function NewPiece() {
           })
         );
       }
+
+      setPhotoUri(null);
+      setDocName(null);
+      setInplDocName(null);
+      pictureFileRef.current = null;
+      nativePictureRef.current = null;
+      inplFilesRef.current = null;
+      nativeINPLRefs.current = null;
 
       Alert.alert("OK", "Pieza creada correctamente.");
       router.push("/(tabs)/archaeological-Pieces/View_pieces");
