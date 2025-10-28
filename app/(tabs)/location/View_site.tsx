@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import { useDeleteArchaeologicalSite } from "../../../hooks/useArchaeologicalsite";
 import Navbar from "../Navbar";
@@ -22,40 +22,48 @@ export default function ViewSite() {
  const siteId = id ? parseInt(id, 10) : undefined;
  
  // --- HOOK DE BORRADO ---
- // Usamos isDeleting para el estado de carga (isPending)
- const { mutate: deleteSite, isPending: isDeleting } = useDeleteArchaeologicalSite();
+ // Usamos la variante async de la mutación para control explícito
+ const { mutateAsync: deleteSiteAsync, isPending: isDeleting } = useDeleteArchaeologicalSite();
  
 
  const handleDeleteConfirmation = () => {
-  if (siteId === undefined || isDeleting) { // Bloqueamos el botón si ya está borrando
-   return; 
+  if (siteId === undefined || isDeleting) return;
+
+  const message = `¿Está seguro de que desea eliminar el sitio arqueológico "${name}"? Esta acción es irreversible.`;
+
+  // En web, Alert.alert puede no comportarse igual; usar window.confirm para compatibilidad.
+  if (Platform.OS === 'web') {
+    const ok = window.confirm(message);
+    if (!ok) return;
+    // Ejecutar borrado async
+    (async () => {
+      try {
+        await deleteSiteAsync(siteId);
+        Alert.alert("Éxito", "Sitio eliminado correctamente.");
+        router.push("/(tabs)/location/Location");
+      } catch (e: any) {
+        Alert.alert("Error", `Fallo al eliminar el sitio: ${e?.message ?? e}`);
+      }
+    })();
+    return;
   }
 
-    // NOTA: Lanzamos el Alert directamente. No necesitamos setIsAlertOpen.
-
+  // Nativo: usar Alert con botones
   Alert.alert(
-   "Confirmar Eliminación",
-   `¿Está seguro de que desea eliminar el sitio arqueológico "${name}"? Esta acción es irreversible.`,
-   [
-    { text: "Cancelar", style: "cancel" },
-    {
-     text: "Eliminar",
-     style: "destructive",
-     onPress: () => {
-                // ESTE CALLBACK LANZA LA MUTACIÓN. isDeleting se vuelve TRUE aquí.
-        deleteSite(siteId, {
-         onSuccess: () => {
-          Alert.alert("Éxito", "Sitio eliminado correctamente.");
-          router.push("/(tabs)/location/Location"); 
-         },
-         onError: (error) => {
-          Alert.alert("Error", `Fallo al eliminar el sitio: ${error.message}`); 
-         },
-                    // No necesitamos onSettled aquí porque TanStack Query maneja el estado
-        });
-       },
-    },
-   ]
+    'Confirmar Eliminación',
+    message,
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: async () => {
+        try {
+          await deleteSiteAsync(siteId);
+          Alert.alert('Éxito', 'Sitio eliminado correctamente.');
+          router.push('/(tabs)/location/Location');
+        } catch (e: any) {
+          Alert.alert('Error', `Fallo al eliminar el sitio: ${e?.message ?? e}`);
+        }
+      } }
+    ]
   );
  };
 
@@ -77,43 +85,47 @@ return (
   showsVerticalScrollIndicator={false}
   contentContainerStyle={{ paddingBottom: 20 }}
  >
-  {/* --- Encabezado --- */}
-  <View className="mb-6">
-  <Text
-   className="text-3xl font-bold text-[#3d2c13] text-center mb-2"
-   style={{ fontFamily: "MateSC-Regular" }}
-  >
-   {name}
-  </Text>
-  <View className="h-1 bg-[#A67C52] mx-auto w-24 rounded-full" />
+  {/* --- Título centrado --- */}
+  <View style={{ marginBottom: 18, alignItems: 'center' }}>
+    <Text style={{ fontFamily: 'MateSC-Regular', fontSize: 28, color: '#3d2c13', fontWeight: '700', textAlign: 'center' }} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
+    <View style={{ height: 6 }} />
+    <View style={{ width: 96, height: 4, backgroundColor: '#A67C52', borderRadius: 4, alignSelf: 'center' }} />
+  </View>
+
+  {/* --- Acciones rápidas en la esquina superior derecha (sobre la Navbar) --- */}
+  <View style={{ position: 'absolute', right: 14, top: 18, flexDirection: 'row', alignItems: 'center', zIndex: 50 }}>
+    <TouchableOpacity
+      onPress={isDeleting ? () => {} : () => {
+        router.push({ pathname: `/(tabs)/location/Edit_site` as any, params: { id, name, location, regionName, countryName, description } });
+      }}
+      style={{ backgroundColor: '#A67C52', padding: 10, borderRadius: 10, marginRight: 8 }}
+      accessibilityLabel="Editar sitio"
+    >
+      <Feather name="edit-2" size={18} color="#F7F5F2" />
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={isDeleting ? () => {} : handleDeleteConfirmation}
+      style={{ backgroundColor: '#cf0303', padding: 10, borderRadius: 10 }}
+      accessibilityLabel="Eliminar sitio"
+    >
+      {isDeleting ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="trash-2" size={18} color="#fff" />}
+    </TouchableOpacity>
   </View>
 
   {/* --- Bloque de Información --- */}
-  <View className="bg-[#D9C6A5] rounded-2xl p-6 mb-6 shadow-lg relative">
-  <TouchableOpacity
-   className="absolute top-4 right-4 z-10 bg-[#A67C52] p-2 rounded-full"
-   activeOpacity={0.8}
-   onPress={isDeleting ? () => {} : () => { // Deshabilitado si está borrando
-   router.push({
-    pathname: `/(tabs)/location/Edit_site` as any,
-    params: {
-    id, 
-    name,
-    location, 
-    regionName, 
-    countryName, 
-    description,
-    },
-   });
-   }}
-  >
-   <Feather name="edit-2" size={20} color="#F7F5F2" />
-  </TouchableOpacity>
-  <View className="space-y-5">
-   <DetailItem icon="map-pin" label="Ubicación" value={location} /> 
-   <DetailItem icon="globe" label="Región" value={regionName} /> 
-   <DetailItem icon="flag" label="País" value={countryName} /> 
-  </View>
+  <View style={{ backgroundColor: '#D9C6A5', borderRadius: 16, padding: 18, marginBottom: 18, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
+    <View style={{ marginBottom: 8 }}>
+      <DetailItem icon="map-pin" label="Ubicación" value={location} />
+    </View>
+    <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+      <View style={{ backgroundColor: '#EADFCB', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8 }}>
+        <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13' }}>{regionName}</Text>
+      </View>
+      <View style={{ backgroundColor: '#F3E9DD', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8 }}>
+        <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13' }}>{countryName}</Text>
+      </View>
+    </View>
   </View>
 
   {/* --- Bloque de Descripción --- */}
@@ -137,14 +149,15 @@ return (
   </Text>
   </View>
 
-  {/* --- Botón Eliminar --- */}
-  <Button
-  title={isDeleting ? "Eliminando..." : "Eliminar Sitio Arqueológico"}
-  onPress={isDeleting ? () => {} : handleDeleteConfirmation} 
-  className={`bg-[#D32F2F] rounded-lg py-4 items-center mb-4 ${isDeleting ? 'opacity-50' : ''}`} 
-  textClassName="text-[16px] font-bold text-white"
-  textStyle={{ fontFamily: "MateSC-Regular" }}
-  />
+  {/* --- (Botón de eliminación principal eliminado — ahora usar las acciones rápidas) --- */}
+  {isDeleting && (
+    <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+      <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 8, alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#D32F2F" />
+        <Text style={{ marginTop: 12, fontFamily: 'CrimsonText-Regular', color: '#3d2c13' }}>Eliminando sitio...</Text>
+      </View>
+    </View>
+  )}
   
   {/* --- Botón Volver --- */}
   <Button

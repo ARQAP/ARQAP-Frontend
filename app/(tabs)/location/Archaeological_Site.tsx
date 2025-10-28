@@ -43,35 +43,31 @@ export default function ArchaeologicalSite({
 
  return (
   <TouchableOpacity
-   className="w-full max-w-md p-4 rounded-xl mb-4 bg-[#D9C6A5] relative"
    onPress={handlePress}
-   activeOpacity={0.8}
+   activeOpacity={0.85}
+   style={{ width: '100%', maxWidth: 720, backgroundColor: '#FFF6ED', borderRadius: 14, padding: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}
+   accessibilityRole="button"
   >
-   <View className="absolute top-3 right-3">
-    <Feather name="chevron-right" size={20} color="#8B5E3C" />
+   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+     <View style={{ flex: 1, paddingRight: 12 }}>
+       <Text style={{ fontFamily: 'MateSC-Regular', fontSize: 18, color: '#3d2c13', fontWeight: '700' }} numberOfLines={1} ellipsizeMode="tail">{Name}</Text>
+
+       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 8 }}>
+         <View style={{ backgroundColor: '#EADFCB', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 }}>
+           <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13', fontSize: 12 }}>{regionName}</Text>
+         </View>
+         <View style={{ backgroundColor: '#F3E9DD', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 }}>
+           <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13', fontSize: 12 }}>{countryName}</Text>
+         </View>
+       </View>
+     </View>
+
+     <Feather name="chevron-right" size={20} color="#8B5E3C" />
    </View>
 
-   <Text
-    className="text-xl font-bold text-amber-900 mb-4 tracking-wide pr-8"
-    style={{ fontFamily: "MateSC-Regular" }}
-   >
-    {Name}
-   </Text>
-
-   <View className="space-y-3">
-    {/* Muestra 'location' (que en tu UI original era 'province') */}
-    <InfoItem icon="map-pin" label="Ubicación" value={Location} /> 
-    <InfoItem icon="globe" label="Región" value={regionName} /> 
-    <InfoItem icon="flag" label="País" value={countryName} /> {/* Muestra el país */}
-    
-        {/* Eliminados: País (country) y Antigüedad (antiquity) */}
-    
-        <InfoItem
-     icon="info"
-     label="Descripción"
-     value={Description}
-     multiline
-    />
+   <View style={{ borderTopWidth: 1, borderTopColor: '#F1E8DA', paddingTop: 12 }}>
+     <InfoItem icon="map-pin" label="Ubicación" value={Location} />
+     <InfoItem icon="info" label="Descripción" value={Description} multiline />
    </View>
   </TouchableOpacity>
  );
