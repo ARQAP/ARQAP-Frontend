@@ -38,6 +38,7 @@ import { Feather } from "@expo/vector-icons";
 import SimplePickerModal, {
   SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
+import { INPLRepository } from "@/repositories/inplClassifierRepository";
 
 export default function NewPiece() {
   const router = useRouter();
@@ -85,6 +86,17 @@ export default function NewPiece() {
   const { data: locations = [] } = usePhysicalLocations();
   const { data: internalClassifiers = [] } = useInternalClassifiers();
   const { data: archaeologicalSites = [] } = useAllArchaeologicalSites();
+
+  // -------- INPL ficha (imagen) ----------
+  const [inplModalOpen, setInplModalOpen] = useState(false);
+  const [inplPreviewUri, setInplPreviewUri] = useState<string | null>(null);
+
+  const inplFileWebRef = useRef<File | null>(null);
+  const inplFileNativeRef = useRef<{
+    uri: string;
+    name: string;
+    type: string;
+  } | null>(null);
 
   // -------- uploads ----------
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -249,6 +261,57 @@ export default function NewPiece() {
     }
   }
 
+  async function pickInplFicha() {
+    try {
+      if (Platform.OS === "web") {
+        (document.getElementById("file-inpl") as HTMLInputElement)?.click();
+        return;
+      }
+      let ImagePicker: any;
+      try {
+        ImagePicker = await import("expo-image-picker");
+      } catch {
+        Alert.alert(
+          "Falta dependencia",
+          "Instalá expo-image-picker para elegir imágenes."
+        );
+        return;
+      }
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== "granted") {
+        Alert.alert(
+          "Permiso denegado",
+          "Necesitamos permiso para acceder a la galería."
+        );
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.9,
+      });
+      const uri = res?.assets?.[0]?.uri as string | undefined;
+      if (uri) {
+        setInplPreviewUri(uri);
+        inplFileNativeRef.current = {
+          uri,
+          name: "ficha_inpl.jpg",
+          type: "image/jpeg",
+        };
+      }
+    } catch (e) {
+      console.warn("pickInplFicha error", e);
+    }
+  }
+
+  function onWebInplChange(e: any) {
+    const file: File | undefined = e?.target?.files?.[0];
+    if (!file) return;
+    inplFileWebRef.current = file;
+    const url = URL.createObjectURL(file);
+    setInplPreviewUri(url);
+  }
+
   function onWebImageChange(e: any) {
     const file: File | undefined = e?.target?.files?.[0];
     if (!file) return;
@@ -331,6 +394,33 @@ export default function NewPiece() {
         ensuredPhysicalLocationId = createdLoc.id!;
       }
 
+      // 1) si hay ficha INPL seleccionada, crear el clasificador INPL y obtener su id usando tu repo
+      let inplClassifierIdCreated: number | null = null;
+
+      if (
+        (Platform.OS === "web" && inplFileWebRef.current) ||
+        (Platform.OS !== "web" && inplFileNativeRef.current)
+      ) {
+        try {
+          // El repo espera un array de archivos. En web: File; en nativo: { uri, name, type }
+          const files =
+            Platform.OS === "web"
+              ? [inplFileWebRef.current as File]
+              : [inplFileNativeRef.current as any]; // RN FormData file
+
+          const dto = await INPLRepository.create(files);
+          inplClassifierIdCreated = dto?.id ?? null;
+
+          if (!inplClassifierIdCreated) {
+            throw new Error("No se obtuvo el id del INPLClassifier");
+          }
+        } catch (err: any) {
+          console.warn(err);
+          Alert.alert("Error", "No se pudo crear la Ficha INPL.");
+          return; // abortar el guardado si falla la creación del INPL
+        }
+      }
+
       const payload = {
         name: name.trim(),
         material: material.trim() || null,
@@ -344,7 +434,7 @@ export default function NewPiece() {
         physicalLocationId: ensuredPhysicalLocationId ?? null,
 
         archaeologicalSiteId,
-        inplClassifierId: null,
+        inplClassifierId: inplClassifierIdCreated ?? null,
       };
 
       const created = await createArtefact.mutateAsync(payload);
@@ -708,6 +798,33 @@ export default function NewPiece() {
                   accept="image/*,application/pdf"
                   style={{ display: "none" }}
                   onChange={onWebDocChange}
+                />
+              </>
+            ) : null}
+            <TouchableOpacity
+              onPress={() => setInplModalOpen(true)}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                backgroundColor: "#8B6C42",
+                borderRadius: 6,
+              }}
+            >
+              <Text
+                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+              >
+                SUBIR FICHA INPL
+              </Text>
+            </TouchableOpacity>
+
+            {Platform.OS === "web" ? (
+              <>
+                <input
+                  id="file-inpl"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={onWebInplChange}
                 />
               </>
             ) : null}
@@ -1348,6 +1465,135 @@ export default function NewPiece() {
         }}
         onClose={() => setArchaeologicalSitePickerOpen(false)}
       />
+      {/* Modal Ficha INPL */}
+      {inplModalOpen && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 16,
+          }}
+        >
+          <View
+            style={{
+              width: Math.min(containerWidth, 520),
+              backgroundColor: "#fff",
+              borderRadius: 12,
+              padding: 16,
+              gap: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontWeight: "700",
+                color: Colors.black,
+              }}
+            >
+              Cargar Ficha INPL
+            </Text>
+
+            {inplPreviewUri ? (
+              <Image
+                source={{ uri: inplPreviewUri }}
+                style={{ width: "100%", height: 220, borderRadius: 8 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  height: 180,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: "#DDD",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "CrimsonText-Regular",
+                    color: Colors.black,
+                  }}
+                >
+                  Sin imagen seleccionada
+                </Text>
+              </View>
+            )}
+
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                justifyContent: "flex-end",
+              }}
+            >
+              <TouchableOpacity
+                onPress={pickInplFicha}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  backgroundColor: Colors.green,
+                  borderRadius: 8,
+                }}
+              >
+                <Text
+                  style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+                >
+                  ELEGIR IMAGEN
+                </Text>
+              </TouchableOpacity>
+
+              {!!inplPreviewUri && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setInplPreviewUri(null);
+                    inplFileWebRef.current = null;
+                    inplFileNativeRef.current = null;
+                  }}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    backgroundColor: "#F3D6C1",
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: Colors.black,
+                      fontFamily: "CrimsonText-Regular",
+                    }}
+                  >
+                    QUITAR
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                onPress={() => setInplModalOpen(false)}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  backgroundColor: Colors.brown,
+                  borderRadius: 8,
+                }}
+              >
+                <Text
+                  style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+                >
+                  LISTO
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
