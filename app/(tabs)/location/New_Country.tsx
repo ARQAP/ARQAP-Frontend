@@ -1,20 +1,28 @@
 // New_Country.tsx
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
 import { Alert, Text, TextInput, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
 // --- Importar Hooks y Tipos ---
-import { useCreateCountry } from "../../../hooks/useCountry";
+import { SimplePickerItem } from '../../../components/ui/SimpleModal';
+import { useAllCountries, useCreateCountry } from "../../../hooks/useCountry";
 import { Country } from "../../../repositories/countryRepository";
 
 export default function New_Country() {
   const [countryName, setCountryName] = useState("");
   const router = useRouter();
+  const params = useLocalSearchParams();
   
   // Conexión con el Hook de Mutación
   const { mutate, isPending: isCreating } = useCreateCountry();
+  const { data: allCountries = [] } = useAllCountries();
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+
+  const countryItems: SimplePickerItem<Country>[] = useMemo(() => (
+    allCountries.map((c) => ({ value: c.id!, label: c.name, raw: c }))
+  ), [allCountries]);
 
   const handleCrear = () => {
     const trimmedName = countryName.trim();
@@ -27,10 +35,20 @@ export default function New_Country() {
     };
 
     mutate(newCountryPayload, {
-      onSuccess: () => {
-        Alert.alert("Éxito", `El país '${trimmedName}' fue creado correctamente.`);
-        // Redirigir a la pantalla donde se puede usar el país
-        router.push("/(tabs)/location/New_location"); 
+      onSuccess: (createdCountry: any) => {
+        const createdId = createdCountry?.id;
+        const createdName = createdCountry?.name ?? trimmedName;
+        Alert.alert("Éxito", `El país '${createdName}' fue creado correctamente.`);
+        const p: any = params ?? {};
+        router.push({ pathname: "/(tabs)/location/New_location", params: {
+          nombre: p.nombre,
+          ubicacion: p.ubicacion,
+          descripcion: p.descripcion,
+          regionSearch: p.regionSearch,
+          selectedRegionId: p.selectedRegionId,
+          paisSearch: createdName,
+          selectedCountryId: createdId ? String(createdId) : undefined,
+        }});
       },
       onError: (error) => {
         Alert.alert("Error de Creación", `Fallo al crear el país: ${error.message}`);
@@ -39,7 +57,16 @@ export default function New_Country() {
   };
 
   const handleCancelar = () => {
-    router.push("/(tabs)/location/New_location");
+    const p: any = params ?? {};
+    router.push({ pathname: "/(tabs)/location/New_location", params: {
+      nombre: p.nombre,
+      ubicacion: p.ubicacion,
+      descripcion: p.descripcion,
+      regionSearch: p.regionSearch,
+      selectedRegionId: p.selectedRegionId,
+      paisSearch: p.paisSearch,
+      selectedCountryId: p.selectedCountryId,
+    }});
   };
 
   return (

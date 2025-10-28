@@ -97,36 +97,45 @@ export default function Location() {
           textStyle={{ fontFamily: "MateSC-Regular" }}
         />
 
-        {/* ... (Bloque de Búsqueda y TextInput) ... */}
-        <View className="mb-4 relative">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
+        {/* Búsqueda mejorada */}
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontFamily: 'MateSC-Regular', fontWeight: '700', marginBottom: 8, color: '#3d2c13' }}>
             Buscar sitio arqueológico
           </Text>
-          <View className="relative">
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F5F2', borderRadius: 12, borderWidth: 1, borderColor: '#E6DAC4', paddingHorizontal: 12, paddingVertical: 8 }}>
+            <Feather name="search" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
             <TextInput
-              className="border-2 border-[#A67C52] rounded-lg p-3 bg-[#F7F5F2] text-[16px] w-full pr-12"
-              style={{
-                fontFamily: "CrimsonText-Regular",
-              }}
-              placeholder="Escriba el nombre del sitio..."
+              placeholder="Buscar por nombre..."
               value={searchTerm}
               onChangeText={handleSearchChange}
               onFocus={() => setShowSuggestions(searchTerm.length > 0)}
               placeholderTextColor="#A68B5B"
               selectionColor="#8B5E3C"
+              style={{ flex: 1, fontFamily: 'CrimsonText-Regular', fontSize: 16 }}
             />
             {searchTerm.length > 0 && (
-              <TouchableOpacity
-                className="absolute right-3 top-3 p-1"
-                onPress={handleClearSearch}
-              >
-                <Feather name="x" size={20} color="#A68B5B" />
+              <TouchableOpacity onPress={handleClearSearch} style={{ padding: 6 }} accessibilityLabel="Limpiar búsqueda">
+                <Feather name="x" size={18} color="#A68B5B" />
               </TouchableOpacity>
             )}
           </View>
+
+          {/* sugerencias inline */}
+          {showSuggestions && suggestions.length > 0 && (
+            <View style={{ marginTop: 8 }}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#E6DAC4', maxHeight: 240, overflow: 'hidden', elevation: 6 }}>
+                <ScrollView nestedScrollEnabled>
+                  {suggestions.map((site: SiteType, index: number) => (
+                    <TouchableOpacity key={site.id || index} onPress={() => handleSuggestionSelect(site.Name)} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1E8DA' }}>
+                      <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13', fontSize: 16 }}>{site.Name}</Text>
+                      <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#A68B5B', marginTop: 6 }}>{site.Location} • {site.region?.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
         </View>
 
         <ScrollView 
@@ -136,23 +145,23 @@ export default function Location() {
         >
           <View className="w-full max-w-full mx-auto self-center">
             {filteredSites.length > 0 ? (
-              <View className="flex-row flex-wrap justify-center w-full">
-                {/* --- 3. MAPEANDO DATOS REALES DEL API AL COMPONENTE CARD --- */}
-                {/* SOLUCIÓN: Pasamos el objeto 'region' completo, que es lo que espera la interfaz */}
-                {filteredSites.map((site: SiteType) => (
-                  <React.Fragment key={site.id}>
-                    <ArchaeologicalSite
-                      // Las props coinciden exactamente con ArchaeologicalSiteProps
-                      id={site.id!} 
-                      Name={site.Name}
-                      Description={site.Description}
-                      Location={site.Location}
-                      regionId={site.regionId} // Propiedad necesaria de la interfaz
-                      region={site.region}     // Propiedad necesaria de la interfaz
-                    />
-                    <View className="w-12" /> 
-                  </React.Fragment>
-                ))}
+              <View>
+                {/* resultado count */}
+                <Text style={{ fontFamily: 'MateSC-Regular', color: '#3d2c13', marginBottom: 8 }}>{filteredSites.length} sitio(s) encontrado(s)</Text>
+                <View>
+                  {filteredSites.map((site: SiteType) => (
+                    <View key={site.id} style={{ marginBottom: 12 }}>
+                      <ArchaeologicalSite
+                        id={site.id!}
+                        Name={site.Name}
+                        Description={site.Description}
+                        Location={site.Location}
+                        regionId={site.regionId}
+                        region={site.region}
+                      />
+                    </View>
+                  ))}
+                </View>
               </View>
             ) : searchTerm.length > 0 || showNoSitesMessage ? (
               <View className="items-center justify-center py-8">

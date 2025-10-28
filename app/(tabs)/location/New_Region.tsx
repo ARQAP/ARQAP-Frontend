@@ -1,10 +1,11 @@
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
 // --- Importar Hooks y Tipos ---
+import SimplePickerModal, { SimplePickerItem } from '../../../components/ui/SimpleModal';
 import { useAllCountries } from "../../../hooks/useCountry";
 import { useCreateRegion } from "../../../hooks/useRegion";
 import { Country } from "../../../repositories/countryRepository"; // Para tipar los países
@@ -12,6 +13,30 @@ import { CreateRegionPayload } from "../../../repositories/regionRepository";
 
 export default function New_Region() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  // Si venimos desde New_location con un país seleccionado, pre-seleccionarlo
+  useEffect(() => {
+    if (!params) return;
+    const p: any = params;
+    const getVal = (key: string) => {
+      const v = p[key];
+      if (Array.isArray(v)) return v[0];
+      return v;
+    };
+
+    const selectedCountryIdParam = getVal('selectedCountryId');
+    const paisSearchParam = getVal('paisSearch');
+
+    if (selectedCountryIdParam) {
+      const idNum = Number(selectedCountryIdParam);
+      setSelectedCountryId(idNum);
+    }
+    if (paisSearchParam) {
+      setSelectedCountryName(String(paisSearchParam));
+      setCountrySearch(String(paisSearchParam));
+    }
+  }, [params]);
   
   // ESTADO DE LA REGIÓN
   const [regionName, setRegionName] = useState("");
@@ -21,6 +46,7 @@ export default function New_Region() {
   const [selectedCountryId, setSelectedCountryId] = useState<number | undefined>(undefined);
   const [selectedCountryName, setSelectedCountryName] = useState<string>("");
   const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
   
   // --- Conexión con Hooks ---
   const { mutate, isPending: isCreating } = useCreateRegion();
@@ -30,7 +56,7 @@ export default function New_Region() {
   const handleCountrySearchChange = (text: string) => {
     setCountrySearch(text);
     // Limpiamos la selección si el usuario empieza a escribir de nuevo
-    setSelectedCountryId(undefined); 
+    setSelectedCountryId(undefined);
     setSelectedCountryName("");
     setShowCountrySuggestions(text.length > 0);
   };
@@ -48,6 +74,13 @@ export default function New_Region() {
             country.name.toLowerCase().includes(countrySearch.toLowerCase()))
         .slice(0, 5)
     : [];
+
+  // Mapeo para SimplePickerModal
+  const countryItems: SimplePickerItem<Country>[] = allCountries.map((c) => ({
+    value: c.id!,
+    label: c.name,
+    raw: c,
+  }));
 
   const handleCrear = () => {
     const trimmedName = regionName.trim();
@@ -67,9 +100,23 @@ export default function New_Region() {
 
     // --- 3. Ejecutar la Mutación ---
     mutate(newRegionPayload, {
-      onSuccess: () => {
-        Alert.alert("Éxito", `La región '${trimmedName}' fue creada y asociada a ${selectedCountryName}.`);
-        router.push("/(tabs)/location/New_location"); 
+      onSuccess: (createdRegion: any) => {
+        const createdId = createdRegion?.id;
+        const createdName = createdRegion?.name ?? trimmedName;
+        Alert.alert("Éxito", `La región '${createdName}' fue creada y asociada a ${selectedCountryName}.`);
+        const p: any = params ?? {};
+        router.push({
+          pathname: "/(tabs)/location/New_location",
+          params: {
+            nombre: p.nombre,
+            ubicacion: p.ubicacion,
+            descripcion: p.descripcion,
+            regionSearch: createdName,
+            selectedRegionId: createdId ? String(createdId) : undefined,
+            paisSearch: p.paisSearch,
+            selectedCountryId: p.selectedCountryId,
+          }
+        });
       },
       onError: (error) => {
         Alert.alert("Error de Creación", `Fallo al crear la región: ${error.message}`);
@@ -78,7 +125,16 @@ export default function New_Region() {
   };
 
   const handleCancelar = () => {
-    router.push("/(tabs)/location/New_location");
+    const p: any = params ?? {};
+    router.push({ pathname: "/(tabs)/location/New_location", params: {
+      nombre: p.nombre,
+      ubicacion: p.ubicacion,
+      descripcion: p.descripcion,
+      regionSearch: p.regionSearch,
+      selectedRegionId: p.selectedRegionId,
+      paisSearch: p.paisSearch,
+      selectedCountryId: p.selectedCountryId,
+    }});
   };
 
   return (
@@ -126,46 +182,20 @@ export default function New_Region() {
             >
                 Asociar a País {isCountriesLoading && <ActivityIndicator size="small" color="#A68B5B" />}
             </Text>
-            <TextInput
-                className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base w-full placeholder:text-[#A68B5B]"
-                placeholder="Buscar o seleccionar un País"
-                value={countrySearch}
-                onChangeText={handleCountrySearchChange}
-                editable={!isCreating}
-                style={{ fontFamily: "CrimsonText-Regular" }}
-            />
-            
-            {/* Bloque de Sugerencias de País */}
-            {showCountrySuggestions && countrySuggestions.length > 0 && (
-                <View
-                    className="absolute bg-white border-2 border-[#A67C52] rounded-lg shadow-lg max-h-[200px] w-full"
-                    style={{
-                        top: 75, // Ajusta la posición debajo del TextInput
-                        zIndex: 10,
-                    }}
-                >
-                    <ScrollView nestedScrollEnabled>
-                        {countrySuggestions.map((country: Country, index: number) => (
-                            <TouchableOpacity
-                                key={country.id || index}
-                                className="p-3 border-b border-[#E2D1B2]"
-                                onPress={() => handleCountrySuggestionSelect(country)}
-                            >
-                                <Text className="text-[16px] text-[#3d2c13]" style={{ fontFamily: "CrimsonText-Regular" }}>
-                                    {country.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            )}
-            
-            {/* Mostrar País Seleccionado */}
-            {selectedCountryId !== undefined && (
-                <Text className="text-[14px] text-[#3d2c13] mt-2" style={{ fontFamily: "CrimsonText-Regular" }}>
-                    País Seleccionado: <Text className="font-bold">{selectedCountryName}</Text>
-                </Text>
-            )}
+      {/* Reemplazamos el TextInput + sugerencias por un selector modal */}
+      <TouchableOpacity
+        onPress={() => setCountryPickerOpen(true)}
+        style={{ borderWidth: 2, borderColor: '#A67C52', borderRadius: 8, padding: 12, backgroundColor: '#F7F5F2' }}
+      >
+        <Text style={{ fontFamily: 'CrimsonText-Regular' }}>
+          {selectedCountryId ? `País: ${selectedCountryName}` : 'Buscar o seleccionar un País'}
+        </Text>
+      </TouchableOpacity>
+      {selectedCountryId !== undefined && (
+        <Text className="text-[14px] text-[#3d2c13] mt-2" style={{ fontFamily: "CrimsonText-Regular" }}>
+          País Seleccionado: <Text className="font-bold">{selectedCountryName}</Text>
+        </Text>
+      )}
         </View>
 
         {/* --- Botones --- */}
@@ -184,6 +214,23 @@ export default function New_Region() {
           textStyle={{ fontFamily: "MateSC-Regular" }}
         />
       </View>
+      {/* Modal de selección de País */}
+      <SimplePickerModal
+        visible={countryPickerOpen}
+        title="Seleccionar país"
+        items={countryItems}
+        selectedValue={selectedCountryId ?? null}
+        onSelect={(value) => {
+          const sel = allCountries.find((c) => c.id === Number(value));
+          if (sel) {
+            setSelectedCountryId(sel.id);
+            setSelectedCountryName(sel.name);
+            setCountrySearch(sel.name);
+          }
+          setCountryPickerOpen(false);
+        }}
+        onClose={() => setCountryPickerOpen(false)}
+      />
     </View>
   );
 }

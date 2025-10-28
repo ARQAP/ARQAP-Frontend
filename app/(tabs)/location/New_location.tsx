@@ -1,9 +1,10 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -12,6 +13,7 @@ import {
   View,
 } from "react-native";
 import Button from "../../../components/ui/Button";
+import SimplePickerModal from '../../../components/ui/SimpleModal';
 import Navbar from "../Navbar";
 
 // --- 1. IMPORTAR HOOKS Y TIPOS ---
@@ -33,6 +35,7 @@ interface InputPosition {
 
 export default function New_location() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
 
   // --- 2. ESTADO DE LOS DATOS A CREAR ---
@@ -49,8 +52,7 @@ export default function New_location() {
   // Estados de UI
   const [showRegionSuggestions, setShowRegionSuggestions] = useState(false);
   const [showPaisSuggestions, setShowPaisSuggestions] = useState(false);
-  const [regionInputPosition, setRegionInputPosition] = useState<InputPosition>({ x: 0, y: 0, width: 0, height: 0 });
-  const [paisInputPosition, setPaisInputPosition] = useState<InputPosition>({ x: 0, y: 0, width: 0, height: 0 });
+  // not needed with modal picker
   
   // --- 3. CONEXIÓN CON LOS HOOKS DE LECTURA (Regiones y Países) ---
   const { data: allRegions = [], isLoading: regionsLoading } = useAllRegions();
@@ -62,6 +64,33 @@ export default function New_location() {
 
   // --- 4. LÓGICA DE SELECCIÓN Y BÚSQUEDA ---
 
+  // Si venimos de crear/editar país/región, recuperar los valores previos pasados por params
+  useEffect(() => {
+    if (!params) return;
+    const p: any = params;
+    // Los params pueden venir como array o string
+    const getVal = (key: string) => {
+      const v = p[key];
+      if (Array.isArray(v)) return v[0];
+      return v;
+    };
+
+    const nombreParam = getVal('nombre');
+    const ubicacionParam = getVal('ubicacion');
+    const descripcionParam = getVal('descripcion');
+    const regionSearchParam = getVal('regionSearch');
+    const selectedRegionIdParam = getVal('selectedRegionId');
+    const paisSearchParam = getVal('paisSearch');
+    const selectedCountryIdParam = getVal('selectedCountryId');
+
+    if (nombreParam) setNombre(String(nombreParam));
+    if (ubicacionParam) setUbicacion(String(ubicacionParam));
+    if (descripcionParam) setDescripcion(String(descripcionParam));
+    if (regionSearchParam) setRegionSearch(String(regionSearchParam));
+    if (selectedRegionIdParam) setSelectedRegionId(Number(selectedRegionIdParam));
+    if (paisSearchParam) setPaisSearch(String(paisSearchParam));
+    if (selectedCountryIdParam) setSelectedCountryId(Number(selectedCountryIdParam));
+  }, [params]);
   const handleRegionSearchChange = (text: string) => {
     setRegionSearch(text);
     // Limpiamos el ID seleccionado si el usuario empieza a escribir
@@ -70,6 +99,55 @@ export default function New_location() {
   };
 
   const handleRegionSuggestionSelect = (region: Region) => {
+    // Si ya hay un país seleccionado, verificar que coincidan
+    const regionCountryId = (region as any).countryId ?? (region as any).country?.id;
+    if (selectedCountryId && regionCountryId && Number(selectedCountryId) !== Number(regionCountryId)) {
+      const message = `La región '${region.name}' pertenece a otro país. Desea cambiar el país seleccionado a la región seleccionada?`;
+      // web confirm
+      if (Platform.OS === 'web') {
+        const ok = window.confirm(message);
+        if (!ok) return;
+        // cambiar el país automáticamente
+        const countryFromRegion = (region as any).country;
+        if (countryFromRegion) {
+          setPaisSearch(countryFromRegion.name);
+          setSelectedCountryId(countryFromRegion.id);
+        } else if (regionCountryId) {
+          const found = allCountries.find(c => c.id === Number(regionCountryId));
+          if (found) {
+            setPaisSearch(found.name);
+            setSelectedCountryId(found.id);
+          }
+        }
+      } else {
+        // native alert with options
+        Alert.alert(
+          'País diferente',
+          message,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Cambiar país', onPress: () => {
+              const countryFromRegion = (region as any).country;
+              if (countryFromRegion) {
+                setPaisSearch(countryFromRegion.name);
+                setSelectedCountryId(countryFromRegion.id);
+              } else if (regionCountryId) {
+                const found = allCountries.find(c => c.id === Number(regionCountryId));
+                if (found) {
+                  setPaisSearch(found.name);
+                  setSelectedCountryId(found.id);
+                }
+              }
+            }}
+          ]
+        );
+        // If user cancels, don't select region now
+        // We'll return here and wait for user's choice. The Alert callback handles change.
+        return;
+      }
+    }
+
+    // Finalmente, seleccionar la región
     setRegionSearch(region.name);
     setSelectedRegionId(region.id); // Guardamos el ID real para la mutación
     setShowRegionSuggestions(false);
@@ -85,6 +163,9 @@ export default function New_location() {
     setPaisSearch(text);
     setSelectedCountryId(undefined);
     setShowPaisSuggestions(text.length > 0);
+    // Si el usuario modifica manualmente el país, limpiar la región seleccionada (posible inconsistencia)
+    setSelectedRegionId(undefined);
+    setRegionSearch('');
   };
 
   const handlePaisSuggestionSelect = (country: Country) => {
@@ -117,6 +198,12 @@ export default function New_location() {
           )
           .slice(0, 5)
       : [];
+
+  // Items para el modal de regiones — si hay un país seleccionado, filtrar por countryId
+  const regionItems = (selectedCountryId
+    ? allRegions.filter(r => ((r as any).countryId ?? (r as any).country?.id) === Number(selectedCountryId))
+    : allRegions
+  ).map(r => ({ value: r.id!, label: r.name, raw: r }));
       
   // --- 5. FUNCIÓN DE CREACIÓN CON MUTATION ---
   const handleCrear = () => {
@@ -230,53 +317,6 @@ export default function New_location() {
           />
         </View>
 
-        {/* --- INPUT DE REGIÓN (Con indicador de carga) --- */}
-        <View className="mb-2 w-[98%] self-center relative">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            Asociar Pieza a una región {regionsLoading && <ActivityIndicator size="small" color="#A68B5B" />}
-          </Text>
-          <View className="relative">
-            <TextInput
-              className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full pr-12"
-              style={{ fontFamily: "MateSC-Regular" }}
-              placeholder="Buscar o seleccionar región"
-              value={regionSearch}
-              onChangeText={handleRegionSearchChange}
-              onFocus={() => setShowRegionSuggestions(regionSearch.length > 0)}
-              placeholderTextColor="#A68B5B"
-              selectionColor="#8B5E3C"
-              onLayout={(event) => {
-                const { x, y, width, height } = event.nativeEvent.layout;
-                setRegionInputPosition({ x, y, width, height });
-              }}
-            />
-            {regionSearch.length > 0 && (
-              <TouchableOpacity
-                className="absolute right-3 top-2 p-1"
-                onPress={handleClearRegionSearch}
-              >
-                <Feather name="x" size={20} color="#A68B5B" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <TouchableOpacity
-            className="p-2 flex-row items-center justify-end"
-            onPress={() => router.push("/(tabs)/location/New_Region")}
-          >
-            <Text
-              className="text-[#A68B5B] mr-1"
-              style={{ fontFamily: "MateSC-Regular" }}
-            >
-              Crear nueva Región
-            </Text>
-            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
-          </TouchableOpacity>
-        </View>
-        
         {/* --- INPUT DE PAÍS (Con indicador de carga) --- */}
         <View className="mb-2 w-[98%] self-center relative">
           <Text
@@ -285,21 +325,13 @@ export default function New_location() {
           >
             Asociar Pieza a un País {countriesLoading && <ActivityIndicator size="small" color="#A68B5B" />}
           </Text>
-          <View className="relative">
-            <TextInput
-              className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full pr-12"
-              style={{ fontFamily: "MateSC-Regular" }}
-              placeholder="Buscar o seleccionar país"
-              value={paisSearch}
-              onChangeText={handlePaisSearchChange}
-              onFocus={() => setShowPaisSuggestions(paisSearch.length > 0)}
-              placeholderTextColor="#A68B5B"
-              selectionColor="#8B5E3C"
-              onLayout={(event) => {
-                const { x, y, width, height } = event.nativeEvent.layout;
-                setPaisInputPosition({ x, y, width, height });
-              }}
-            />
+          <View>
+            <TouchableOpacity
+              onPress={() => setShowPaisSuggestions(true)}
+              style={{ borderWidth: 2, borderColor: '#A67C52', borderRadius: 8, padding: 12, backgroundColor: '#F7F5F2' }}
+            >
+              <Text style={{ fontFamily: 'MateSC-Regular', color: '#3d2c13' }}>{paisSearch || 'Buscar o seleccionar país'}</Text>
+            </TouchableOpacity>
             {paisSearch.length > 0 && (
               <TouchableOpacity
                 className="absolute right-3 top-2 p-1"
@@ -312,13 +344,59 @@ export default function New_location() {
 
           <TouchableOpacity
             className="p-2 flex-row items-center justify-end"
-            onPress={() => router.push("/(tabs)/location/New_Country")}
+            onPress={() => router.push({ pathname: "/(tabs)/location/New_Country", params: { nombre, ubicacion, descripcion, regionSearch, selectedRegionId: selectedRegionId ? String(selectedRegionId) : undefined, paisSearch, selectedCountryId: selectedCountryId ? String(selectedCountryId) : undefined } })}
           >
             <Text
               className="text-[#A68B5B] mr-1"
               style={{ fontFamily: "MateSC-Regular" }}
             >
               Crear nuevo País
+            </Text>
+            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+          </TouchableOpacity>
+        </View>
+
+        {/* --- INPUT DE REGIÓN (Con indicador de carga) --- */}
+        <View className="mb-2 w-[98%] self-center relative">
+          <Text
+            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
+            style={{ fontFamily: "MateSC-Regular" }}
+          >
+            Asociar Pieza a una región {regionsLoading && <ActivityIndicator size="small" color="#A68B5B" />}
+          </Text>
+          <View>
+            {/* Si no hay país seleccionado, impedir abrir el selector y mostrar ayuda */}
+            <TouchableOpacity
+              onPress={() => {
+                if (!selectedCountryId) {
+                  Alert.alert('Seleccione un país', 'Primero seleccione un país para ver sus regiones.');
+                  return;
+                }
+                setShowRegionSuggestions(true);
+              }}
+              style={{ borderWidth: 2, borderColor: '#A67C52', borderRadius: 8, padding: 12, backgroundColor: '#F7F5F2', opacity: selectedCountryId ? 1 : 0.7 }}
+            >
+              <Text style={{ fontFamily: 'MateSC-Regular', color: '#3d2c13' }}>{regionSearch || (selectedCountryId ? 'Buscar o seleccionar región' : 'Seleccione un país primero')}</Text>
+            </TouchableOpacity>
+            {regionSearch.length > 0 && (
+              <TouchableOpacity
+                className="absolute right-3 top-2 p-1"
+                onPress={handleClearRegionSearch}
+              >
+                <Feather name="x" size={20} color="#A68B5B" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity
+            className="p-2 flex-row items-center justify-end"
+            onPress={() => router.push({ pathname: "/(tabs)/location/New_Region", params: { nombre, ubicacion, descripcion, regionSearch, selectedRegionId: selectedRegionId ? String(selectedRegionId) : undefined, paisSearch, selectedCountryId: selectedCountryId ? String(selectedCountryId) : undefined } })}
+          >
+            <Text
+              className="text-[#A68B5B] mr-1"
+              style={{ fontFamily: "MateSC-Regular" }}
+            >
+              Crear nueva Región
             </Text>
             <Feather name="arrow-up-right" size={16} color="#A68B5B" />
           </TouchableOpacity>
@@ -341,81 +419,32 @@ export default function New_location() {
         />
       </View>
 
-      {/* --- Bloque de Sugerencias de Región (usando data de la API) --- */}
-      {showRegionSuggestions && regionSuggestions.length > 0 && (
-        <View
-          style={{
-            position: "absolute",
-            top: regionInputPosition.y + regionInputPosition.height + 5,
-            left: regionInputPosition.x,
-            right: 0,
-            marginHorizontal: 8,
-            backgroundColor: "white",
-            borderWidth: 2,
-            borderColor: "#A67C52",
-            borderRadius: 8,
-            maxHeight: 200,
-            zIndex: 99999,
-            elevation: 50,
-            boxShadow: "0px 2px 3.84px rgba(0, 0, 0, 0.25)",
-          }}
-        >
-          <ScrollView nestedScrollEnabled>
-            {regionSuggestions.map((region: Region, index: number) => ( // Corregido: tipado y usando objeto Region
-              <TouchableOpacity
-                key={region.id || index}
-                className="p-3 border-b border-[#E2D1B2]"
-                onPress={() => handleRegionSuggestionSelect(region)}
-              >
-                <Text
-                  className="text-[16px] text-[#3d2c13]"
-                  style={{ fontFamily: "CrimsonText-Regular" }}
-                >
-                  {region.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      {/* --- Modal pickers para Región y País (reemplazan overlays) --- */}
+      <SimplePickerModal
+        visible={showRegionSuggestions}
+        title="Seleccionar Región"
+        items={regionItems}
+        selectedValue={selectedRegionId ?? null}
+        onSelect={(value) => {
+          const sel = allRegions.find(r => r.id === Number(value));
+          if (sel) handleRegionSuggestionSelect(sel);
+          setShowRegionSuggestions(false);
+        }}
+        onClose={() => setShowRegionSuggestions(false)}
+      />
 
-      {/* --- Bloque de Sugerencias de País (usando data de la API) --- */}
-      {showPaisSuggestions && paisSuggestions.length > 0 && (
-        <View
-          style={{
-            position: "absolute",
-            top: paisInputPosition.y + paisInputPosition.height + 5,
-            left: paisInputPosition.x,
-            right: 0,
-            marginHorizontal: 8,
-            backgroundColor: "white",
-            borderWidth: 2,
-            borderColor: "#A67C52",
-            borderRadius: 8,
-            maxHeight: 200,
-            zIndex: 99999,
-            elevation: 50,
-            boxShadow: "0px 2px 3.84px rgba(0, 0, 0, 0.25)",
-          }}
-        >
-          <ScrollView nestedScrollEnabled>
-            {paisSuggestions.map((pais: Country, index: number) => ( // Corregido: tipado y usando objeto Country
-              <TouchableOpacity
-                key={pais.id || index}
-                className="p-3 border-b border-[#E2D1B2]"
-                onPress={() => handlePaisSuggestionSelect(pais)}
-              >
-                <Text
-                  className="text-[16px] text-[#3d2c13]"
-                  style={{ fontFamily: "CrimsonText-Regular" }}
-                >
-                  {pais.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      <SimplePickerModal
+        visible={showPaisSuggestions}
+        title="Seleccionar País"
+        items={allCountries.map(c => ({ value: c.id!, label: c.name, raw: c }))}
+        selectedValue={selectedCountryId ?? null}
+        onSelect={(value) => {
+          const sel = allCountries.find(c => c.id === Number(value));
+          if (sel) handlePaisSuggestionSelect(sel);
+          setShowPaisSuggestions(false);
+        }}
+        onClose={() => setShowPaisSuggestions(false)}
+      />
     </ScrollView>
   );
 }
