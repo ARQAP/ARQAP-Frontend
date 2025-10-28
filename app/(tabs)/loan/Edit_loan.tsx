@@ -2,7 +2,14 @@ import { useAllLoans, useUpdateLoan } from "@/hooks/useloan";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Alert, Text, TextInput, TouchableOpacity, View, Platform } from "react-native";
+import {
+  Alert,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
@@ -121,7 +128,7 @@ export default function EditLoan() {
           Fecha de Prestamo
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-    <TouchableOpacity onPress={() => openDatePicker()}>
+          <TouchableOpacity onPress={() => openDatePicker()}>
             <FontAwesome
               name="calendar"
               size={20}
