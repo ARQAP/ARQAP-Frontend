@@ -1,7 +1,7 @@
-import { useLoginMutation } from "@/hooks/useUserAuth";
+import { useIsAuthenticated, useLoginMutation } from "@/hooks/useUserAuth";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ export default function IndexScreen() {
   });
 
   const router = useRouter();
+  const { data: token, isLoading: isCheckingAuth } = useIsAuthenticated();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +40,18 @@ export default function IndexScreen() {
     );
   };
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || isCheckingAuth) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#8B5E3C" />
+      </View>
+    );
+  }
+
+  // Si ya hay token, redirige al home
+  if (token) {
+    return <Redirect href="/(tabs)/home" />;
+  }
 
   return (
     <KeyboardAvoidingView

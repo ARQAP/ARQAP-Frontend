@@ -1,3 +1,5 @@
+import { useLogoutMutation } from "@/hooks/useUserAuth";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
@@ -7,10 +9,21 @@ interface NavbarProps {
   showBackArrow?: boolean;
   backToHome?: boolean;
   redirectTo?: string;
+  showLogout?: boolean;
 }
 
-function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
+function Navbar({ title, showBackArrow, backToHome, redirectTo, showLogout = true }: NavbarProps) {
   const router = useRouter();
+  const logoutMutation = useLogoutMutation();
+
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        router.replace("/(tabs)");
+      },
+    });
+  };
+
   return (
     <View className="w-full bg-[#D9C6A5] flex-row items-center h-[80px]">
       <TouchableOpacity
@@ -62,6 +75,15 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
           {title}
         </Text>
       </View>
+      {showLogout && (
+        <TouchableOpacity
+          onPress={handleLogout}
+          className="mr-4 p-2"
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="logout" size={24} color="#8B5E3C" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
