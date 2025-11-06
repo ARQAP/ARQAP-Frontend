@@ -646,7 +646,7 @@ export default function ViewPiece() {
                   color: Colors.black,
                 }}
               >
-                UBICACIÓN FÍSICA DE LA PIEZA{" "}
+                UBICACIÓN FÍSICA DE LA PIEZA
               </Text>
               <View style={{ marginBottom: 8, alignItems: "center" }}>
                 <View
@@ -667,8 +667,7 @@ export default function ViewPiece() {
                         fontFamily: "CrimsonText-Regular",
                       }}
                     >
-                      {" "}
-                      {piece.shelf || "—"}{" "}
+                      {piece.shelf || "—"}
                     </Text>
                   </View>
                 </View>
@@ -689,7 +688,6 @@ export default function ViewPiece() {
                 >
                   <View style={{ width: leftLabelWidth }} />
                   <View style={{ flexDirection: "row" }}>
-                    {" "}
                     {columns.map((c, ci) => (
                       <View
                         key={c}
@@ -714,9 +712,8 @@ export default function ViewPiece() {
                               fontFamily: "CrimsonText-Regular",
                               fontSize: 11,
                             }}
-                          >
-                            {" "}
-                            {c}{" "}
+                            >
+                            {c}
                           </Text>
                         </View>
                       </View>
@@ -725,7 +722,6 @@ export default function ViewPiece() {
                 </View>
               </View>
               <View>
-                {" "}
                 {levels.map((lvl, li) => (
                   <View
                     key={lvl}
@@ -737,7 +733,6 @@ export default function ViewPiece() {
                       marginBottom: 6,
                     }}
                   >
-                    {" "}
                     <View
                       style={{
                         width: leftLabelWidth,
@@ -745,7 +740,6 @@ export default function ViewPiece() {
                         justifyContent: "center",
                       }}
                     >
-                      {" "}
                       <View
                         style={{
                           backgroundColor: Colors.brown,
@@ -755,7 +749,6 @@ export default function ViewPiece() {
                           alignSelf: "flex-start",
                         }}
                       >
-                        {" "}
                         <Text
                           style={{
                             color: Colors.cremit,
@@ -763,13 +756,11 @@ export default function ViewPiece() {
                             fontSize: 12,
                           }}
                         >
-                          {" "}
-                          {lvl}{" "}
-                        </Text>{" "}
-                      </View>{" "}
-                    </View>{" "}
+                          {lvl}
+                        </Text>
+                      </View>
+                    </View>
                     <View style={{ flexDirection: "row" }}>
-                      {" "}
                       {columns.map((c, ci) => {
                         const isSelected =
                           piece.selectedLevel === li &&
@@ -783,7 +774,6 @@ export default function ViewPiece() {
                               marginRight: ci < columns.length - 1 ? gap : 0,
                             }}
                           >
-                            {" "}
                             <View
                               style={{
                                 width: cellSize,
@@ -793,18 +783,17 @@ export default function ViewPiece() {
                                   ? Colors.brown
                                   : "#EADFCB",
                               }}
-                            />{" "}
+                            />
                           </View>
                         );
-                      })}{" "}
-                    </View>{" "}
+                      })}
+                    </View>
                   </View>
-                ))}{" "}
-              </View>{" "}
-            </View>{" "}
-            {/* Menciones */}{" "}
+                ))}
+              </View>
+            </View>
+            {/* Menciones */}
             <View style={{ marginTop: 16 }}>
-              {" "}
               <Text
                 style={{
                   fontFamily: "MateSC-Regular",
@@ -813,9 +802,8 @@ export default function ViewPiece() {
                   color: Colors.black,
                 }}
               >
-                {" "}
-                MENCIONES DE LA PIEZA ARQUEOLÓGICA{" "}
-              </Text>{" "}
+                MENCIONES DE LA PIEZA ARQUEOLÓGICA
+              </Text>
               {piece.mentions && piece.mentions.length > 0 ? (
                 piece.mentions.map((m) => (
                   <View
@@ -830,10 +818,9 @@ export default function ViewPiece() {
                       marginBottom: 6,
                     }}
                   >
-                    {" "}
                     <Text style={{ fontFamily: "CrimsonText-Regular" }}>
                       {m.title}
-                    </Text>{" "}
+                    </Text>
                     <TouchableOpacity
                       style={{
                         backgroundColor: Colors.green,
@@ -849,17 +836,15 @@ export default function ViewPiece() {
                         }
                       }}
                     >
-                      {" "}
                       <Text
                         style={{
                           color: Colors.cremit,
                           fontFamily: "CrimsonText-Regular",
                         }}
                       >
-                        {" "}
-                        VER{" "}
-                      </Text>{" "}
-                    </TouchableOpacity>{" "}
+                        VER
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 ))
               ) : (
@@ -871,11 +856,11 @@ export default function ViewPiece() {
                 >
                   —
                 </Text>
-              )}{" "}
-            </View>{" "}
-          </View>{" "}
-        </View>{" "}
-      </ScrollView>{" "}
+              )}
+            </View>
+          </View>
+        </View>
+      </ScrollView>
       {/* Modal de previsualización */}
       <Modal
         visible={!!previewUri}

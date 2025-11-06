@@ -118,6 +118,7 @@ export default function EditPiece() {
 
   // -------- uploads (opcional como New_piece) ----------
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [hasExistingImage, setHasExistingImage] = useState<boolean>(false);
   const fileInputRef = useRef<any>(null);
   const fileInputRef2 = useRef<any>(null);
   const [fileUri, setFileUri] = useState<string | null>(null);
@@ -339,6 +340,10 @@ export default function EditPiece() {
     if (!data) return;
     const a = data as any;
 
+    // Debug: ver qué datos llegan
+    console.log("🔍 DEBUG - Datos del artefacto:", a);
+    console.log("🔍 DEBUG - Picture array:", a?.picture);
+
     // ----- Campos base del artefacto -----
     setName(a?.name ?? "");
     setMaterial(a?.material ?? "");
@@ -347,6 +352,19 @@ export default function EditPiece() {
     setAvailable(!!a?.available);
     setClassifier("INAPL");
     setColor(a?.internalClassifier?.color ?? "");
+
+    // Imagen existente
+    if (a?.picture && a.picture.length > 0) {
+      const existingPicture = a.picture[0];
+      const imageUrl = `${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.1.82:8080'}/uploads/pictures/${existingPicture.filename}`;
+      console.log("🔍 DEBUG - URL de imagen construida:", imageUrl);
+      setPhotoUri(imageUrl);
+      setHasExistingImage(true);
+    } else {
+      console.log("🔍 DEBUG - No hay imagen o array vacío");
+      setPhotoUri(null);
+      setHasExistingImage(false);
+    }
 
     // Colección
     setCollection(a?.collection?.name ?? a?.collection?.Nombre ?? "");
@@ -457,7 +475,7 @@ export default function EditPiece() {
       await INPLRepository.deleteFicha(fichaId);
       await refreshInplThumbs(inplClassifierId);
     } catch (e) {
-      Alert.alert("Error", "No se pudo eliminar la ficha INPL.");
+      Alert.alert("Error", "No se pudo eliminar la ficha histórica INPL.");
     }
   }
 
@@ -469,7 +487,7 @@ export default function EditPiece() {
     try {
       let clsId = inplClassifierId;
 
-      // Si no hay clasificador: crearlo con las fichas
+      // Si no hay clasificador: crearlo con las fichas históricas
       if (!clsId) {
         const created = await INPLRepository.create(files); // <<-- tu método
         clsId = Number((created as any)?.id);
@@ -478,12 +496,14 @@ export default function EditPiece() {
         // Enlazar el artefacto con este clasificador
         if (artefactId) {
           await ArtefactRepository.update(artefactId, {
+            name: name,
+            available: available,
             inplClassifierId: clsId,
           });
         }
         setInplClassifierId(clsId);
       } else {
-        // Ya existe: agregar fichas
+        // Ya existe: agregar fichas históricas
         await INPLRepository.addFichas(clsId, files);
       }
 
@@ -491,7 +511,7 @@ export default function EditPiece() {
       await refreshInplThumbs(clsId!);
     } catch (err) {
       console.warn(err);
-      Alert.alert("Error", "No se pudieron cargar las fichas INPL.");
+      Alert.alert("Error", "No se pudieron cargar las fichas históricas INPL.");
     }
   }
 
@@ -549,6 +569,8 @@ export default function EditPiece() {
       const uri = result?.assets?.[0]?.uri ?? (result as any)?.uri ?? null;
       if (uri) {
         setPhotoUri(uri);
+        // Ya no es una imagen existente si el usuario selecciona una nueva
+        setHasExistingImage(false);
         // en nativo guardamos el file-like
         nativePictureRef.current = {
           uri,
@@ -566,6 +588,8 @@ export default function EditPiece() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setPhotoUri(url);
+    // Ya no es una imagen existente si el usuario selecciona una nueva
+    setHasExistingImage(false);
     pictureFileRef.current = file;
     e.target.value = "";
   }
@@ -699,7 +723,7 @@ export default function EditPiece() {
         );
       }
 
-      // subir ficha/documento si corresponde
+      // subir ficha histórica/documento si corresponde
       if (Platform.OS === "web" && recordFileRef.current) {
         await uploadRecord.mutateAsync({
           id: artefactId,
@@ -1075,13 +1099,20 @@ export default function EditPiece() {
                 borderColor: "#DDD",
               }}
             >
-              {photoUri ? (
-                // @ts-ignore
-                <Image
-                  source={{ uri: photoUri }}
-                  style={{ width: 92, height: 92, borderRadius: 6 }}
-                />
-              ) : null}
+              {(() => {
+                if (photoUri) {
+                  console.log("🔍 DEBUG - Renderizando imagen con URI:", photoUri);
+                  return (
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={{ width: 92, height: 92, borderRadius: 6 }}
+                    />
+                  );
+                } else {
+                  console.log("🔍 DEBUG - No hay photoUri para mostrar imagen");
+                  return null;
+                }
+              })()}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1096,7 +1127,7 @@ export default function EditPiece() {
               <Text
                 style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
               >
-                SUBIR IMAGEN
+                {hasExistingImage || photoUri ? "REEMPLAZAR IMAGEN" : "SUBIR IMAGEN"}
               </Text>
             </TouchableOpacity>
 
@@ -1112,7 +1143,7 @@ export default function EditPiece() {
               <Text
                 style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
               >
-                SUBIR FICHA
+                SUBIR FICHA HISTÓRICA
               </Text>
             </TouchableOpacity>
 

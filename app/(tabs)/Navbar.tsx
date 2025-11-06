@@ -1,8 +1,8 @@
-import { useLogoutMutation } from "@/hooks/useUserAuth";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
+import { removeToken } from "../../services/authStorage";
 
 interface NavbarProps {
   title: string;
@@ -14,14 +14,10 @@ interface NavbarProps {
 
 function Navbar({ title, showBackArrow, backToHome, redirectTo, showLogout = true }: NavbarProps) {
   const router = useRouter();
-  const logoutMutation = useLogoutMutation();
 
-  const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSuccess: () => {
-        router.replace("/(tabs)");
-      },
-    });
+  const handleLogout = async () => {
+    await removeToken();
+    router.replace("/(tabs)");
   };
 
   return (

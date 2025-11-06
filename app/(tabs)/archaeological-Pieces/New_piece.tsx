@@ -400,7 +400,7 @@ export default function NewPiece() {
         ensuredPhysicalLocationId = createdLoc.id!;
       }
 
-      // 1) si hay ficha INPL seleccionada, crear el clasificador INPL y obtener su id usando tu repo
+      // 1) si hay ficha histórica INPL seleccionada, crear el clasificador INPL y obtener su id usando tu repo
       let inplClassifierIdCreated: number | null = null;
 
       if (
@@ -719,7 +719,7 @@ export default function NewPiece() {
           </TouchableOpacity>
         </View>
 
-        {/* Imagen + Ficha */}
+        {/* Imagen + Ficha Histórica */}
         <View style={{ marginBottom: 12 }}>
           <Text
             style={{
@@ -788,7 +788,7 @@ export default function NewPiece() {
               <Text
                 style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
               >
-                SUBIR FICHA
+                SUBIR FICHA HISTÓRICA
               </Text>
             </TouchableOpacity>
 

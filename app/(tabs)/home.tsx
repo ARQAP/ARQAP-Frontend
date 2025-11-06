@@ -1,6 +1,5 @@
-import { useIsAuthenticated } from "@/hooks/useUserAuth";
 import * as Font from "expo-font";
-import { Redirect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import ActionButton from "../../components/ui/ActionButton";
@@ -10,7 +9,6 @@ import Navbar from "./Navbar";
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const router = useRouter();
-  const { data: token, isLoading } = useIsAuthenticated();
 
   useEffect(() => {
     async function loadFonts() {
@@ -24,17 +22,12 @@ export default function HomeScreen() {
     loadFonts();
   }, []);
 
-  if (isLoading || !fontsLoaded) {
+  if (!fontsLoaded) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#8B5E3C" />
       </View>
     );
-  }
-
-  // Si no hay token, redirige al login
-  if (!token) {
-    return <Redirect href="/(tabs)" />;
   }
 
   return (
