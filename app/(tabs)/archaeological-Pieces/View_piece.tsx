@@ -22,6 +22,7 @@ import { useArtefact } from "@/hooks/useArtefact";
 import { useMentionsByArtefactId } from "@/hooks/useMentions";
 import type { Artefact } from "@/repositories/artefactRepository";
 import { apiClient } from "@/lib/api";
+import { getToken } from "@/services/authStorage";
 import {
   INPLRepository,
   INPLClassifierDTO,
@@ -221,28 +222,49 @@ export default function ViewPiece() {
   async function buildViewableInplFichas(
     dtoFichas: { id: number; filename: string; url: string }[]
   ): Promise<InplFichaView[]> {
-    if (Platform.OS === "web") {
-      const out: InplFichaView[] = [];
-      for (const f of dtoFichas) {
-        try {
-          const blob = await INPLRepository.fetchFichaBlob(f.id); // usa axios con headers
+    const out: InplFichaView[] = [];
+
+    for (const f of dtoFichas) {
+      try {
+        if (Platform.OS === "web") {
+          // Web: usar blob con URL.createObjectURL
+          const blob = await INPLRepository.fetchFichaBlob(f.id);
           const objUrl = URL.createObjectURL(blob);
           out.push({ id: Number(f.id), url: objUrl, filename: f.filename });
-        } catch (e) {
-          console.warn("fetchFichaBlob error", e);
-          // fallback: si por alguna razón falla, intentamos con la URL directa
-          out.push({ id: Number(f.id), url: f.url, filename: f.filename });
+        } else {
+          // React Native: usar fetch manual con headers de autorización
+          const token = await getToken();
+          const baseUrl = apiClient.defaults.baseURL || "";
+          const fullUrl = `${baseUrl}/inplFichas/${f.id}/download`;
+
+          const response = await fetch(fullUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            // En React Native, podemos usar la URL del blob directamente
+            const url = URL.createObjectURL(blob);
+            out.push({ id: Number(f.id), url: url, filename: f.filename });
+          } else {
+            console.warn(
+              `Failed to fetch INPL ficha ${f.id}:`,
+              response.status
+            );
+            // Fallback: usar URL original (probablemente falle pero intentamos)
+            out.push({ id: Number(f.id), url: f.url, filename: f.filename });
+          }
         }
+      } catch (e) {
+        console.warn("Error loading INPL ficha", f.id, e);
+        // Fallback: intentar con URL directa
+        out.push({ id: Number(f.id), url: f.url, filename: f.filename });
       }
-      return out;
     }
 
-    // iOS/Android: devolvés directo
-    return dtoFichas.map((f) => ({
-      id: Number(f.id),
-      url: f.url,
-      filename: f.filename,
-    }));
+    return out;
   }
 
   React.useEffect(() => {
@@ -712,7 +734,7 @@ export default function ViewPiece() {
                               fontFamily: "CrimsonText-Regular",
                               fontSize: 11,
                             }}
-                            >
+                          >
                             {c}
                           </Text>
                         </View>

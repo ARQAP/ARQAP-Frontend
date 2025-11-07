@@ -39,6 +39,7 @@ import SimplePickerModal, {
   SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
 import { INPLRepository } from "@/repositories/inplClassifierRepository";
+import { apiClient } from "@/lib/api";
 
 export default function NewPiece() {
   const router = useRouter();
@@ -370,6 +371,38 @@ export default function NewPiece() {
     setDocName(file.name || "archivo");
   }
 
+  // -------- test de conectividad ----------
+  async function testConnectivity() {
+    try {
+      console.log("Testing connectivity to backend...");
+      // Usamos el endpoint raíz que no requiere autenticación
+      const response = await apiClient.get("/", {
+        timeout: 5000,
+      });
+      console.log("Connectivity test successful:", response.status);
+      console.log("Server response:", response.data);
+      return true;
+    } catch (error: any) {
+      console.error("Connectivity test failed:", error);
+      if (
+        error.code === "NETWORK_ERROR" ||
+        error.message === "Network Error" ||
+        error.name === "AxiosError" ||
+        !error.response
+      ) {
+        Alert.alert(
+          "Error de Conexión",
+          "No se puede conectar al servidor. Verifica:\n\n" +
+            "• Que el backend esté corriendo\n" +
+            "• Que estés conectado a la misma red WiFi\n" +
+            "• Que la IP del servidor sea correcta (10.10.20.236:8080)\n" +
+            "• Que no haya firewall bloqueando la conexión"
+        );
+      }
+      return false;
+    }
+  }
+
   // -------- guardar ----------
   async function handleSave() {
     try {
@@ -407,22 +440,47 @@ export default function NewPiece() {
         (Platform.OS === "web" && inplFileWebRef.current) ||
         (Platform.OS !== "web" && inplFileNativeRef.current)
       ) {
+        // Test de conectividad antes de intentar subir archivos
+        const isConnected = await testConnectivity();
+        if (!isConnected) {
+          return; // Salir si no hay conectividad
+        }
+
         try {
+          // Log para debugging
+          console.log("Platform:", Platform.OS);
+          console.log(
+            "INPL File Reference:",
+            Platform.OS === "web"
+              ? inplFileWebRef.current
+              : inplFileNativeRef.current
+          );
+
           // El repo espera un array de archivos. En web: File; en nativo: { uri, name, type }
           const files =
             Platform.OS === "web"
               ? [inplFileWebRef.current as File]
               : [inplFileNativeRef.current as any]; // RN FormData file
 
+          console.log("Files to send:", files);
           const dto = await INPLRepository.create(files);
+          console.log("INPL Created:", dto);
           inplClassifierIdCreated = dto?.id ?? null;
 
           if (!inplClassifierIdCreated) {
             throw new Error("No se obtuvo el id del INPLClassifier");
           }
         } catch (err: any) {
-          console.warn(err);
-          Alert.alert("Error", "No se pudo crear la Ficha INPL.");
+          console.error("INPL Creation Error:", err);
+          console.error("Error details:", err.message);
+          if (err.response) {
+            console.error("Server response:", err.response.data);
+            console.error("Server status:", err.response.status);
+          }
+          Alert.alert(
+            "Error",
+            `No se pudo crear la Ficha INPL: ${err.message}`
+          );
           return; // abortar el guardado si falla la creación del INPL
         }
       }

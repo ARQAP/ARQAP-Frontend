@@ -1,0 +1,21 @@
+import React from "react";
+import { ScrollView, Text, View } from "react-native";
+import Navbar from "../Navbar";
+
+export default function DetailCollection() {
+  return (
+    <View className="flex-1 bg-[#F7F0E6]">
+      <Navbar
+        title="Detalle de Colección"
+        showBackArrow
+        backToHome={false}
+        redirectTo="/(tabs)/collection"
+      />
+      <ScrollView className="flex-1 px-4">
+        <Text className="text-lg text-center mt-4 text-gray-700">
+          Detalle de Colección - En desarrollo
+        </Text>
+      </ScrollView>
+    </View>
+  );
+}
