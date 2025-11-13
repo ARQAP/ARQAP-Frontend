@@ -5,10 +5,27 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import ActionButton from "../../components/ui/ActionButton";
 import Card from "./Card";
 import Navbar from "./Navbar";
+import { useArtefacts } from "@/hooks/useArtefact";
+import { useCollections } from "@/hooks/useCollections";
+import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
+import { useArchaeologists } from "@/hooks/useArchaeologist";
+import { useLoans } from "@/hooks/useLoan";
 
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const router = useRouter();
+
+  // Obtener datos para contar elementos
+  const { data: artefacts = [] } = useArtefacts();
+  const { data: collections = [] } = useCollections();
+  const { data: sites = [] } = useAllArchaeologicalSites();
+  const { data: archaeologists = [] } = useArchaeologists();
+  const { data: loans = [] } = useLoans();
+
+  // Contar préstamos activos (sin fecha de devolución)
+  const activeLoans = loans.filter(
+    (loan) => !loan.returnDate || !loan.returnTime
+  );
 
   useEffect(() => {
     async function loadFonts() {
@@ -54,31 +71,31 @@ export default function HomeScreen() {
           title="Piezas Arqueológicas"
           subtitle="Registrar y Gestionar las piezas"
           icon="archive"
-          cubeCount={2845}
+          cubeCount={artefacts.length}
         />
         <Card
           title=" Colecciones Arqueológicas"
           subtitle="Organizar por colecciones"
           icon="book"
-          cubeCount={156}
+          cubeCount={collections.length}
         />
         <Card
           title="Sitios Arqueológicos"
           subtitle="Gestionar ubicaciones"
           icon="map-marker"
-          cubeCount={128}
+          cubeCount={sites.length}
         />
         <Card
           title="Arqueólogos"
           subtitle="Gestionar Especialistas"
           icon="user"
-          cubeCount={12}
+          cubeCount={archaeologists.length}
         />
         <Card
           title="Préstamos"
           subtitle="Préstamos activos"
           icon="exchange"
-          cubeCount={23}
+          cubeCount={activeLoans.length}
         />
         <View className="items-center mt-7">
           <Text
@@ -88,14 +105,22 @@ export default function HomeScreen() {
             Acciones rápidas
           </Text>
           <View className="flex-col md:flex-row justify-center items-center mt-4 gap-4 sm:gap-5 md:gap-4 lg:gap-6 xl:gap-8 w-full md:flex-nowrap md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-            <ActionButton title="Nueva Pieza" />
+            <ActionButton
+              title="Nueva Pieza"
+              onPress={() =>
+                router.push("/(tabs)/archaeological-Pieces/New_piece")
+              }
+            />
             <ActionButton
               title="Nuevo Arqueólogo"
               onPress={() =>
                 router.push("/(tabs)/archaeologist/New_archaeologist")
               }
             />
-            <ActionButton title="Nueva Colección" />
+            <ActionButton
+              title="Nueva Colección"
+              onPress={() => router.push("/(tabs)/collection/New_collection")}
+            />
           </View>
         </View>
       </ScrollView>
