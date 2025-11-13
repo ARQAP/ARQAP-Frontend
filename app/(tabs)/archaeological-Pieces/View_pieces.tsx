@@ -4,6 +4,9 @@ import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -16,13 +19,11 @@ import InfoRow from "../../../components/ui/InfoRow";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 
-import { useArtefacts } from "../../../hooks/useArtefact";
+import { useArtefacts, useDeleteArtefact } from "../../../hooks/useArtefact";
 import type { Artefact } from "@/repositories/artefactRepository";
 
-type Piece = {
-  id: number;
-  name: string;
-  material?: string;
+// Tipo extendido para incluir campos adicionales que se usan en la UI
+type Piece = Artefact & {
   site?: string;
   archaeologist?: string;
   collection?: string;
@@ -34,12 +35,77 @@ type Piece = {
 export default function ViewPieces() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useArtefacts();
-  console.log("Artefacts data:", data);
+  const deleteMutation = useDeleteArtefact();
   const [query, setQuery] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");
   const [filterCollection, setFilterCollection] = useState("");
   const [filterSite, setFilterSite] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+
+  // Estado para el menú desplegable
+  const [menuVisible, setMenuVisible] = useState<string | null>(null);
+
+  const handleEdit = (id: number) => {
+    setMenuVisible(null);
+    router.push({
+      pathname: "/(tabs)/archaeological-Pieces/Edit_piece",
+      params: { id: String(id) },
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    setMenuVisible(null);
+
+    const piece = pieces.find((p) => p.id === id);
+    const pieceName = piece?.name || "esta pieza";
+
+    const doDelete = () => {
+      console.log("Iniciando eliminación de pieza con ID:", id);
+      deleteMutation.mutate(id, {
+        onSuccess: (data) => {
+          console.log("Eliminación exitosa:", data);
+          Alert.alert("Éxito", "Pieza eliminada correctamente.");
+        },
+        onError: (error) => {
+          console.error("Error en eliminación:", error);
+          const errorMessage =
+            (error as Error).message || "Error al eliminar la pieza.";
+          Alert.alert("Error", errorMessage);
+        },
+      });
+    };
+
+    console.log("Showing delete confirmation for:", pieceName);
+    console.log("Platform.OS:", Platform.OS);
+
+    if (Platform.OS === "web") {
+      console.log("Using web confirm dialog");
+      const confirmed = window.confirm(
+        `¿Eliminar ${pieceName}? Esta acción es irreversible.`
+      );
+      if (confirmed) doDelete();
+      return;
+    }
+
+    console.log("Using React Native Alert");
+    try {
+      Alert.alert(
+        "Eliminar",
+        `¿Eliminar ${pieceName}? Esta acción es irreversible.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Eliminar", style: "destructive", onPress: doDelete },
+        ]
+      );
+    } catch (error) {
+      console.error("Error showing Alert:", error);
+      // Fallback: usar confirm aunque no sea móvil
+      const confirmed = confirm(
+        `¿Eliminar ${pieceName}? Esta acción es irreversible.`
+      );
+      if (confirmed) doDelete();
+    }
+  };
 
   const pieces: Piece[] = useMemo(() => {
     const list = (data ?? []) as Artefact[];
@@ -76,9 +142,10 @@ export default function ViewPieces() {
         columnRaw == null ? undefined : `Columna ${String(columnRaw)}`;
 
       return {
+        ...a, // Incluir todos los campos del artefacto original
         id: Number(a.id!),
         name: a.name,
-        material: a.material ?? undefined,
+        material: a.material,
         site: siteName,
         archaeologist: archaeologistName,
         collection: collectionName,
@@ -128,7 +195,11 @@ export default function ViewPieces() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-      <Navbar title="Piezas arqueologicas" showBackArrow backToHome />
+      <Navbar
+        title="Piezas arqueologicas"
+        showBackArrow
+        redirectTo="/(tabs)/home"
+      />
 
       {isLoading ? (
         <View
@@ -232,7 +303,10 @@ export default function ViewPieces() {
               {filtered.length} PIEZAS ENCONTRADAS
             </Text>
 
-            <View style={{ display: "flex", gap: 12 }}>
+            <Pressable
+              style={{ display: "flex", gap: 12 }}
+              onPress={() => menuVisible && setMenuVisible(null)}
+            >
               {filtered.map((p) => (
                 <TouchableOpacity
                   key={p.id}
@@ -298,50 +372,124 @@ export default function ViewPieces() {
                         <InfoRow
                           icon="cube"
                           label="MATERIAL"
-                          value={p.material}
+                          value={p.material || ""}
                         />
                         <InfoRow
                           icon="map-marker"
                           label="SITIO ARQUEOLOGICO"
-                          value={p.site}
+                          value={p.site || ""}
                         />
                         <InfoRow
                           icon="user"
                           label="ARQUEOLOGO"
-                          value={p.archaeologist}
+                          value={p.archaeologist || ""}
                         />
                         <InfoRow
                           icon="archive"
                           label="COLECCION"
-                          value={p.collection}
+                          value={p.collection || ""}
                         />
                       </View>
                     </View>
 
-                    <View style={{ marginLeft: 12, alignItems: "center" }}>
+                    <View
+                      style={{
+                        marginLeft: 12,
+                        alignItems: "center",
+                        position: "relative",
+                      }}
+                    >
                       <TouchableOpacity
                         onPress={(e) => {
                           // evitar que dispare el onPress del card
                           // @ts-ignore RN synthetic event
                           e.stopPropagation?.();
-                          router.push(
-                            `/(tabs)/archaeological-Pieces/Edit_piece?id=${p.id}`
-                          );
+                          if (p.id) {
+                            setMenuVisible(
+                              menuVisible === String(p.id) ? null : String(p.id)
+                            );
+                          }
                         }}
                         style={{ padding: 8 }}
-                        accessibilityLabel={`Editar pieza ${p.name}`}
+                        accessibilityLabel={`Opciones para pieza ${p.name}`}
                       >
                         <FontAwesome
-                          name="pencil"
+                          name="ellipsis-v"
                           size={18}
                           color={Colors.black}
                         />
                       </TouchableOpacity>
+
+                      {/* Menú desplegable */}
+                      {menuVisible === String(p.id) && (
+                        <View
+                          style={{
+                            position: "absolute",
+                            top: 40,
+                            right: 8,
+                            backgroundColor: "white",
+                            borderRadius: 8,
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 4,
+                            elevation: 10,
+                            zIndex: 1000,
+                            width: 120,
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => handleEdit(p.id!)}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              padding: 12,
+                              borderBottomWidth: 1,
+                              borderBottomColor: "#e0e0e0",
+                            }}
+                          >
+                            <FontAwesome
+                              name="edit"
+                              size={16}
+                              color={Colors.brown}
+                              style={{ marginRight: 10 }}
+                            />
+                            <Text style={{ fontSize: 16, color: Colors.brown }}>
+                              Editar
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => {
+                              console.log(
+                                "Delete button pressed, piece ID:",
+                                p.id
+                              );
+                              handleDelete(p.id!);
+                            }}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              padding: 12,
+                            }}
+                          >
+                            <FontAwesome
+                              name="trash"
+                              size={16}
+                              color={Colors.brown}
+                              style={{ marginRight: 10 }}
+                            />
+                            <Text style={{ fontSize: 16, color: Colors.brown }}>
+                              Eliminar
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
               ))}
-            </View>
+            </Pressable>
           </View>
         </ScrollView>
       )}

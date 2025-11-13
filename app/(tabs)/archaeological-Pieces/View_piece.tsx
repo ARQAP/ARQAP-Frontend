@@ -98,8 +98,6 @@ export default function ViewPiece() {
     const a = (data ?? null) as Artefact | null;
     if (!a) return null;
 
-    console.log("Artefact raw data:", a);
-
     const arch = (a as any)?.archaeologist;
     const archaeologicalSite = (a as any)?.archaeologicalSite;
     const collection = (a as any)?.collection;
@@ -348,7 +346,11 @@ export default function ViewPiece() {
   if (isError || !piece) {
     return (
       <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-        <Navbar title="Ficha de la pieza" showBackArrow backToHome />
+        <Navbar
+          title="Ficha de la pieza"
+          showBackArrow
+          redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
+        />
         <View style={{ padding: 16 }}>
           <Text style={{ color: "#b00020", marginBottom: 8 }}>
             No se pudo cargar la pieza.
@@ -372,7 +374,11 @@ export default function ViewPiece() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-      <Navbar title="Ficha de la pieza" showBackArrow backToHome />
+      <Navbar
+        title="Ficha de la pieza"
+        showBackArrow
+        redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
+      />
       <ScrollView
         contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
       >

@@ -84,6 +84,11 @@ export default function EditPiece() {
   const [site, setSite] = useState("");
 
   const [shelf, setShelf] = useState(""); // string con el code (p.ej. "07")
+
+  // Estados para validaciones
+  const [nameError, setNameError] = useState("");
+  const [materialError, setMaterialError] = useState("");
+
   // -------- pickers (modales) ----------
   const [archPickerOpen, setArchPickerOpen] = useState(false);
   const [collPickerOpen, setCollPickerOpen] = useState(false);
@@ -340,10 +345,6 @@ export default function EditPiece() {
     if (!data) return;
     const a = data as any;
 
-    // Debug: ver qué datos llegan
-    console.log("🔍 DEBUG - Datos del artefacto:", a);
-    console.log("🔍 DEBUG - Picture array:", a?.picture);
-
     // ----- Campos base del artefacto -----
     setName(a?.name ?? "");
     setMaterial(a?.material ?? "");
@@ -356,12 +357,10 @@ export default function EditPiece() {
     // Imagen existente
     if (a?.picture && a.picture.length > 0) {
       const existingPicture = a.picture[0];
-      const imageUrl = `${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.1.82:8080'}/uploads/pictures/${existingPicture.filename}`;
-      console.log("🔍 DEBUG - URL de imagen construida:", imageUrl);
+      const imageUrl = `${process.env.EXPO_PUBLIC_BACKEND_URL || "http://192.168.1.82:8080"}/uploads/pictures/${existingPicture.filename}`;
       setPhotoUri(imageUrl);
       setHasExistingImage(true);
     } else {
-      console.log("🔍 DEBUG - No hay imagen o array vacío");
       setPhotoUri(null);
       setHasExistingImage(false);
     }
@@ -649,8 +648,25 @@ export default function EditPiece() {
         Alert.alert("Error", "ID de pieza inválido.");
         return;
       }
+
+      // Limpiar errores previos
+      setNameError("");
+      setMaterialError("");
+
+      // Validar campos obligatorios
+      let hasErrors = false;
+
       if (!name.trim()) {
-        Alert.alert("Falta nombre", "El nombre es obligatorio.");
+        setNameError("Debe colocar un nombre");
+        hasErrors = true;
+      }
+
+      if (!material.trim()) {
+        setMaterialError("Debe colocar un material");
+        hasErrors = true;
+      }
+
+      if (hasErrors) {
         return;
       }
 
@@ -693,7 +709,7 @@ export default function EditPiece() {
 
       const payload: any = {
         name: name.trim(),
-        material: material.trim() || null,
+        material: material.trim(), // Ya no permitimos null porque es obligatorio
         observation: observation.trim() || null,
         available,
         description: description.trim() || null,
@@ -792,7 +808,30 @@ export default function EditPiece() {
       router.push("/(tabs)/archaeological-Pieces/View_pieces");
     } catch (e: any) {
       console.warn(e);
-      Alert.alert("Error", e?.message ?? "No se pudo actualizar la pieza.");
+
+      // Manejar errores específicos del backend
+      if (e?.response?.data?.error) {
+        const errorMessage = e.response.data.error;
+
+        // Verificar si es un error de validación específico
+        if (errorMessage.includes("nombre") || errorMessage.includes("Name")) {
+          setNameError(errorMessage);
+          return;
+        }
+
+        if (
+          errorMessage.includes("material") ||
+          errorMessage.includes("Material")
+        ) {
+          setMaterialError(errorMessage);
+          return;
+        }
+
+        // Mostrar otros errores del servidor
+        Alert.alert("Error", errorMessage);
+      } else {
+        Alert.alert("Error", e?.message ?? "No se pudo actualizar la pieza.");
+      }
     }
   }
 
@@ -827,7 +866,11 @@ export default function EditPiece() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-      <Navbar title="Editar pieza arqueologica" showBackArrow backToHome />
+      <Navbar
+        title="Editar pieza arqueologica"
+        showBackArrow
+        redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
+      />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <Text
           style={{
@@ -861,7 +904,10 @@ export default function EditPiece() {
             </Text>
             <TextInput
               value={name}
-              onChangeText={setName}
+              onChangeText={(text) => {
+                setName(text);
+                if (nameError) setNameError("");
+              }}
               placeholder="Nombre"
               style={{
                 backgroundColor: "#fff",
@@ -869,8 +915,22 @@ export default function EditPiece() {
                 padding: 8,
                 fontFamily: "CrimsonText-Regular",
                 color: Colors.black,
+                borderWidth: nameError ? 1 : 0,
+                borderColor: nameError ? "#ff4444" : "transparent",
               }}
             />
+            {nameError ? (
+              <Text
+                style={{
+                  color: "#ff4444",
+                  fontSize: 12,
+                  marginTop: 4,
+                  fontFamily: "CrimsonText-Regular",
+                }}
+              >
+                {nameError}
+              </Text>
+            ) : null}
           </View>
 
           <View
@@ -888,7 +948,10 @@ export default function EditPiece() {
             </Text>
             <TextInput
               value={material}
-              onChangeText={setMaterial}
+              onChangeText={(text) => {
+                setMaterial(text);
+                if (materialError) setMaterialError("");
+              }}
               placeholder="Material"
               style={{
                 backgroundColor: "#fff",
@@ -896,8 +959,22 @@ export default function EditPiece() {
                 padding: 8,
                 fontFamily: "CrimsonText-Regular",
                 color: Colors.black,
+                borderWidth: materialError ? 1 : 0,
+                borderColor: materialError ? "#ff4444" : "transparent",
               }}
             />
+            {materialError ? (
+              <Text
+                style={{
+                  color: "#ff4444",
+                  fontSize: 12,
+                  marginTop: 4,
+                  fontFamily: "CrimsonText-Regular",
+                }}
+              >
+                {materialError}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -1101,7 +1178,10 @@ export default function EditPiece() {
             >
               {(() => {
                 if (photoUri) {
-                  console.log("🔍 DEBUG - Renderizando imagen con URI:", photoUri);
+                  console.log(
+                    "🔍 DEBUG - Renderizando imagen con URI:",
+                    photoUri
+                  );
                   return (
                     <Image
                       source={{ uri: photoUri }}
@@ -1109,7 +1189,6 @@ export default function EditPiece() {
                     />
                   );
                 } else {
-                  console.log("🔍 DEBUG - No hay photoUri para mostrar imagen");
                   return null;
                 }
               })()}
@@ -1127,7 +1206,9 @@ export default function EditPiece() {
               <Text
                 style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
               >
-                {hasExistingImage || photoUri ? "REEMPLAZAR IMAGEN" : "SUBIR IMAGEN"}
+                {hasExistingImage || photoUri
+                  ? "REEMPLAZAR IMAGEN"
+                  : "SUBIR IMAGEN"}
               </Text>
             </TouchableOpacity>
 

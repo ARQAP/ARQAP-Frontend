@@ -51,6 +51,10 @@ export default function NewPiece() {
   const [description, setDescription] = useState("");
   const [available, setAvailable] = useState(true);
 
+  // Estados para validaciones
+  const [nameError, setNameError] = useState("");
+  const [materialError, setMaterialError] = useState("");
+
   // -------- modales pickers ----------
   const [archPickerOpen, setArchPickerOpen] = useState(false);
   const [collPickerOpen, setCollPickerOpen] = useState(false);
@@ -406,8 +410,24 @@ export default function NewPiece() {
   // -------- guardar ----------
   async function handleSave() {
     try {
+      // Limpiar errores previos
+      setNameError("");
+      setMaterialError("");
+
+      // Validar campos obligatorios
+      let hasErrors = false;
+
       if (!name.trim()) {
-        Alert.alert("Falta nombre", "El nombre es obligatorio.");
+        setNameError("Debe colocar un nombre");
+        hasErrors = true;
+      }
+
+      if (!material.trim()) {
+        setMaterialError("Debe colocar un material");
+        hasErrors = true;
+      }
+
+      if (hasErrors) {
         return;
       }
 
@@ -487,7 +507,7 @@ export default function NewPiece() {
 
       const payload = {
         name: name.trim(),
-        material: material.trim() || null,
+        material: material.trim(), // Ya no permitimos null porque es obligatorio
         observation: observation.trim() || null,
         available,
         description: description.trim() || null,
@@ -563,10 +583,33 @@ export default function NewPiece() {
       inplFileNativeRef.current = null;
 
       Alert.alert("OK", "Pieza creada correctamente.");
-      router.back();
+      router.push("/(tabs)/archaeological-Pieces/View_pieces");
     } catch (e: any) {
       console.warn(e);
-      Alert.alert("Error", e?.message ?? "No se pudo crear la pieza.");
+
+      // Manejar errores específicos del backend
+      if (e?.response?.data?.error) {
+        const errorMessage = e.response.data.error;
+
+        // Verificar si es un error de validación específico
+        if (errorMessage.includes("nombre") || errorMessage.includes("Name")) {
+          setNameError(errorMessage);
+          return;
+        }
+
+        if (
+          errorMessage.includes("material") ||
+          errorMessage.includes("Material")
+        ) {
+          setMaterialError(errorMessage);
+          return;
+        }
+
+        // Mostrar otros errores del servidor
+        Alert.alert("Error", errorMessage);
+      } else {
+        Alert.alert("Error", e?.message ?? "No se pudo crear la pieza.");
+      }
     }
   }
 
@@ -601,7 +644,11 @@ export default function NewPiece() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-      <Navbar title="Nueva pieza arqueologica" showBackArrow backToHome />
+      <Navbar
+        title="Nueva pieza arqueologica"
+        showBackArrow
+        redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
+      />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         <Text
           style={{
@@ -635,7 +682,10 @@ export default function NewPiece() {
             </Text>
             <TextInput
               value={name}
-              onChangeText={setName}
+              onChangeText={(text) => {
+                setName(text);
+                if (nameError) setNameError("");
+              }}
               placeholder="Nombre"
               style={{
                 backgroundColor: "#fff",
@@ -643,8 +693,22 @@ export default function NewPiece() {
                 padding: 8,
                 fontFamily: "CrimsonText-Regular",
                 color: Colors.black,
+                borderWidth: nameError ? 1 : 0,
+                borderColor: nameError ? "#ff4444" : "transparent",
               }}
             />
+            {nameError ? (
+              <Text
+                style={{
+                  color: "#ff4444",
+                  fontSize: 12,
+                  marginTop: 4,
+                  fontFamily: "CrimsonText-Regular",
+                }}
+              >
+                {nameError}
+              </Text>
+            ) : null}
           </View>
           <View style={{ flex: 1 }}>
             <Text
@@ -659,7 +723,10 @@ export default function NewPiece() {
             </Text>
             <TextInput
               value={material}
-              onChangeText={setMaterial}
+              onChangeText={(text) => {
+                setMaterial(text);
+                if (materialError) setMaterialError("");
+              }}
               placeholder="Material"
               style={{
                 backgroundColor: "#fff",
@@ -667,8 +734,22 @@ export default function NewPiece() {
                 padding: 8,
                 fontFamily: "CrimsonText-Regular",
                 color: Colors.black,
+                borderWidth: materialError ? 1 : 0,
+                borderColor: materialError ? "#ff4444" : "transparent",
               }}
             />
+            {materialError ? (
+              <Text
+                style={{
+                  color: "#ff4444",
+                  fontSize: 12,
+                  marginTop: 4,
+                  fontFamily: "CrimsonText-Regular",
+                }}
+              >
+                {materialError}
+              </Text>
+            ) : null}
           </View>
         </View>
 

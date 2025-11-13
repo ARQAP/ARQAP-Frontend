@@ -27,7 +27,7 @@ export type HistoricalRecord = {
 export type Artefact = {
   id?: number;
   name: string;
-  material?: string | null;
+  material: string; // Ya no es opcional
   observation?: string | null;
   available: boolean;
   picture?: Picture[];
@@ -130,10 +130,7 @@ export const ArtefactRepository = {
       description?: string;
     }
   ) => {
-    const { data } = await apiClient.put(
-      `/mentions/${mentionId}`,
-      payload
-    );
+    const { data } = await apiClient.put(`/mentions/${mentionId}`, payload);
     return data;
   },
 
