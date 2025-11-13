@@ -496,6 +496,7 @@ export default function EditPiece() {
         if (artefactId) {
           await ArtefactRepository.update(artefactId, {
             name: name,
+            material: material,
             available: available,
             inplClassifierId: clsId,
           });
