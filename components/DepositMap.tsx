@@ -55,7 +55,7 @@ const SHELVES: ShelfBox[] = [
 
 // Map overlay ids to backend numeric shelf IDs. Fill these values to match your DB.
 const SHELF_ID_MAP: Record<string, number> = {
-  // example: 's_124_293': 1,
+  's_365_389': 1
   // map each overlay id to the numeric shelf id used by the backend
 };
 
@@ -64,6 +64,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [hoveredShelf, setHoveredShelf] = useState<string | null>(null);
+  const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
   
   // Detectar si estamos en escritorio (pantalla ancha)
   const isDesktop = Dimensions.get('window').width >= 768;
@@ -73,23 +74,20 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const fetchItemsForShelf = useCallback(async (shelf: ShelfBox) => {
     try {
       setLoading(true);
-      // backend provides /artefacts (protected). apiClient attaches token automatically.
-      const res = await apiClient.get('/artefacts');
+      // Obtener el ID numérico del shelf desde el mapping o usar el ID del backend
+      const shelfId = SHELF_ID_MAP[shelf.id];
+      
+      if (!shelfId) {
+        console.warn(`No shelf ID mapping found for ${shelf.id}. Please update SHELF_ID_MAP.`);
+        setItems([]);
+        return;
+      }
+
+      // Usar el query parameter shelfId para filtrar en el backend
+      const res = await apiClient.get(`/artefacts?shelfId=${shelfId}`);
       const artefacts: any[] = res.data || [];
-      // filter artefacts whose physicalLocation.shelf.id matches shelf id
-      // NOTE: here we assume the shelf id can be obtained from shelf label or custom mapping.
-      // As backend currently uses numeric IDs, you might want to map shelf ids accordingly.
-      // For now we filter by coordinates mapping using PhysicalLocation.Shelf with approximate matching.
-      const mappedId = SHELF_ID_MAP[shelf.id];
-      const filtered = artefacts.filter(a => {
-        if (!a.physicalLocation || !a.physicalLocation.shelf) return false;
-        // if we have a mapping, compare to numeric id
-        if (mappedId) return Number(a.physicalLocation.shelf.id) === mappedId;
-        // otherwise try to match by label or fallback to false
-        return String(a.physicalLocation.shelf.id) === shelf.id || String(a.physicalLocation.shelf.name) === shelf.label;
-      });
-      // If no numeric mapping was set, fallback to empty and log
-      setItems(filtered.length ? filtered : []);
+      
+      setItems(artefacts);
     } catch (err) {
       console.warn('Error fetching artefacts', err);
       setItems([]);
@@ -118,12 +116,34 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 
   // onViewPieces removed: navigation to View_pieces is disabled for now
 
+  // Calcular dimensiones del SVG considerando preserveAspectRatio="xMidYMid meet"
+  const svgAspect = 559 / 539;
+  const containerAspect = containerLayout.width / containerLayout.height;
+  
+  let svgWidth, svgHeight, offsetX, offsetY;
+  if (containerAspect > svgAspect) {
+    // Contenedor más ancho: SVG limitado por altura
+    svgHeight = containerLayout.height;
+    svgWidth = svgHeight * svgAspect;
+    offsetX = (containerLayout.width - svgWidth) / 2;
+    offsetY = 0;
+  } else {
+    // Contenedor más alto: SVG limitado por ancho
+    svgWidth = containerLayout.width;
+    svgHeight = svgWidth / svgAspect;
+    offsetX = 0;
+    offsetY = (containerLayout.height - svgHeight) / 2;
+  }
+
   return (
     <View style={[{ width: '100%', flex: 1 }, style]}>
-      <View style={[
-        { width: '100%', flex: 1, position: 'relative' },
-        isDesktop && { maxWidth: 900, alignSelf: 'center' }
-      ]}>
+      <View 
+        style={[
+          { width: '100%', flex: 1, position: 'relative' },
+          isDesktop && { maxWidth: 900, alignSelf: 'center' }
+        ]}
+        onLayout={(e) => setContainerLayout(e.nativeEvent.layout)}
+      >
         {/* SVG component - se ajusta al contenedor manteniendo aspect ratio */}
         <DepositoSvg 
           width="100%" 
@@ -132,13 +152,13 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
           preserveAspectRatio="xMidYMid meet"
         />
 
-        {/* Overlay hotspots - usando porcentajes del viewBox */}
-        {SHELVES.map(s => {
-          // Calcular posiciones como porcentaje del viewBox (559x539)
-          const leftPercent = (s.x / 559) * 100;
-          const topPercent = (s.y / 539) * 100;
-          const widthPercent = (s.w / 559) * 100;
-          const heightPercent = (s.h / 539) * 100;
+        {/* Overlay hotspots - ajustados al SVG renderizado */}
+        {containerLayout.width > 0 && SHELVES.map(s => {
+          // Calcular posiciones absolutas considerando el offset del SVG
+          const left = offsetX + (s.x / 559) * svgWidth;
+          const top = offsetY + (s.y / 539) * svgHeight;
+          const width = (s.w / 559) * svgWidth;
+          const height = (s.h / 539) * svgHeight;
           const isSelected = selected?.id === s.id;
           const isHovered = hoveredShelf === s.id;
           return (
@@ -150,10 +170,10 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
               style={[
                 styles.hotspot, 
                 { 
-                  left: `${leftPercent}%`,
-                  top: `${topPercent}%`,
-                  width: `${widthPercent}%`,
-                  height: `${heightPercent}%`,
+                  left,
+                  top,
+                  width,
+                  height,
                 }
               ]}
               android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
@@ -265,7 +285,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: '100%',
     left: '50%',
-    transform: [{ translateX: '-50%' }],
+    marginLeft: -40, // half of minWidth to center
     backgroundColor: 'rgba(47, 47, 47, 0.9)',
     paddingHorizontal: 8,
     paddingVertical: 4,

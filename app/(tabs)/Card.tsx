@@ -16,7 +16,7 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   const handlePress = () => {
     const t = title || "";
     if (/pieza/i.test(t)) {
-      router.push({ pathname: "/(tabs)/archaeological-Pieces/View_pieces" });
+      router.push({ pathname: "/(tabs)/archaeological-Pieces" });
       return;
     }
     if (title === "Arqueólogos") {
@@ -29,7 +29,7 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
       title === "Piezas Arqueológicas" ||
       title === "Piezas arqueologicas"
     ) {
-      router.push({ pathname: "/(tabs)/archaeological-Pieces/View_pieces" });
+      router.push({ pathname: "/(tabs)/archaeological-Pieces" });
     } else if (title === " Colecciones Arqueológicas" || /colección/i.test(title)) {
       router.push({ pathname: "/(tabs)/collection/View_collection" });
     }
