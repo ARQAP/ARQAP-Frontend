@@ -58,7 +58,7 @@ export type Mention = {
 // src/repositories/artefactRepository.ts
 export const ArtefactRepository = {
   getAll: async () => {
-    const { data } = await apiClient.get("/artefacts/");
+    const { data } = await apiClient.get("/artefacts");
     return data as Artefact[];
   },
 
