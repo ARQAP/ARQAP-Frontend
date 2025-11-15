@@ -22,17 +22,12 @@ const ArchaeologicalSiteCard: React.FC<ArchaeologicalSiteCardProps> = ({
       isTitle: true,
     },
     {
+      label: 'País',
+      value: site.region?.country?.name,
+    },
+    {
       label: 'Región',
       value: site.region?.name,
-      isSubtitle: true,
-    },
-    {
-      label: 'Descripción',
-      value: site.Description,
-    },
-    {
-      label: 'Ubicación',
-      value: site.Location,
     },
   ];
 

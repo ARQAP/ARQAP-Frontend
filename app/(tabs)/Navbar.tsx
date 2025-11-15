@@ -1,15 +1,13 @@
-import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import { removeToken } from "../../services/authStorage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface NavbarProps {
   title: string;
   showBackArrow?: boolean;
   backToHome?: boolean;
   redirectTo?: string;
-  showLogout?: boolean;
 }
 
 function Navbar({
@@ -17,19 +15,18 @@ function Navbar({
   showBackArrow,
   backToHome,
   redirectTo,
-  showLogout = true,
 }: NavbarProps) {
   const router = useRouter();
-
-  const handleLogout = async () => {
-    await removeToken();
-    router.replace("/(tabs)");
-  };
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       className="w-full bg-[#D9C6A5] flex-row items-center h-[80px] px-4"
-      style={{ position: "relative" }}
+      style={{ 
+        position: "relative",
+        paddingTop: insets.top,
+        height: 80 + insets.top
+      }}
     >
       {/* Área izquierda: flecha + título multilinea */}
       <View
@@ -60,10 +57,11 @@ function Navbar({
         )}
 
         <Text
-          className="font-bold text-lg text-black flex-shrink leading-tight"
+          className="font-bold text-xl text-black flex-shrink leading-tight"
           style={{
             fontFamily: "MateSC-Regular",
-            lineHeight: 20,
+            lineHeight: 24,
+            fontSize: 20,
           }}
           numberOfLines={2}
         >
@@ -71,14 +69,12 @@ function Navbar({
         </Text>
       </View>
 
-      {/* Logo en el centro absoluto */}
+      {/* Logo movido a la derecha */}
       <View
         style={{
-          position: "absolute",
-          left: "48.2%",
-          marginLeft: 0,
           justifyContent: "center",
           alignItems: "center",
+          paddingLeft: 16,
         }}
       >
         <Image
@@ -95,19 +91,6 @@ function Navbar({
           accessible={true}
           accessibilityLabel="Logo del Museo"
         />
-      </View>
-
-      {/* Área derecha: logout */}
-      <View className="flex-1 items-end" style={{ maxWidth: "100%" }}>
-        {showLogout && (
-          <TouchableOpacity
-            onPress={handleLogout}
-            className="p-2"
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="logout" size={24} color="#8B5E3C" />
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
