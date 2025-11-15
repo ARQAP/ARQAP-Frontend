@@ -114,13 +114,6 @@ const GenericCard: React.FC<GenericCardProps> = ({
         </View>
       )}
 
-      {/* Tipo de tarjeta como badge */}
-      {cardType && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{cardType}</Text>
-        </View>
-      )}
-
       {/* Modal del menú */}
       <Modal
         visible={menuVisible}
@@ -167,19 +160,21 @@ const GenericCard: React.FC<GenericCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.cremit,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 18,
     marginVertical: 8,
-    marginHorizontal: 16,
-    shadowColor: Colors.black,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   header: {
     flexDirection: 'row',
@@ -203,9 +198,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   menuButton: {
-    padding: 4,
+    padding: 6,
     borderRadius: 20,
-    backgroundColor: Colors.lightbrown,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
   fieldsContainer: {
     gap: 8,
@@ -226,21 +223,6 @@ const styles = StyleSheet.create({
     color: Colors.black,
     flex: 1,
   },
-  badge: {
-    position: 'absolute',
-    top: 8,
-    right: 50,
-    backgroundColor: Colors.lightgreen,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.darkgreen,
-    textTransform: 'uppercase',
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -249,16 +231,18 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     minWidth: 200,
-    shadowColor: Colors.black,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
   },
   menuItem: {
     flexDirection: 'row',
