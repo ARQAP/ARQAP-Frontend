@@ -1,15 +1,17 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Text, TextInput, View, Alert } from "react-native";
 import Button from "../../../components/ui/Button";
-import { useArchaeologists } from "../../../hooks/useArchaeologist";
+import { useArchaeologists, useDeleteArchaeologist } from "../../../hooks/useArchaeologist";
+import { ArchaeologistCard, GenericList } from "../../../components/ui";
+import { Archaeologist } from "../../../repositories/archaeologistRespository";
 import Navbar from "../Navbar";
-import Card_archaeologist from "./Card_archaeologist";
 
 export default function View_archaeologist() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const { data, status, error, isFetching } = useArchaeologists();
+  const { data, status, error, isFetching, refetch } = useArchaeologists();
+  const deleteMutation = useDeleteArchaeologist();
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
@@ -21,47 +23,80 @@ export default function View_archaeologist() {
     );
   }, [data, search]);
 
+  const handleEdit = (archaeologist: Archaeologist) => {
+    router.push({
+      pathname: "/(tabs)/archaeologist/Edit_archaeologist",
+      params: { 
+        id: String(archaeologist.id), 
+        nombre: archaeologist.firstname, 
+        apellido: archaeologist.lastname 
+      },
+    });
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      Alert.alert("Éxito", "Arqueólogo eliminado correctamente.");
+    } catch (error) {
+      const errorMessage = (error as Error).message || "Error al eliminar el arqueólogo.";
+      Alert.alert("Error", errorMessage);
+    }
+  };
+
+  const handleViewDetails = (archaeologist: Archaeologist) => {
+    Alert.alert("Detalles", `Ver detalles de: ${archaeologist.firstname} ${archaeologist.lastname}`);
+  };
+
+  const renderArchaeologistCard = (archaeologist: Archaeologist) => (
+    <ArchaeologistCard
+      archaeologist={archaeologist}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onViewDetails={handleViewDetails}
+    />
+  );
+
   return (
     <View className="flex-1 bg-[#F3E9DD] p-0">
       <Navbar title="Ver Arqueólogos" showBackArrow backToHome />
-      <View className="p-5 flex-1">
+      <View className="p-5">
         <Button
-          title="Registrar nuevo arqueologo"
+          title="Registrar nuevo arqueólogo"
           onPress={() => router.push("/(tabs)/archaeologist/New_archaeologist")}
           textStyle={{ fontFamily: "MateSC-Regular", fontWeight: "bold" }}
         />
 
         <TextInput
           placeholder="Buscar por nombre o apellido"
-          className="bg-[#F7F5F2] rounded-lg p-2 mb-5 border border-[#ccc]"
+          className="bg-[#F7F5F2] rounded-lg p-2 mb-5 border border-[#ccc] mt-4"
           value={search}
           onChangeText={setSearch}
           style={{ fontFamily: "CrimsonText-Regular", fontSize: 16 }}
         />
 
-        {status === "pending" ? (
-          <ActivityIndicator />
-        ) : status === "error" ? (
-          <Text style={{ fontFamily: "CrimsonText-Regular", color: "#8B0000" }}>
-            {(error as Error).message}
-          </Text>
-        ) : (
-          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-            <View className="flex flex-col gap-4">
-              {filtered.map((arch) => (
-                <Card_archaeologist
-                  key={arch.id ?? `${arch.firstname}-${arch.lastname}`}
-                  id={arch.id}
-                  nombre={arch.firstname}
-                  apellido={arch.lastname}
-                />
-              ))}
-              {isFetching ? (
-                <Text style={{ fontFamily: "CrimsonText-Regular" }}>Actualizando…</Text>
-              ) : null}
-            </View>
-          </ScrollView>
-        )}
+        <Text
+          className="text-[#8B5E3C] text-base mb-2"
+          style={{ fontFamily: "MateSC-Regular" }}
+        >
+          {filtered.length} Arqueólogos encontrados
+        </Text>
+      </View>
+
+      <View className="flex-1">
+        <GenericList
+          data={filtered}
+          renderItem={renderArchaeologistCard}
+          keyExtractor={(item) => item.id?.toString() || `${item.firstname}-${item.lastname}`}
+          isLoading={status === "pending"}
+          isRefreshing={isFetching}
+          onRefresh={refetch}
+          emptyStateMessage="No hay arqueólogos registrados"
+          error={status === "error" ? (error as Error)?.message : null}
+          customStyles={{
+            container: { backgroundColor: 'transparent', paddingTop: 0 }
+          }}
+        />
       </View>
     </View>
   );

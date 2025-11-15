@@ -2,18 +2,19 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator, // Importado para el estado de carga
+  ActivityIndicator,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
-import ArchaeologicalSite from "./Archaeological_Site";
+import { ArchaeologicalSiteCard, GenericList } from "../../../components/ui";
 // Importar el hook de lectura de la API y el tipo
-import { useAllArchaeologicalSites } from "../../../hooks/useArchaeologicalsite";
+import { useAllArchaeologicalSites, useDeleteArchaeologicalSite } from "../../../hooks/useArchaeologicalsite";
 import { ArchaeologicalSite as SiteType } from "../../../repositories/archaeologicalsiteRepository";
 
 
@@ -27,8 +28,12 @@ export default function Location() {
     data: allSites = [], 
     isLoading, 
     isError, 
-    error 
+    error,
+    refetch,
+    isFetching
   } = useAllArchaeologicalSites();
+
+  const deleteMutation = useDeleteArchaeologicalSite();
 
   // Mantenemos la lógica de búsqueda y filtros con los datos de la API
   const handleSearchChange = (text: string) => {
@@ -46,7 +51,7 @@ export default function Location() {
     setShowSuggestions(false);
   };
 
-  // La lógica de filtro usa el campo 'name' del tipo SiteType
+  // La lógica de filtro usa el campo 'Name' del tipo SiteType
   const suggestions =
     searchTerm.length > 0
       ? allSites
@@ -62,6 +67,47 @@ export default function Location() {
           site.Name.toLowerCase().includes(searchTerm.toLowerCase())
         )
       : allSites;
+
+  // Handlers para las acciones de las tarjetas
+  const handleEdit = (site: SiteType) => {
+    router.push({
+      pathname: "/(tabs)/location/Edit_site" as any,
+      params: { id: String(site.id) },
+    });
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      Alert.alert("Éxito", "Sitio arqueológico eliminado correctamente.");
+    } catch (error) {
+      const errorMessage = (error as Error).message || "Error al eliminar el sitio.";
+      Alert.alert("Error", errorMessage);
+    }
+  };
+
+  const handleViewDetails = (site: SiteType) => {
+    router.push({
+      pathname: `/(tabs)/location/View_site` as any,
+      params: {
+        id: site.id?.toString() || '', 
+        Name: site.Name,
+        Description: site.Description,
+        Location: site.Location,
+        regionName: site.region?.name || 'Región no especificada',
+        countryName: site.region?.country?.name || 'País no especificado',
+      },
+    });
+  };
+
+  const renderSiteCard = (site: SiteType) => (
+    <ArchaeologicalSiteCard
+      site={site}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onViewDetails={handleViewDetails}
+    />
+  );
   
   // --- 2. MANEJO DE ESTADOS DE CARGA Y ERROR ---
   if (isLoading) {
@@ -82,13 +128,11 @@ export default function Location() {
       </View>
     );
   }
-  
-  const showNoSitesMessage = !isLoading && !isError && filteredSites.length === 0 && searchTerm.length === 0;
 
   return (
     <View className="flex-1 bg-[#F3E9DD]">
       <Navbar title="Sitios Arqueológicos" showBackArrow backToHome />
-      <View className="flex-1 px-2 sm:px-5 pt-5 pb-5">
+      <View className="px-2 sm:px-5 pt-5">
         <Button
           title="Registrar nuevo sitio arqueológico"
           onPress={() => router.push("/(tabs)/location/New_location")}
@@ -138,55 +182,32 @@ export default function Location() {
           )}
         </View>
 
-        <ScrollView 
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingVertical: 20 }}
+        <Text
+          className="text-[#8B5E3C] text-base mb-2"
+          style={{ fontFamily: "MateSC-Regular" }}
         >
-          <View className="w-full max-w-full mx-auto self-center">
-            {filteredSites.length > 0 ? (
-              <View>
-                {/* resultado count */}
-                <Text style={{ fontFamily: 'MateSC-Regular', color: '#3d2c13', marginBottom: 8 }}>{filteredSites.length} sitio(s) encontrado(s)</Text>
-                <View>
-                  {filteredSites.map((site: SiteType) => (
-                    <View key={site.id} style={{ marginBottom: 12 }}>
-                      <ArchaeologicalSite
-                        id={site.id!}
-                        Name={site.Name}
-                        Description={site.Description}
-                        Location={site.Location}
-                        regionId={site.regionId}
-                        region={site.region}
-                      />
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : searchTerm.length > 0 || showNoSitesMessage ? (
-              <View className="items-center justify-center py-8">
-                <Text
-                  className="text-[18px] text-[#A68B5B] text-center"
-                  style={{ fontFamily: "CrimsonText-Regular" }}
-                >
-                  {showNoSitesMessage
-                    ? "No hay sitios arqueológicos registrados aún."
-                    : `No se encontraron sitios arqueológicos que coincidan con "${searchTerm}"`
-                  }
-                </Text>
-                <Text
-                  className="text-[14px] text-[#A68B5B] text-center mt-2"
-                  style={{ fontFamily: "CrimsonText-Regular" }}
-                >
-                  Intenta con otro término de búsqueda
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        </ScrollView>
+          {filteredSites.length} Sitios arqueológicos encontrados
+        </Text>
       </View>
 
-      {/* --- Bloque de Sugerencias (Uso de datos anidados) --- */}
+      {/* Lista de sitios usando el componente estandarizado */}
+      <View className="flex-1">
+        <GenericList
+          data={filteredSites}
+          renderItem={renderSiteCard}
+          keyExtractor={(item) => item.id?.toString() || ''}
+          isLoading={false} // Ya manejamos loading arriba
+          isRefreshing={isFetching}
+          onRefresh={refetch}
+          emptyStateMessage="No hay sitios arqueológicos registrados"
+          error={null} // Ya manejamos errores arriba
+          customStyles={{
+            container: { backgroundColor: 'transparent', paddingTop: 0 }
+          }}
+        />
+      </View>
+
+      {/* --- Bloque de Sugerencias flotantes --- */}
       {showSuggestions && suggestions.length > 0 && (
         <View
           className="absolute bg-white border-2 border-[#A67C52] rounded-lg shadow-lg max-h-[200px]"

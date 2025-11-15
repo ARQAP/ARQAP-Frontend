@@ -74,7 +74,7 @@ export default function HomeScreen() {
           cubeCount={artefacts.length}
         />
         <Card
-          title=" Colecciones Arqueológicas"
+          title="Colecciones Arqueológicas"
           subtitle="Organizar por colecciones"
           icon="book"
           cubeCount={collections.length}

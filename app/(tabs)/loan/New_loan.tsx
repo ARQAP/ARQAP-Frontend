@@ -4,14 +4,9 @@ import {
   ActivityIndicator,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  Platform,
-  Modal,
-  StyleSheet,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { FontAwesome, Feather } from "@expo/vector-icons";
 import Button from "@/components/ui/Button";
 import Navbar from "@/app/(tabs)/Navbar";
@@ -49,8 +44,17 @@ export default function NewLoan() {
   const [selectedRequesterId, setSelectedRequesterId] = useState<number | null>(
     null
   );
-  const [loanDate, setLoanDate] = useState("");
-  const [loanTime, setLoanTime] = useState("");
+  
+  // Establecer fecha y hora actual automáticamente (hora local)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  const [loanDate] = useState(`${year}-${month}-${day}`); // Fecha local en formato YYYY-MM-DD
+  const [loanTime] = useState(`${hours}:${minutes}`); // Hora local en formato HH:MM
 
   // Estados para modales
   const [artefactModalVisible, setArtefactModalVisible] = useState(false);
@@ -58,401 +62,6 @@ export default function NewLoan() {
 
   // Estados para errores
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  // Componente para selector de fecha híbrido (web/móvil)
-  const DateSelector = ({
-    value,
-    placeholder,
-    onDateChange,
-    hasError,
-  }: {
-    value: string;
-    placeholder: string;
-    onDateChange: (date: string) => void;
-    hasError?: boolean;
-  }) => {
-    const [showPicker, setShowPicker] = useState(false);
-    const [tempValue, setTempValue] = useState(value);
-
-    if (Platform.OS === "web") {
-      return (
-        <View>
-          <TouchableOpacity
-            onPress={() => {
-              setTempValue(value);
-              setShowPicker(true);
-            }}
-            style={{
-              backgroundColor: "#F7F5F2",
-              borderRadius: 8,
-              padding: 12,
-              borderWidth: hasError ? 2 : 1,
-              borderColor: hasError ? "#DC2626" : "#e0e0e0",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: value ? Colors.brown : "#999" }}>
-              {value || placeholder}
-            </Text>
-            <FontAwesome name="calendar" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <Modal
-            visible={showPicker}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setShowPicker(false)}
-          >
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-              }}
-              onPress={() => setShowPicker(false)}
-              activeOpacity={1}
-            >
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: 12,
-                  padding: 20,
-                  minWidth: 300,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 3.84,
-                  elevation: 5,
-                }}
-                onPress={(e) => e.stopPropagation()}
-                activeOpacity={1}
-              >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "bold",
-                    marginBottom: 15,
-                    textAlign: "center",
-                    color: Colors.brown,
-                  }}
-                >
-                  Seleccionar Fecha
-                </Text>
-
-                <input
-                  type="date"
-                  value={tempValue}
-                  onChange={(e) => setTempValue(e.target.value)}
-                  style={{
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 8,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    borderColor: "#e0e0e0",
-                    color: Colors.brown,
-                    fontSize: 16,
-                    width: "100%",
-                    outline: "none",
-                    marginBottom: 15,
-                  }}
-                />
-
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <TouchableOpacity
-                    onPress={() => setShowPicker(false)}
-                    style={{
-                      flex: 1,
-                      backgroundColor: "#DC2626",
-                      padding: 12,
-                      borderRadius: 8,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
-                      Cancelar
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      onDateChange(tempValue);
-                      setShowPicker(false);
-                    }}
-                    style={{
-                      flex: 1,
-                      backgroundColor: Colors.brown,
-                      padding: 12,
-                      borderRadius: 8,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
-                      Confirmar
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </Modal>
-        </View>
-      );
-    }
-
-    return (
-      <View>
-        <TouchableOpacity
-          onPress={() => setShowPicker(true)}
-          style={{
-            backgroundColor: "#F7F5F2",
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: hasError ? 2 : 1,
-            borderColor: hasError ? "#DC2626" : "#e0e0e0",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: value ? Colors.brown : "#999" }}>
-            {value || placeholder}
-          </Text>
-          <FontAwesome name="calendar" size={16} color="#999" />
-        </TouchableOpacity>
-        {showPicker && (
-          <DateTimePicker
-            value={value ? new Date(value) : new Date()}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(event, selectedDate) => {
-              setShowPicker(false);
-              if (selectedDate) {
-                onDateChange(selectedDate.toISOString().split("T")[0]);
-              }
-            }}
-          />
-        )}
-      </View>
-    );
-  };
-
-  // Componente para selector de hora híbrido (web/móvil)
-  type TimeSelectorProps = {
-    value: string;
-    placeholder: string;
-    onTimeChange: (time: string) => void;
-    hasError?: boolean;
-  };
-
-  const styles = StyleSheet.create({
-    trigger: {
-      backgroundColor: "#F7F5F2",
-      borderRadius: 8,
-      padding: 12,
-      borderWidth: 1,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    modalOverlay: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-    modalCard: {
-      backgroundColor: "white",
-      borderRadius: 12,
-      padding: 20,
-      minWidth: 320,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    modalTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      marginBottom: 15,
-      textAlign: "center",
-      color: Colors.brown,
-    },
-    actionsRow: {
-      flexDirection: "row",
-      // en vez de `gap`, que no siempre anda en RN
-      justifyContent: "space-between",
-    },
-    actionButton: {
-      flex: 1,
-      padding: 12,
-      borderRadius: 8,
-      alignItems: "center",
-    },
-  });
-
-  const TimeSelector: React.FC<TimeSelectorProps> = ({
-    value,
-    placeholder,
-    onTimeChange,
-    hasError,
-  }) => {
-    const [showPicker, setShowPicker] = useState(false);
-    const [tempValue, setTempValue] = useState(value);
-
-    const handleOpen = () => {
-      setTempValue(value);
-      setShowPicker(true);
-    };
-
-    const handleCancel = () => {
-      setShowPicker(false);
-    };
-
-    const handleConfirm = () => {
-      if (!tempValue) return;
-      onTimeChange(tempValue);
-      setShowPicker(false);
-    };
-
-    if (Platform.OS === "web") {
-      return (
-        <View>
-          <TouchableOpacity
-            onPress={handleOpen}
-            style={[
-              styles.trigger,
-              {
-                borderColor: hasError ? "#DC2626" : "#e0e0e0",
-                borderWidth: hasError ? 2 : 1,
-              },
-            ]}
-          >
-            <Text style={{ color: value ? Colors.brown : "#999" }}>
-              {value || placeholder}
-            </Text>
-            <FontAwesome name="clock-o" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <Modal
-            visible={showPicker}
-            transparent
-            animationType="fade"
-            onRequestClose={handleCancel}
-          >
-            <TouchableOpacity
-              style={styles.modalOverlay}
-              onPress={handleCancel}
-              activeOpacity={1}
-            >
-              <TouchableOpacity
-                style={styles.modalCard}
-                onPress={(e: any) => e.stopPropagation?.()}
-                activeOpacity={1}
-              >
-                <Text style={styles.modalTitle}>Seleccionar Hora</Text>
-
-                <input
-                  type="time"
-                  value={tempValue}
-                  onChange={(e) => setTempValue(e.target.value)}
-                  style={{
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 8,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    borderColor: "#e0e0e0",
-                    color: Colors.brown,
-                    fontSize: 16,
-                    width: "100%",
-                    outline: "none",
-                    marginBottom: 15,
-                  }}
-                />
-
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    onPress={handleCancel}
-                    style={[
-                      styles.actionButton,
-                      { backgroundColor: "#DC2626", marginRight: 8 },
-                    ]}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
-                      Cancelar
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    disabled={!tempValue}
-                    onPress={handleConfirm}
-                    style={[
-                      styles.actionButton,
-                      {
-                        backgroundColor: tempValue ? Colors.brown : "#c4c4c4",
-                      },
-                    ]}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
-                      Confirmar
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </Modal>
-        </View>
-      );
-    }
-
-    return (
-      <View>
-        <TouchableOpacity
-          onPress={() => setShowPicker(true)}
-          style={{
-            backgroundColor: "#F7F5F2",
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: hasError ? 2 : 1,
-            borderColor: hasError ? "#DC2626" : "#e0e0e0",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: value ? Colors.brown : "#999" }}>
-            {value || placeholder}
-          </Text>
-          <FontAwesome name="clock-o" size={16} color="#999" />
-        </TouchableOpacity>
-        {showPicker && (
-          <DateTimePicker
-            value={value ? new Date(`2000-01-01T${value}`) : new Date()}
-            mode="time"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(event, selectedTime) => {
-              setShowPicker(false);
-              if (selectedTime) {
-                const hours = selectedTime
-                  .getHours()
-                  .toString()
-                  .padStart(2, "0");
-                const minutes = selectedTime
-                  .getMinutes()
-                  .toString()
-                  .padStart(2, "0");
-                onTimeChange(`${hours}:${minutes}`);
-              }
-            }}
-          />
-        )}
-      </View>
-    );
-  };
 
   // Datos convertidos para SimpleModal
   const artefactItems: SimplePickerItem[] = useMemo(() => {
@@ -489,12 +98,6 @@ export default function NewLoan() {
     if (!selectedRequesterId) {
       newErrors.requester = "Debe seleccionar un solicitante";
     }
-    if (!loanDate) {
-      newErrors.loanDate = "Debe ingresar la fecha de préstamo";
-    }
-    if (!loanTime) {
-      newErrors.loanTime = "Debe ingresar la hora de préstamo";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -505,12 +108,19 @@ export default function NewLoan() {
       return;
     }
 
-    // Combinar fecha y hora en formato ISO para loanDate
-    const loanDateTime = `${loanDate}T${loanTime}:00.000Z`;
+    // Crear datetime con zona horaria local
+    const now = new Date();
+    const timezoneOffset = -now.getTimezoneOffset(); // Offset en minutos
+    const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+    const offsetMinutes = Math.abs(timezoneOffset) % 60;
+    const offsetSign = timezoneOffset >= 0 ? '+' : '-';
+    const timezoneString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+    
+    const loanDateTime = `${loanDate}T${loanTime}:00${timezoneString}`;
 
     const loanData = {
-      loanDate: loanDateTime,
-      loanTime: loanDateTime,
+      loanDate: loanDateTime,  // Datetime completo con zona horaria
+      loanTime: loanDateTime,  // Datetime completo con zona horaria
       artefactId: selectedArtefactId!,
       requesterId: selectedRequesterId!,
     };
@@ -520,7 +130,6 @@ export default function NewLoan() {
     console.log("selectedRequesterId:", selectedRequesterId);
     console.log("loanDate original:", loanDate);
     console.log("loanTime original:", loanTime);
-    console.log("loanDateTime combinado:", loanDateTime);
 
     try {
       await createLoanMutation.mutateAsync(loanData);
@@ -676,50 +285,51 @@ export default function NewLoan() {
               marginBottom: 15,
             }}
           >
-            Fechas y Horarios
+            Fecha y Hora del Préstamo
           </Text>
 
-          {/* Fecha y hora de préstamo */}
+          {/* Mostrar fecha y hora actual (solo lectura) */}
           <View
             style={{
-              flexDirection: "row",
-              gap: 10,
-              marginBottom: 15,
+              backgroundColor: "#F7F5F2",
+              borderRadius: 12,
+              padding: 15,
+              borderWidth: 1,
+              borderColor: "#e0e0e0",
             }}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={{ marginBottom: 5, fontWeight: "600" }}>
-                Fecha de Préstamo
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+              <FontAwesome name="calendar" size={16} color={Colors.brown} />
+              <Text style={{ 
+                marginLeft: 10, 
+                fontSize: 16,
+                fontWeight: "600",
+                color: Colors.brown 
+              }}>
+                Fecha: {new Date(loanDate).toLocaleDateString('es-ES')}
               </Text>
-              <DateSelector
-                value={loanDate}
-                placeholder="Seleccionar fecha"
-                onDateChange={setLoanDate}
-                hasError={!!errors.loanDate}
-              />
-              {errors.loanDate && (
-                <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-                  {errors.loanDate}
-                </Text>
-              )}
             </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={{ marginBottom: 5, fontWeight: "600" }}>
-                Hora de Préstamo
+            
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <FontAwesome name="clock-o" size={16} color={Colors.brown} />
+              <Text style={{ 
+                marginLeft: 10, 
+                fontSize: 16,
+                fontWeight: "600",
+                color: Colors.brown 
+              }}>
+                Hora: {loanTime}
               </Text>
-              <TimeSelector
-                value={loanTime}
-                placeholder="Seleccionar hora"
-                onTimeChange={setLoanTime}
-                hasError={!!errors.loanTime}
-              />
-              {errors.loanTime && (
-                <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-                  {errors.loanTime}
-                </Text>
-              )}
             </View>
+            
+            <Text style={{ 
+              marginTop: 8,
+              fontSize: 12,
+              color: "#666",
+              fontStyle: "italic"
+            }}>
+              * La fecha y hora se establecen automáticamente al momento actual
+            </Text>
           </View>
         </View>
 
