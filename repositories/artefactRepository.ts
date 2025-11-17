@@ -57,7 +57,7 @@ export type Mention = {
 
 // src/repositories/artefactRepository.ts
 export const ArtefactRepository = {
-  getAll: async (filters?: { shelfId?: string | number }) => {
+  getAll: async (filters?: { shelfId?: number }) => {
     const { data } = await apiClient.get("/artefacts", { params: filters });
     return data as Artefact[];
   },

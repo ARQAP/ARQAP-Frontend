@@ -274,7 +274,8 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                     if (!selected) return;
                     const shelfId = SHELF_ID_MAP[selected.id];
                     const params: any = {};
-                    if (shelfId) params.shelfId = String(shelfId);
+                    // Ensure shelfId is sent as a number so the backend receives a numeric query param
+                    if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId);
                     // also include a readable label for convenience
                     if (selected.label) params.shelfLabel = selected.label;
                     router.push({ pathname: '/(tabs)/archaeological-Pieces/View_pieces', params });

@@ -36,7 +36,11 @@ export default function ViewPieces() {
   const router = useRouter();
   const params = useLocalSearchParams() as any;
   const shelfIdParam = params?.shelfId ?? params?.shelfid ?? params?.shelfID;
-  const { data, isLoading, isError, refetch } = useArtefacts(shelfIdParam ? { shelfId: shelfIdParam } : undefined);
+  // Convert shelfId from query params (string) to number before sending to the backend
+  const shelfIdNum = shelfIdParam != null ? Number(shelfIdParam) : undefined;
+  const { data, isLoading, isError, refetch } = useArtefacts(
+    typeof shelfIdNum === 'number' && !Number.isNaN(shelfIdNum) ? { shelfId: shelfIdNum } : undefined
+  );
   const deleteMutation = useDeleteArtefact();
   const [query, setQuery] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");

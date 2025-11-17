@@ -7,7 +7,7 @@ import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["artefacts"];
 
-export const useArtefacts = (filters?: { shelfId?: string | number }) => {
+export const useArtefacts = (filters?: { shelfId?: number }) => {
   const { data: token } = useIsAuthenticated();
   const key = filters ? [...KEY, JSON.stringify(filters)] : KEY;
   return useQuery({
