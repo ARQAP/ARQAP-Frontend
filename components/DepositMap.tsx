@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import type { ViewStyle } from 'react-native';
 import { Dimensions, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import DepositoSvg from '../Distribucion Deposito.svg';
@@ -60,14 +61,23 @@ const SHELF_ID_MAP: Record<string, number> = {
 };
 
 export default function DepositMap({ style }: { style?: ViewStyle }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<ShelfBox | null>(null);
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [hoveredShelf, setHoveredShelf] = useState<string | null>(null);
   const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
+  const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   
   // Detectar si estamos en escritorio (pantalla ancha)
   const isDesktop = Dimensions.get('window').width >= 768;
+
+  useEffect(() => {
+    const sub = Dimensions.addEventListener?.('change', ({ window }) => {
+      setWindowWidth(window.width);
+    });
+    return () => sub?.remove?.();
+  }, []);
   
   // router navigation removed temporarily (Ver piezas feature disabled)
 
@@ -118,7 +128,9 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 
   // Calcular dimensiones del SVG considerando preserveAspectRatio="xMidYMid meet"
   const svgAspect = 559 / 539;
-  const containerAspect = containerLayout.width / containerLayout.height;
+  const containerAspect = containerLayout.width / Math.max(1, containerLayout.height);
+  // altura inicial sensible basada en el ancho de ventana (para móvil antes de onLayout)
+  const initialHeight = Math.min(700, Math.round(windowWidth / svgAspect));
   
   let svgWidth, svgHeight, offsetX, offsetY;
   if (containerAspect > svgAspect) {
@@ -136,18 +148,18 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   }
 
   return (
-    <View style={[{ width: '100%', flex: 1 }, style]}>
+    <View style={[{ width: '100%', alignItems: 'center' }, style]}>
       <View 
         style={[
-          { width: '100%', flex: 1, position: 'relative' },
+          { width: '100%', height: containerLayout.height || initialHeight, position: 'relative' },
           isDesktop && { maxWidth: 900, alignSelf: 'center' }
         ]}
         onLayout={(e) => setContainerLayout(e.nativeEvent.layout)}
       >
         {/* SVG component - se ajusta al contenedor manteniendo aspect ratio */}
         <DepositoSvg 
-          width="100%" 
-          height="100%" 
+          width={containerLayout.width > 0 ? containerLayout.width : windowWidth}
+          height={containerLayout.height > 0 ? containerLayout.height : initialHeight}
           viewBox="0 0 559 539"
           preserveAspectRatio="xMidYMid meet"
         />
@@ -176,6 +188,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                   height,
                 }
               ]}
+              hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
               android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
             >
               <View style={[styles.hotInner, isSelected ? styles.selectedHot : isHovered ? styles.hoveredHot : undefined]} />
@@ -254,6 +267,37 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                 >
                   <Text style={styles.closeButtonText}>Cerrar</Text>
                 </Pressable>
+                {/* Primary action: view pieces for selected shelf */}
+                <Pressable
+                  style={[styles.primaryButton]}
+                  onPress={() => {
+                    if (!selected) return;
+                    const shelfId = SHELF_ID_MAP[selected.id];
+                    const params: any = {};
+                    if (shelfId) params.shelfId = String(shelfId);
+                    // also include a readable label for convenience
+                    if (selected.label) params.shelfLabel = selected.label;
+                    router.push({ pathname: '/(tabs)/archaeological-Pieces/View_pieces', params });
+                    // keep modal open or close? Close to show the list
+                    setSelected(null);
+                    setItems(null);
+                  }}
+                >
+                  <Text style={[styles.closeButtonText]}>Ver piezas</Text>
+                </Pressable>
+
+                {/* Placeholder for future detailed SVG zoom */}
+                <Pressable
+                  style={[styles.secondaryButton]}
+                  onPress={() => {
+                    // future: abrir vista con SVG de detalle por niveles/columnas
+                    // actualmente sólo mostramos un placeholder
+                    console.log('Detalle de estantería - pendiente de implementación');
+                    // podríamos cerrar el modal para navegar a la vista futura
+                  }}
+                >
+                  <Text style={[styles.secondaryButtonText]}>Ver detalle (próx.)</Text>
+                </Pressable>
               </View>
             )}
           </Pressable>
@@ -266,6 +310,8 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 const styles = StyleSheet.create({
   hotspot: {
     position: 'absolute',
+    overflow: 'visible',
+    borderRadius: 6,
   },
   hotInner: {
     flex: 1,
@@ -416,6 +462,27 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  primaryButton: {
+    backgroundColor: '#4A5D23',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#D9C6A5',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  secondaryButtonText: {
+    color: '#2F2F2F',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

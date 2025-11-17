@@ -1,6 +1,6 @@
 // app/(tabs)/archaeological-Pieces/View_pieces.tsx
 import { FontAwesome } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -34,7 +34,9 @@ type Piece = Artefact & {
 
 export default function ViewPieces() {
   const router = useRouter();
-  const { data, isLoading, isError, refetch } = useArtefacts();
+  const params = useLocalSearchParams() as any;
+  const shelfIdParam = params?.shelfId ?? params?.shelfid ?? params?.shelfID;
+  const { data, isLoading, isError, refetch } = useArtefacts(shelfIdParam ? { shelfId: shelfIdParam } : undefined);
   const deleteMutation = useDeleteArtefact();
   const [query, setQuery] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");

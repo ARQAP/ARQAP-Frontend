@@ -7,11 +7,12 @@ import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["artefacts"];
 
-export const useArtefacts = () => {
+export const useArtefacts = (filters?: { shelfId?: string | number }) => {
   const { data: token } = useIsAuthenticated();
+  const key = filters ? [...KEY, JSON.stringify(filters)] : KEY;
   return useQuery({
-    queryKey: KEY,
-    queryFn: ArtefactRepository.getAll,
+    queryKey: key,
+    queryFn: () => ArtefactRepository.getAll(filters),
     enabled: !!token,
   });
 };
