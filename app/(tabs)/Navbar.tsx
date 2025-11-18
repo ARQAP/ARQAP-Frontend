@@ -2,6 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
+import Colors from "../../constants/Colors";
 import { removeToken } from "../../services/authStorage";
 
 interface NavbarProps {
@@ -28,8 +29,8 @@ function Navbar({
 
   return (
     <View
-      className="w-full bg-[#D9C6A5] flex-row items-center h-[80px] px-4"
-      style={{ position: "relative" }}
+      className="w-full flex-row items-center h-[80px] px-4"
+      style={{ position: "relative", backgroundColor: Colors.cremit }}
     >
       {/* Área izquierda: flecha + título multilinea */}
       <View
@@ -105,7 +106,7 @@ function Navbar({
             className="p-2"
             activeOpacity={0.7}
           >
-            <MaterialIcons name="logout" size={24} color="#8B5E3C" />
+            <MaterialIcons name="logout" size={24} color={Colors.brown} />
           </TouchableOpacity>
         )}
       </View>

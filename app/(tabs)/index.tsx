@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Colors from "../../constants/Colors";
 
 export default function IndexScreen() {
   const [fontsLoaded] = useFonts({
@@ -42,7 +43,7 @@ export default function IndexScreen() {
   if (!fontsLoaded) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#8B5E3C" />
+        <ActivityIndicator size="large" color={Colors.brown} />
       </View>
     );
   }
@@ -50,45 +51,52 @@ export default function IndexScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-[#F3E9DD]"
+      className="flex-1"
+      style={{ backgroundColor: Colors.cream }}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
         <View className="flex-1 justify-center items-center px-4">
-          <View className="rounded-2xl p-6 sm:p-8 w-full max-w-md items-center  bg-[#E2D1B2]">
+          <View
+            className="rounded-2xl p-6 sm:p-8 w-full max-w-md items-center"
+            style={{ backgroundColor: Colors.cremitLight }}
+          >
             <Text
-              className="text-[45px] font-bold text-center w-full text-[#8B5E3C]"
-              style={{ fontFamily: "MateSC-Regular" }}
+              className="text-[45px] font-bold text-center w-full"
+              style={{ fontFamily: "MateSC-Regular", color: Colors.brown }}
             >
               ARQAP
             </Text>
             <Text
-              className="text-[18px] sm:text-[22px] text-center mb-6 text-[#8B5E3C]"
-              style={{ fontFamily: "MateSC", letterSpacing: 1 }}
+              className="text-[18px] sm:text-[22px] text-center mb-6"
+              style={{ fontFamily: "MateSC", letterSpacing: 1, color: Colors.brown }}
             >
               Museo de ciencias naturales
             </Text>
             <Text
-              className="text-[16px] sm:text-[20px] text-center mb-4 text-[#A68B5B]"
-              style={{ fontFamily: "CrimsonText-Regular" }}
+              className="text-[16px] sm:text-[20px] text-center mb-4"
+              style={{ fontFamily: "CrimsonText-Regular", color: Colors.accent }}
             >
               Iniciar Sesión
             </Text>
 
             <View className="w-full mb-4">
-              <View className="flex-row items-center border-2 border-[#A68B5B] rounded-lg mb-2 bg-[#F7F5F2]">
+              <View
+                className="flex-row items-center border-2 rounded-lg mb-2"
+                style={{ borderColor: Colors.accent, backgroundColor: "#F7F5F2" }}
+              >
                 <MaterialIcons
                   name="person"
                   size={22}
-                  color="#A68B5B"
+                  color={Colors.accent}
                   style={{ marginRight: 6 }}
                   className="pl-2 mr-2"
                 />
                 <TextInput
                   placeholder="Ingresa tu usuario"
-                  placeholderTextColor="#A68B5B"
+                  placeholderTextColor={Colors.accent}
                   className="flex-1 h-11 text-base text-[#222]"
                   style={{ fontFamily: "CrimsonText-Regular" }}
                   autoCapitalize="none"
@@ -97,17 +105,20 @@ export default function IndexScreen() {
                 />
               </View>
 
-              <View className="flex-row items-center border-2 border-[#A68B5B] rounded-lg bg-[#F7F5F2]">
+              <View
+                className="flex-row items-center border-2 rounded-lg"
+                style={{ borderColor: Colors.accent, backgroundColor: "#F7F5F2" }}
+              >
                 <MaterialIcons
                   name="lock"
                   size={22}
-                  color="#A68B5B"
+                  color={Colors.accent}
                   style={{ marginRight: 6 }}
                   className="pl-2 mr-2"
                 />
                 <TextInput
                   placeholder="**************"
-                  placeholderTextColor="#A68B5B"
+                  placeholderTextColor={Colors.accent}
                   secureTextEntry
                   className="flex-1 h-11 text-base text-[#222] pt-1"
                   style={{ fontFamily: "CrimsonText-Regular" }}
@@ -119,9 +130,8 @@ export default function IndexScreen() {
 
             <TouchableOpacity
               disabled={loginMutation.isPending}
-              className={`rounded-lg w-full py-3 mt-2 ${
-                loginMutation.isPending ? "bg-[#A68B5B]" : "bg-[#6B705C]"
-              }`}
+              className="rounded-lg w-full py-3 mt-2"
+              style={{ backgroundColor: loginMutation.isPending ? Colors.accent : Colors.green }}
               onPress={handleLogin}
             >
               {loginMutation.isPending ? (
@@ -138,8 +148,8 @@ export default function IndexScreen() {
 
             {loginMutation.isError && (
               <Text
-                className="text-red-700 text-center mt-3"
-                style={{ fontFamily: "CrimsonText-Regular" }}
+                className="text-center mt-3"
+                style={{ fontFamily: "CrimsonText-Regular", color: "#b91c1c" }}
               >
                 {(loginMutation.error as Error).message === "Request failed with status code 401" 
                   ? "Usuario o contraseña incorrectos"

@@ -1,15 +1,16 @@
+import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
+import { useArchaeologists } from "@/hooks/useArchaeologist";
+import { useArtefacts } from "@/hooks/useArtefact";
+import { useCollections } from "@/hooks/useCollections";
+import { useLoans } from "@/hooks/useLoan";
 import * as Font from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import ActionButton from "../../components/ui/ActionButton";
+import Colors from "../../constants/Colors";
 import Card from "./Card";
 import Navbar from "./Navbar";
-import { useArtefacts } from "@/hooks/useArtefact";
-import { useCollections } from "@/hooks/useCollections";
-import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
-import { useArchaeologists } from "@/hooks/useArchaeologist";
-import { useLoans } from "@/hooks/useLoan";
 
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -42,27 +43,27 @@ export default function HomeScreen() {
   if (!fontsLoaded) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#8B5E3C" />
+        <ActivityIndicator size="large" color={Colors.brown} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1" style={{ backgroundColor: "#F3E9DD" }}>
+    <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
       <Navbar title="Inicio" />
       <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
         <View className="items-center mt-8 mb-8">
           <Text
-            className="text-[45px] font-bold text-center w-full text-[#8B5E3C]"
-            style={{ fontFamily: "MateSC-Regular" }}
+            className="text-[45px] font-bold text-center w-full"
+            style={{ fontFamily: "MateSC-Regular", color: Colors.brown }}
           >
             ARQAP
           </Text>
         </View>
         <View className="items-center mb-8">
           <Text
-            className="text-[30px] font-bold text-center w-full text-[#8B5E3C]"
-            style={{ fontFamily: "MateSC-Regular" }}
+            className="text-[30px] font-bold text-center w-full"
+            style={{ fontFamily: "MateSC-Regular", color: Colors.brown }}
           >
             Museo De Ciencias Naturales
           </Text>

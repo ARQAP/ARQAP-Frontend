@@ -1,8 +1,9 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import CubeBadge from "../../components/ui/CubeBadge";
+import Colors from '../../constants/Colors';
 
 interface CardProps {
   title: string;
@@ -36,7 +37,8 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   };
   return (
     <TouchableOpacity
-      className="w-[90%] self-center rounded-xl p-4 my-2 flex-row items-center bg-[#6B705C]"
+      className="w-[90%] self-center rounded-xl p-4 my-2 flex-row items-center justify-between"
+      style={[styles.card, { backgroundColor: Colors.green }]}
       activeOpacity={0.8}
       onPress={handlePress}
     >
@@ -58,9 +60,24 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
         {cubeCount !== undefined ? (
           <CubeBadge count={cubeCount} icon={icon} />
         ) : icon ? (
-          <FontAwesome name={icon} size={32} color="#fff" />
+          <View className="w-12 h-12 rounded-full bg-white/15 items-center justify-center">
+            <FontAwesome name={icon} size={22} color="#fff" />
+          </View>
         ) : null}
       </View>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    // sombras y elevación sin romper layout
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.16)",
+  },
+});
