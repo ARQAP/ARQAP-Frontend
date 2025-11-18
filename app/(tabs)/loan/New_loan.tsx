@@ -44,15 +44,15 @@ export default function NewLoan() {
   const [selectedRequesterId, setSelectedRequesterId] = useState<number | null>(
     null
   );
-  
+
   // Establecer fecha y hora actual automáticamente (hora local)
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
   const [loanDate] = useState(`${year}-${month}-${day}`); // Fecha local en formato YYYY-MM-DD
   const [loanTime] = useState(`${hours}:${minutes}`); // Hora local en formato HH:MM
 
@@ -65,11 +65,13 @@ export default function NewLoan() {
 
   // Datos convertidos para SimpleModal
   const artefactItems: SimplePickerItem[] = useMemo(() => {
-    return artefacts.map((artefact) => ({
-      value: artefact.id!,
-      label: `${artefact.name} - ${artefact.material}`,
-      raw: artefact,
-    }));
+    return artefacts
+      .filter((artefact) => artefact.available)
+      .map((artefact) => ({
+        value: artefact.id!,
+        label: `${artefact.name} - ${artefact.material}`,
+        raw: artefact,
+      }));
   }, [artefacts]);
 
   const requesterItems: SimplePickerItem[] = useMemo(() => {
@@ -94,7 +96,14 @@ export default function NewLoan() {
 
     if (!selectedArtefactId) {
       newErrors.artefact = "Debe seleccionar una pieza arqueológica";
+    } else {
+      const selected = artefacts.find((a) => a.id === selectedArtefactId);
+      if (!selected?.available) {
+        newErrors.artefact =
+          "La pieza seleccionada no está disponible para préstamo";
+      }
     }
+
     if (!selectedRequesterId) {
       newErrors.requester = "Debe seleccionar un solicitante";
     }
@@ -113,14 +122,14 @@ export default function NewLoan() {
     const timezoneOffset = -now.getTimezoneOffset(); // Offset en minutos
     const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
     const offsetMinutes = Math.abs(timezoneOffset) % 60;
-    const offsetSign = timezoneOffset >= 0 ? '+' : '-';
-    const timezoneString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
-    
+    const offsetSign = timezoneOffset >= 0 ? "+" : "-";
+    const timezoneString = `${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
+
     const loanDateTime = `${loanDate}T${loanTime}:00${timezoneString}`;
 
     const loanData = {
-      loanDate: loanDateTime,  // Datetime completo con zona horaria
-      loanTime: loanDateTime,  // Datetime completo con zona horaria
+      loanDate: loanDateTime, // Datetime completo con zona horaria
+      loanTime: loanDateTime, // Datetime completo con zona horaria
       artefactId: selectedArtefactId!,
       requesterId: selectedRequesterId!,
     };
@@ -161,7 +170,11 @@ export default function NewLoan() {
   }
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-      <Navbar title="Nuevo Préstamo" showBackArrow redirectTo="/(tabs)/loan" />
+      <Navbar
+        title="Nuevo Préstamo"
+        showBackArrow
+        redirectTo="/(tabs)/loan/View_loan"
+      />
 
       <View style={{ padding: 20 }}>
         {/* Selección de Pieza Arqueológica */}
@@ -298,36 +311,48 @@ export default function NewLoan() {
               borderColor: "#e0e0e0",
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
               <FontAwesome name="calendar" size={16} color={Colors.brown} />
-              <Text style={{ 
-                marginLeft: 10, 
-                fontSize: 16,
-                fontWeight: "600",
-                color: Colors.brown 
-              }}>
-                Fecha: {new Date(loanDate).toLocaleDateString('es-ES')}
+              <Text
+                style={{
+                  marginLeft: 10,
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: Colors.brown,
+                }}
+              >
+                Fecha: {new Date(loanDate).toLocaleDateString("es-ES")}
               </Text>
             </View>
-            
+
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <FontAwesome name="clock-o" size={16} color={Colors.brown} />
-              <Text style={{ 
-                marginLeft: 10, 
-                fontSize: 16,
-                fontWeight: "600",
-                color: Colors.brown 
-              }}>
+              <Text
+                style={{
+                  marginLeft: 10,
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: Colors.brown,
+                }}
+              >
                 Hora: {loanTime}
               </Text>
             </View>
-            
-            <Text style={{ 
-              marginTop: 8,
-              fontSize: 12,
-              color: "#666",
-              fontStyle: "italic"
-            }}>
+
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 12,
+                color: "#666",
+                fontStyle: "italic",
+              }}
+            >
               * La fecha y hora se establecen automáticamente al momento actual
             </Text>
           </View>

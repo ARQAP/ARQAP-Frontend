@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api";
+import { InternalClassifier } from "./internalClassifierRepository";
 
 export type Picture = {
   id?: number;
@@ -42,7 +43,7 @@ export type Artefact = {
   inplClassifierId?: number | null;
   inplClassifier?: unknown | null;
   internalClassifierId?: number | null;
-  internalClassifier?: unknown | null;
+  internalClassifier?: InternalClassifier | null;
   physicalLocationId?: number | null;
   physicalLocation?: unknown | null;
 };

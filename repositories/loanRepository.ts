@@ -18,6 +18,7 @@ export const LoanRepository = {
   getAll: async () => {
     const { data } = await apiClient.get("/loans/");
     return data as Loan[];
+    console.log("Fetched loans:", data);
   },
 
   getById: async (id: number) => {

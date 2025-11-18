@@ -38,6 +38,7 @@ type Piece = {
   shelf?: string;
   level?: string;
   column?: string;
+  available: boolean;
   description?: string;
   observation?: string;
   internalClassifier?: string;
@@ -208,6 +209,7 @@ export default function ViewPiece() {
       column: columnStr,
       description: a.description ?? undefined,
       observation: a.observation ?? undefined,
+      available: a.available ?? false,
       images,
       fichaHistorica,
       mentions,
@@ -460,6 +462,11 @@ export default function ViewPiece() {
                 icon="tag"
                 label="CLASIFICADOR INTERNO"
                 value={piece.internalClassifier}
+              />
+              <InfoRow
+                icon={piece.available ? "check-circle" : "minus-square"}
+                label="DISPONIBLE"
+                value={piece.available ? "Sí" : "No"}
               />
             </View>
             <Text
