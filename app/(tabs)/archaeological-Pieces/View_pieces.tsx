@@ -41,9 +41,11 @@ export default function ViewPieces() {
   const [filterMaterial, setFilterMaterial] = useState("");
   const [filterCollection, setFilterCollection] = useState("");
   const [filterSite, setFilterSite] = useState("");
-  const [filterShelf, setFilterShelf] = useState("");
-  const [filterShelfLevel, setFilterShelfLevel] = useState("");
-  const [filterShelfColumn, setFilterShelfColumn] = useState("");
+
+  // filtros de ubicación
+  const [filterShelf, setFilterShelf] = useState(""); // SOLO número de estante
+  const [filterShelfLevel, setFilterShelfLevel] = useState(""); // SOLO número de nivel
+  const [filterShelfColumn, setFilterShelfColumn] = useState(""); // letra A-D
 
   // Estado para el menú desplegable
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
@@ -63,11 +65,14 @@ export default function ViewPieces() {
     const pieceName = piece?.name || "esta pieza";
 
     const doDelete = () => {
+      console.log("Iniciando eliminación de pieza con ID:", id);
       deleteMutation.mutate(id, {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          console.log("Eliminación exitosa:", data);
           Alert.alert("Éxito", "Pieza eliminada correctamente.");
         },
         onError: (error) => {
+          console.error("Error en eliminación:", error);
           const errorMessage =
             (error as Error).message || "Error al eliminar la pieza.";
           Alert.alert("Error", errorMessage);
@@ -75,7 +80,11 @@ export default function ViewPieces() {
       });
     };
 
+    console.log("Showing delete confirmation for:", pieceName);
+    console.log("Platform.OS:", Platform.OS);
+
     if (Platform.OS === "web") {
+      console.log("Using web confirm dialog");
       const confirmed = window.confirm(
         `¿Eliminar ${pieceName}? Esta acción es irreversible.`
       );
@@ -83,6 +92,7 @@ export default function ViewPieces() {
       return;
     }
 
+    console.log("Using React Native Alert");
     try {
       Alert.alert(
         "Eliminar",
@@ -92,7 +102,8 @@ export default function ViewPieces() {
           { text: "Eliminar", style: "destructive", onPress: doDelete },
         ]
       );
-    } catch {
+    } catch (error) {
+      console.error("Error showing Alert:", error);
       const confirmed = confirm(
         `¿Eliminar ${pieceName}? Esta acción es irreversible.`
       );
@@ -114,7 +125,7 @@ export default function ViewPieces() {
 
       const collectionName = (a as any)?.collection?.name ?? undefined;
 
-      const shelfRaw = (a as any)?.physicalLocation?.shelf?.code ?? undefined;
+      const shelfRaw = (a as any)?.physicalLocation?.shelf.code ?? undefined;
       const levelRaw = (a as any)?.physicalLocation?.level ?? undefined;
       const columnRaw = (a as any)?.physicalLocation?.column ?? undefined;
 
@@ -128,7 +139,6 @@ export default function ViewPieces() {
             : `Estantería ${String(shelfRaw)}`;
 
       const level = levelRaw == null ? undefined : `Nivel ${String(levelRaw)}`;
-
       const column =
         columnRaw == null ? undefined : `Columna ${String(columnRaw)}`;
 
@@ -176,37 +186,29 @@ export default function ViewPieces() {
       )
         return false;
 
-      // Estante (texto completo: "Estantería 1", etc.)
-      if (
-        filterShelf &&
-        !(p.shelf || "").toLowerCase().includes(filterShelf.toLowerCase())
-      )
-        return false;
+      // ====== ESTANTERÍA (solo número) ======
+      if (filterShelf.trim() !== "") {
+        const shelfText = p.shelf || "";
+        const pieceNum = shelfText.match(/\d+/)?.[0]; // número en "Estantería 1"
 
-      // ----- Filtro por nivel (ej: "1" o "Nivel 1") -----
-      if (filterShelfLevel.trim() !== "") {
-        const nivelFiltro =
-          filterShelfLevel.match(/\d+/)?.[0] ?? filterShelfLevel.trim();
-
-        const nivelPieza =
-          (p.level || "").match(/\d+/)?.[0] ?? (p.level || "").trim();
-
-        if (!nivelPieza || nivelPieza !== nivelFiltro) return false;
+        if (!pieceNum || pieceNum !== filterShelf.trim()) return false;
       }
 
-      // ----- Filtro por columna (ej: "A" o "Columna A") -----
-      if (filterShelfColumn.trim() !== "") {
-        // Normalizo el filtro: saco "columna", espacios y me quedo con la letra
-        const colFiltro = filterShelfColumn
-          .toUpperCase()
-          .replace(/COLUMNA/i, "")
-          .trim(); // A / B / C / D
+      // ====== NIVEL (solo número) ======
+      if (filterShelfLevel.trim() !== "") {
+        const levelText = p.level || "";
+        const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
 
-        // Normalizo el valor de la pieza igual
+        if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
+      }
+
+      // ====== COLUMNA (letra A-D) ======
+      if (filterShelfColumn.trim() !== "") {
+        const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
         const colPieza = (p.column || "")
           .toUpperCase()
           .replace(/COLUMNA/i, "")
-          .trim(); // A / B / C / D
+          .trim(); // A/B/C/D
 
         if (!colPieza || colPieza !== colFiltro) return false;
       }
@@ -259,13 +261,13 @@ export default function ViewPieces() {
               }
             />
 
-            {/* Filtros principales */}
+            {/* Filtros */}
             <View
               style={{
                 flexDirection: "row",
                 flexWrap: "wrap",
                 gap: 8,
-                marginBottom: 8,
+                marginBottom: 12,
               }}
             >
               <TextInput
@@ -317,9 +319,12 @@ export default function ViewPieces() {
                 }}
               />
               <TextInput
-                placeholder="Filtrar por estante"
+                placeholder="Filtrar por numero de estante"
                 value={filterShelf}
-                onChangeText={setFilterShelf}
+                onChangeText={(text) =>
+                  setFilterShelf(text.replace(/[^0-9]/g, ""))
+                }
+                keyboardType="numeric"
                 style={{
                   flex: 1,
                   minWidth: 200,
@@ -328,44 +333,48 @@ export default function ViewPieces() {
                   padding: 10,
                 }}
               />
-            </View>
 
-            {/* Filtros dependientes del estante, DEBAJO */}
-            {filterShelf.trim() !== "" && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  marginBottom: 12,
-                }}
-              >
-                <TextInput
-                  placeholder="Filtrar por nivel (ej: 1, Nivel 1)"
-                  value={filterShelfLevel}
-                  onChangeText={setFilterShelfLevel}
-                  style={{
-                    flex: 1,
-                    minWidth: 200,
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 8,
-                    padding: 10,
-                  }}
-                />
-                <TextInput
-                  placeholder="Filtrar por columna (ej: A, Columna A)"
-                  value={filterShelfColumn}
-                  onChangeText={setFilterShelfColumn}
-                  style={{
-                    flex: 1,
-                    minWidth: 200,
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 8,
-                    padding: 10,
-                  }}
-                />
-              </View>
-            )}
+              {/* Filtros adicionales solo si hay estante */}
+              {filterShelf !== "" && (
+                <>
+                  <TextInput
+                    placeholder="Filtrar por nivel (1-4)"
+                    value={filterShelfLevel}
+                    onChangeText={(text) =>
+                      setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
+                    }
+                    keyboardType="numeric"
+                    style={{
+                      flex: 1,
+                      minWidth: 200,
+                      backgroundColor: "#F7F5F2",
+                      borderRadius: 8,
+                      padding: 10,
+                    }}
+                  />
+                  <TextInput
+                    placeholder="Filtrar por columna (A-D)"
+                    value={filterShelfColumn}
+                    onChangeText={(text) =>
+                      setFilterShelfColumn(
+                        text
+                          .replace(/[^A-Za-z]/g, "")
+                          .toUpperCase()
+                          .slice(0, 1)
+                      )
+                    }
+                    autoCapitalize="characters"
+                    style={{
+                      flex: 1,
+                      minWidth: 200,
+                      backgroundColor: "#F7F5F2",
+                      borderRadius: 8,
+                      padding: 10,
+                    }}
+                  />
+                </>
+              )}
+            </View>
 
             <Text style={{ marginBottom: 8, color: "#222", fontWeight: "700" }}>
               {filtered.length} PIEZAS ENCONTRADAS
@@ -528,7 +537,13 @@ export default function ViewPieces() {
                           </TouchableOpacity>
 
                           <TouchableOpacity
-                            onPress={() => handleDelete(p.id!)}
+                            onPress={() => {
+                              console.log(
+                                "Delete button pressed, piece ID:",
+                                p.id
+                              );
+                              handleDelete(p.id!);
+                            }}
                             style={{
                               flexDirection: "row",
                               alignItems: "center",
