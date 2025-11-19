@@ -42,11 +42,16 @@ export default function ViewPieces() {
     typeof shelfIdNum === 'number' && !Number.isNaN(shelfIdNum) ? { shelfId: shelfIdNum } : undefined
   );
   const deleteMutation = useDeleteArtefact();
+
   const [query, setQuery] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");
   const [filterCollection, setFilterCollection] = useState("");
   const [filterSite, setFilterSite] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
+
+  // filtros de ubicación
+  const [filterShelf, setFilterShelf] = useState(""); // SOLO número de estante
+  const [filterShelfLevel, setFilterShelfLevel] = useState(""); // SOLO número de nivel
+  const [filterShelfColumn, setFilterShelfColumn] = useState(""); // letra A-D
 
   // Estado para el menú desplegable
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
@@ -105,7 +110,6 @@ export default function ViewPieces() {
       );
     } catch (error) {
       console.error("Error showing Alert:", error);
-      // Fallback: usar confirm aunque no sea móvil
       const confirmed = confirm(
         `¿Eliminar ${pieceName}? Esta acción es irreversible.`
       );
@@ -128,9 +132,7 @@ export default function ViewPieces() {
       const collectionName = (a as any)?.collection?.name ?? undefined;
 
       const shelfRaw = (a as any)?.physicalLocation?.shelf.code ?? undefined;
-
       const levelRaw = (a as any)?.physicalLocation?.level ?? undefined;
-
       const columnRaw = (a as any)?.physicalLocation?.column ?? undefined;
 
       const shelf =
@@ -143,12 +145,11 @@ export default function ViewPieces() {
             : `Estantería ${String(shelfRaw)}`;
 
       const level = levelRaw == null ? undefined : `Nivel ${String(levelRaw)}`;
-
       const column =
         columnRaw == null ? undefined : `Columna ${String(columnRaw)}`;
 
       return {
-        ...a, // Incluir todos los campos del artefacto original
+        ...a,
         id: Number(a.id!),
         name: a.name,
         material: a.material,
@@ -164,13 +165,18 @@ export default function ViewPieces() {
 
   const filtered = useMemo(() => {
     return pieces.filter((p) => {
+      // Nombre
       if (query && !p.name.toLowerCase().includes(query.toLowerCase()))
         return false;
+
+      // Material
       if (
         filterMaterial &&
         !(p.material || "").toLowerCase().includes(filterMaterial.toLowerCase())
       )
         return false;
+
+      // Colección
       if (
         filterCollection &&
         !(p.collection || "")
@@ -178,16 +184,41 @@ export default function ViewPieces() {
           .includes(filterCollection.toLowerCase())
       )
         return false;
+
+      // Sitio arqueológico
       if (
         filterSite &&
         !(p.site || "").toLowerCase().includes(filterSite.toLowerCase())
       )
         return false;
-      if (
-        filterCategory &&
-        !(p.name || "").toLowerCase().includes(filterCategory.toLowerCase())
-      )
-        return false; // placeholder
+
+      // ====== ESTANTERÍA (solo número) ======
+      if (filterShelf.trim() !== "") {
+        const shelfText = p.shelf || "";
+        const pieceNum = shelfText.match(/\d+/)?.[0]; // número en "Estantería 1"
+
+        if (!pieceNum || pieceNum !== filterShelf.trim()) return false;
+      }
+
+      // ====== NIVEL (solo número) ======
+      if (filterShelfLevel.trim() !== "") {
+        const levelText = p.level || "";
+        const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
+
+        if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
+      }
+
+      // ====== COLUMNA (letra A-D) ======
+      if (filterShelfColumn.trim() !== "") {
+        const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
+        const colPieza = (p.column || "")
+          .toUpperCase()
+          .replace(/COLUMNA/i, "")
+          .trim(); // A/B/C/D
+
+        if (!colPieza || colPieza !== colFiltro) return false;
+      }
+
       return true;
     });
   }, [
@@ -196,7 +227,9 @@ export default function ViewPieces() {
     filterMaterial,
     filterCollection,
     filterSite,
-    filterCategory,
+    filterShelf,
+    filterShelfLevel,
+    filterShelfColumn,
   ]);
 
   return (
@@ -292,9 +325,12 @@ export default function ViewPieces() {
                 }}
               />
               <TextInput
-                placeholder="Filtrar por categoría"
-                value={filterCategory}
-                onChangeText={setFilterCategory}
+                placeholder="Filtrar por numero de estante"
+                value={filterShelf}
+                onChangeText={(text) =>
+                  setFilterShelf(text.replace(/[^0-9]/g, ""))
+                }
+                keyboardType="numeric"
                 style={{
                   flex: 1,
                   minWidth: 200,
@@ -303,6 +339,47 @@ export default function ViewPieces() {
                   padding: 10,
                 }}
               />
+
+              {/* Filtros adicionales solo si hay estante */}
+              {filterShelf !== "" && (
+                <>
+                  <TextInput
+                    placeholder="Filtrar por nivel (1-4)"
+                    value={filterShelfLevel}
+                    onChangeText={(text) =>
+                      setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
+                    }
+                    keyboardType="numeric"
+                    style={{
+                      flex: 1,
+                      minWidth: 200,
+                      backgroundColor: "#F7F5F2",
+                      borderRadius: 8,
+                      padding: 10,
+                    }}
+                  />
+                  <TextInput
+                    placeholder="Filtrar por columna (A-D)"
+                    value={filterShelfColumn}
+                    onChangeText={(text) =>
+                      setFilterShelfColumn(
+                        text
+                          .replace(/[^A-Za-z]/g, "")
+                          .toUpperCase()
+                          .slice(0, 1)
+                      )
+                    }
+                    autoCapitalize="characters"
+                    style={{
+                      flex: 1,
+                      minWidth: 200,
+                      backgroundColor: "#F7F5F2",
+                      borderRadius: 8,
+                      padding: 10,
+                    }}
+                  />
+                </>
+              )}
             </View>
 
             <Text style={{ marginBottom: 8, color: "#222", fontWeight: "700" }}>

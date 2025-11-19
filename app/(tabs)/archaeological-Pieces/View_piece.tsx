@@ -38,15 +38,18 @@ type Piece = {
   shelf?: string;
   level?: string;
   column?: string;
+  available: boolean;
   description?: string;
   observation?: string;
   internalClassifier?: string;
-  images?: string[]; // URLs absolutas
-  fichaHistorica?: { id: number; title: string; url?: string }[]; // URLs absolutas
+  images?: string[];
+  fichaHistorica?: { id: number; title: string; url?: string }[];
   mentions?: { id: number; title: string; url?: string }[];
-  selectedLevel?: number; // índice 0..3
-  selectedColumn?: number; // índice 0..3
+  selectedLevel?: number;
+  selectedColumn?: number;
 };
+
+type InplFichaView = { id: number; url: string; filename?: string };
 
 export default function ViewPiece() {
   const params = useLocalSearchParams();
@@ -55,9 +58,6 @@ export default function ViewPiece() {
   const { width: windowWidth } = useWindowDimensions();
 
   const [previewUri, setPreviewUri] = useState<string | null>(null);
-
-  type InplFichaView = { id: number; url: string; filename?: string };
-
   const [inplFichas, setInplFichas] = useState<InplFichaView[]>([]);
 
   // grilla ubicación
@@ -75,25 +75,23 @@ export default function ViewPiece() {
   const rawCellSize = Math.floor(availableWidthForCells / columns.length);
   const cellSize = Math.max(48, Math.min(rawCellSize, 110));
 
-  // -------- fetch pieza específica con TU hook ----------
+  // fetch pieza
   const { data, isLoading, isError, refetch } = useArtefact(id ?? undefined);
-
   const { data: mentionsData = [] } = useMentionsByArtefactId(id ?? undefined);
 
-  // util: hace absoluta una ruta si vino relativa
+  // util ruta absoluta
   const base = (apiClient.defaults.baseURL || "").replace(/\/+$/, "");
   const abs = (u?: string) => {
     if (!u) return "";
     if (u.startsWith("http")) return u;
-
-    const clean = u.replace(/^\/+/, ""); // saca / inicial
+    const clean = u.replace(/^\/+/, "");
     const parts = clean.split("/");
     const last = parts.pop()!;
-    const encodedLast = encodeURIComponent(last); // maneja espacios
+    const encodedLast = encodeURIComponent(last);
     return `${base}/${[...parts, encodedLast].join("/")}`;
   };
 
-  // -------- normalización a tu shape Piece ----------
+  // normalizar a Piece
   const piece: Piece | null = useMemo(() => {
     const a = (data ?? null) as Artefact | null;
     if (!a) return null;
@@ -146,7 +144,7 @@ export default function ViewPiece() {
         ? Math.max(0, Math.min(3, Number(levelRaw) - 1))
         : undefined;
 
-    const colLetter = (columnStr || "").replace("COLUMNA ", "").trim(); // A..D
+    const colLetter = (columnStr || "").replace("COLUMNA ", "").trim();
     const columnIndex =
       colLetter === "A"
         ? 0
@@ -184,7 +182,6 @@ export default function ViewPiece() {
       const col = internal.color ? ` (${internal.color})` : "";
       internalClassifierLabel = `${num}${col}`.trim();
     } else if ((a as any)?.internalClassifierId != null) {
-      // Fallback si vino solo el ID y no la relación populada
       internalClassifierLabel = `#${(a as any).internalClassifierId}`;
     }
 
@@ -208,6 +205,7 @@ export default function ViewPiece() {
       column: columnStr,
       description: a.description ?? undefined,
       observation: a.observation ?? undefined,
+      available: a.available ?? false,
       images,
       fichaHistorica,
       mentions,
@@ -225,12 +223,10 @@ export default function ViewPiece() {
     for (const f of dtoFichas) {
       try {
         if (Platform.OS === "web") {
-          // Web: usar blob con URL.createObjectURL
           const blob = await INPLRepository.fetchFichaBlob(f.id);
           const objUrl = URL.createObjectURL(blob);
           out.push({ id: Number(f.id), url: objUrl, filename: f.filename });
         } else {
-          // React Native: usar fetch manual con headers de autorización
           const token = await getToken();
           const baseUrl = apiClient.defaults.baseURL || "";
           const fullUrl = `${baseUrl}/inplFichas/${f.id}/download`;
@@ -243,7 +239,6 @@ export default function ViewPiece() {
 
           if (response.ok) {
             const blob = await response.blob();
-            // En React Native, podemos usar la URL del blob directamente
             const url = URL.createObjectURL(blob);
             out.push({ id: Number(f.id), url: url, filename: f.filename });
           } else {
@@ -251,13 +246,11 @@ export default function ViewPiece() {
               `Failed to fetch INPL ficha ${f.id}:`,
               response.status
             );
-            // Fallback: usar URL original (probablemente falle pero intentamos)
             out.push({ id: Number(f.id), url: f.url, filename: f.filename });
           }
         }
       } catch (e) {
         console.warn("Error loading INPL ficha", f.id, e);
-        // Fallback: intentar con URL directa
         out.push({ id: Number(f.id), url: f.url, filename: f.filename });
       }
     }
@@ -290,14 +283,12 @@ export default function ViewPiece() {
           Number(classifierId)
         );
 
-        // 1) armamos una lista base con los campos del DTO
         const baseList = (dto?.inplFichas ?? []).map((f) => ({
           id: Number(f.id),
-          url: f.url, // viene como /inplFichas/:id/download
+          url: f.url,
           filename: f.filename,
         }));
 
-        // 2) convertimos a URLs mostrables (web => blob, nativo => directa)
         const viewables = await buildViewableInplFichas(baseList);
 
         if (!cancelled) setInplFichas(viewables.filter((x) => !!x.url));
@@ -314,7 +305,6 @@ export default function ViewPiece() {
   }, [data]);
 
   React.useEffect(() => {
-    // cleanup de blob URLs en web
     return () => {
       if (Platform.OS === "web") {
         inplFichas.forEach((f) => {
@@ -383,110 +373,175 @@ export default function ViewPiece() {
         contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
       >
         <View style={{ width: "92%", maxWidth: 840, padding: 16 }}>
-          <View
-            style={{
-              backgroundColor: "transparent",
-              borderRadius: 0,
-              padding: 12,
-              borderWidth: 0,
-            }}
-          >
-            <View
-              style={{
-                marginBottom: 8,
-                flexDirection: "row",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <Badge
-                text={piece.shelf || ""}
-                background={Colors.green}
-                textColor={Colors.cremit}
-              />
-              <Badge
-                text={piece.level || ""}
-                background={Colors.brown}
-                textColor={Colors.cremit}
-              />
-              <Badge
-                text={piece.column || ""}
-                background={Colors.black}
-                textColor={Colors.cremit}
-              />
-            </View>
+          {/* CABECERA */}
+          <View style={{ marginBottom: 12 }}>
+            {/* Nombre */}
             <Text
               style={{
-                fontSize: 22,
+                fontSize: 24,
                 fontWeight: "700",
                 marginBottom: 8,
                 fontFamily: "CrimsonText-Regular",
+                color: Colors.black,
               }}
             >
               {piece.name}
             </Text>
-            <Text
+
+            {/* Ubicación rápida */}
+            <View
               style={{
-                fontFamily: "MateSC-Regular",
-                color: "#333",
+                flexDirection: "row",
+                gap: 8,
+                flexWrap: "wrap",
                 marginBottom: 8,
               }}
             >
-              DESCRIPCIÓN
-            </Text>
-            <Text
-              style={{ fontFamily: "CrimsonText-Regular", marginBottom: 12 }}
-            >
-              {piece.description || "—"}
-            </Text>
-            <View style={{ marginBottom: 8 }}>
-              <InfoRow icon="cube" label="MATERIAL" value={piece.material} />
-              <InfoRow
-                icon="map-marker"
-                label="SITIO ARQUEOLOGICO"
-                value={piece.site}
+              <Badge
+                text={piece.shelf || "SIN ESTANTERÍA"}
+                background={Colors.green}
+                textColor={Colors.cremit}
               />
-              <InfoRow
-                icon="user"
-                label="ARQUEOLOGO"
-                value={piece.archaeologist}
+              <Badge
+                text={piece.level || "SIN NIVEL"}
+                background={Colors.brown}
+                textColor={Colors.cremit}
               />
-              <InfoRow
-                icon="archive"
-                label="COLECCION"
-                value={piece.collection}
-              />
-              <InfoRow
-                icon="tag"
-                label="CLASIFICADOR INTERNO"
-                value={piece.internalClassifier}
+              <Badge
+                text={piece.column || "SIN COLUMNA"}
+                background={Colors.black}
+                textColor={Colors.cremit}
               />
             </View>
+
+            {/* Descripción corta */}
+            <View style={{ marginTop: 4 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  color: "#333",
+                  marginBottom: 6,
+                }}
+              >
+                DESCRIPCIÓN
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  marginBottom: 4,
+                  color: Colors.black,
+                }}
+              >
+                {piece.description || "—"}
+              </Text>
+            </View>
+          </View>
+
+          {/* FICHA TÉCNICA */}
+          <View
+            style={{
+              marginTop: 4,
+              marginBottom: 12,
+              backgroundColor: "#FFF",
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+                marginBottom: 8,
+              }}
+            >
+              FICHA TÉCNICA
+            </Text>
+
+            <InfoRow icon="cube" label="MATERIAL" value={piece.material} />
+            <InfoRow
+              icon="map-marker"
+              label="SITIO ARQUEOLÓGICO"
+              value={piece.site}
+            />
+            <InfoRow
+              icon="user"
+              label="ARQUEÓLOGO"
+              value={piece.archaeologist}
+            />
+            <InfoRow
+              icon="archive"
+              label="COLECCIÓN"
+              value={piece.collection}
+            />
+            <InfoRow
+              icon="tag"
+              label="CLASIFICADOR INTERNO"
+              value={piece.internalClassifier}
+            />
+            <InfoRow
+              icon={piece.available ? "check-circle" : "minus-square"}
+              label="DISPONIBLE"
+              value={piece.available ? "Sí" : "No"}
+            />
+          </View>
+
+          {/* OBSERVACIÓN */}
+          <View
+            style={{
+              marginBottom: 12,
+              backgroundColor: "#FFF",
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
             <Text
               style={{
                 fontFamily: "MateSC-Regular",
                 color: "#333",
-                marginTop: 8,
                 marginBottom: 6,
               }}
             >
               OBSERVACIÓN
             </Text>
             <Text
-              style={{ fontFamily: "CrimsonText-Regular", marginBottom: 12 }}
+              style={{ fontFamily: "CrimsonText-Regular", color: Colors.black }}
             >
               {piece.observation || "—"}
             </Text>
-            <View
+          </View>
+
+          {/* IMÁGENES */}
+          <View
+            style={{
+              marginBottom: 12,
+              backgroundColor: "#FFF",
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
+            <Text
               style={{
-                flexDirection: "row",
-                gap: 12,
-                marginBottom: 12,
-                flexWrap: "wrap",
+                fontFamily: "MateSC-Regular",
+                color: "#333",
+                marginBottom: 8,
               }}
             >
-              {piece.images && piece.images.length > 0 ? (
-                piece.images.map((uri, i) => (
+              IMÁGENES DE LA PIEZA
+            </Text>
+
+            {piece.images && piece.images.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 12 }}
+              >
+                {piece.images.map((uri, i) => (
                   <TouchableOpacity
                     key={i}
                     onPress={() => setPreviewUri(uri)}
@@ -494,6 +549,136 @@ export default function ViewPiece() {
                   >
                     <Image
                       source={{ uri }}
+                      style={{
+                        width: 150,
+                        height: 120,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: "#E6DAC4",
+                        ...(Platform.OS === "web"
+                          ? { cursor: "zoom-in" as any }
+                          : {}),
+                      }}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text
+                style={{ fontFamily: "CrimsonText-Regular", color: "#666" }}
+              >
+                Sin imágenes cargadas.
+              </Text>
+            )}
+          </View>
+
+          {/* FICHA HISTÓRICA */}
+          <View
+            style={{
+              marginBottom: 12,
+              backgroundColor: "#FFF",
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                color: "#333",
+                marginBottom: 6,
+              }}
+            >
+              FICHA HISTÓRICA
+            </Text>
+            {piece.fichaHistorica && piece.fichaHistorica.length > 0 ? (
+              piece.fichaHistorica.map((f) => (
+                <View
+                  key={f.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    backgroundColor: "#F7F5F2",
+                    padding: 8,
+                    borderRadius: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  <Text style={{ fontFamily: "CrimsonText-Regular" }}>
+                    {f.title}
+                  </Text>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: Colors.green,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                    }}
+                    onPress={() => {
+                      if (f.url) {
+                        Linking.openURL(f.url).catch((err) =>
+                          console.warn("No se pudo abrir la URL", err)
+                        );
+                      }
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: Colors.cremit,
+                        fontFamily: "CrimsonText-Regular",
+                      }}
+                    >
+                      {Platform.OS === "web" ? "ABRIR" : "VER"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  color: Colors.black,
+                }}
+              >
+                —
+              </Text>
+            )}
+          </View>
+
+          {/* FICHA INPL */}
+          <View
+            style={{
+              marginBottom: 12,
+              backgroundColor: "#FFF",
+              borderRadius: 8,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                color: "#333",
+                marginBottom: 6,
+              }}
+            >
+              FICHA INPL
+            </Text>
+
+            {inplFichas.length > 0 ? (
+              <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                {inplFichas.map((f) => (
+                  <TouchableOpacity
+                    key={f.id}
+                    onPress={() => setPreviewUri(f.url)}
+                    style={{ borderRadius: 6 }}
+                  >
+                    <Image
+                      source={{ uri: f.url }}
                       style={{
                         width: 140,
                         height: 110,
@@ -506,68 +691,84 @@ export default function ViewPiece() {
                       }}
                       resizeMode="cover"
                     />
+                    {!!f.filename && (
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          maxWidth: 140,
+                          marginTop: 4,
+                          fontSize: 12,
+                          fontFamily: "CrimsonText-Regular",
+                          color: Colors.black,
+                        }}
+                      >
+                        {f.filename}
+                      </Text>
+                    )}
                   </TouchableOpacity>
-                ))
-              ) : (
-                <View
-                  style={{
-                    width: 140,
-                    height: 110,
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 6,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 1,
-                    borderColor: "#E6DAC4",
-                  }}
-                >
-                  <Text style={{ fontFamily: "CrimsonText-Regular" }}>
-                    SIN IMÁGENES
-                  </Text>
-                </View>
-              )}
-            </View>
-            {/* ficha histórica list */}
-            <View style={{ marginBottom: 12 }}>
+                ))}
+              </View>
+            ) : (
               <Text
                 style={{
-                  fontFamily: "MateSC-Regular",
-                  color: "#333",
-                  marginBottom: 6,
+                  fontFamily: "CrimsonText-Regular",
+                  color: Colors.black,
                 }}
               >
-                FICHA HISTÓRICA
+                —
               </Text>
-              {piece.fichaHistorica && piece.fichaHistorica.length > 0 ? (
-                piece.fichaHistorica.map((f) => (
+            )}
+          </View>
+
+          {/* UBICACIÓN FÍSICA */}
+          <View
+            style={{
+              marginTop: 8,
+              marginBottom: 12,
+              backgroundColor: "#FFF",
+              padding: 12,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontWeight: "700",
+                textAlign: "center",
+                marginBottom: 8,
+                color: Colors.black,
+              }}
+            >
+              UBICACIÓN FÍSICA DE LA PIEZA
+            </Text>
+
+            {!piece.shelf ||
+            piece.selectedLevel == null ||
+            piece.selectedColumn == null ? (
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  color: "#666",
+                  textAlign: "center",
+                }}
+              >
+                Ubicación física no definida.
+              </Text>
+            ) : (
+              <>
+                <View style={{ marginBottom: 8, alignItems: "center" }}>
                   <View
-                    key={f.id}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      backgroundColor: "#F7F5F2",
-                      padding: 8,
-                      borderRadius: 6,
-                      marginBottom: 6,
-                    }}
+                    style={{ width: containerWidth, alignItems: "flex-start" }}
                   >
-                    <Text style={{ fontFamily: "CrimsonText-Regular" }}>
-                      {f.title}
-                    </Text>
-                    <TouchableOpacity
+                    <View
                       style={{
                         backgroundColor: Colors.green,
+                        alignSelf: "flex-start",
                         paddingHorizontal: 10,
                         paddingVertical: 6,
                         borderRadius: 6,
-                      }}
-                      onPress={() => {
-                        if (f.url) {
-                          Linking.openURL(f.url).catch((err) =>
-                            console.warn("No se pudo abrir la URL", err)
-                          );
-                        }
                       }}
                     >
                       <Text
@@ -576,279 +777,218 @@ export default function ViewPiece() {
                           fontFamily: "CrimsonText-Regular",
                         }}
                       >
-                        {Platform.OS === "web" ? "ABRIR" : "VER"}
+                        {piece.shelf}
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                   </View>
-                ))
-              ) : (
-                <Text
-                  style={{
-                    fontFamily: "CrimsonText-Regular",
-                    color: Colors.black,
-                  }}
-                >
-                  —
-                </Text>
-              )}
-            </View>
-            {/* Ficha INPL */}
-            <View style={{ marginBottom: 12 }}>
-              <Text
-                style={{
-                  fontFamily: "MateSC-Regular",
-                  color: "#333",
-                  marginBottom: 6,
-                }}
-              >
-                FICHA INPL
-              </Text>
-
-              {inplFichas.length > 0 ? (
-                <View
-                  style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}
-                >
-                  {inplFichas.map((f) => (
-                    <TouchableOpacity
-                      key={f.id}
-                      onPress={() => setPreviewUri(f.url)}
-                      style={{ borderRadius: 6 }}
-                    >
-                      <Image
-                        source={{ uri: f.url }}
-                        style={{
-                          width: 140,
-                          height: 110,
-                          borderRadius: 6,
-                          borderWidth: 1,
-                          borderColor: "#E6DAC4",
-                          ...(Platform.OS === "web"
-                            ? { cursor: "zoom-in" as any }
-                            : {}),
-                        }}
-                        resizeMode="cover"
-                      />
-                      {!!f.filename && (
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            maxWidth: 140,
-                            marginTop: 4,
-                            fontSize: 12,
-                            fontFamily: "CrimsonText-Regular",
-                            color: Colors.black,
-                          }}
-                        >
-                          {f.filename}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
                 </View>
-              ) : (
-                <Text
-                  style={{
-                    fontFamily: "CrimsonText-Regular",
-                    color: Colors.black,
-                  }}
-                >
-                  —
-                </Text>
-              )}
-            </View>
-            {/* Ubicación física */}
-            <View
-              style={{
-                marginTop: 8,
-                backgroundColor: "transparent",
-                padding: 0,
-                borderRadius: 0,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "MateSC-Regular",
-                  fontWeight: "700",
-                  textAlign: "center",
-                  marginBottom: 8,
-                  color: Colors.black,
-                }}
-              >
-                UBICACIÓN FÍSICA DE LA PIEZA
-              </Text>
-              <View style={{ marginBottom: 8, alignItems: "center" }}>
+
                 <View
-                  style={{ width: containerWidth, alignItems: "flex-start" }}
+                  style={{
+                    width: containerWidth,
+                    marginBottom: 6,
+                    alignSelf: "center",
+                  }}
                 >
                   <View
                     style={{
-                      backgroundColor: Colors.green,
-                      alignSelf: "flex-start",
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 6,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      width: "100%",
                     }}
                   >
-                    <Text
-                      style={{
-                        color: Colors.cremit,
-                        fontFamily: "CrimsonText-Regular",
-                      }}
-                    >
-                      {piece.shelf || "—"}
-                    </Text>
+                    <View style={{ width: leftLabelWidth }} />
+                    <View style={{ flexDirection: "row" }}>
+                      {columns.map((c, ci) => (
+                        <View
+                          key={c}
+                          style={{
+                            width: cellSize,
+                            paddingHorizontal: gap / 2,
+                            alignItems: "center",
+                            marginRight: ci < columns.length - 1 ? gap : 0,
+                          }}
+                        >
+                          <View
+                            style={{
+                              backgroundColor: "#2F2F2F",
+                              paddingHorizontal: 6,
+                              paddingVertical: 4,
+                              borderRadius: 6,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: Colors.cremit,
+                                fontFamily: "CrimsonText-Regular",
+                                fontSize: 11,
+                              }}
+                            >
+                              {c}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
-              </View>
-              <View
-                style={{
-                  width: containerWidth,
-                  marginBottom: 6,
-                  alignSelf: "center",
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    width: "100%",
-                  }}
-                >
-                  <View style={{ width: leftLabelWidth }} />
-                  <View style={{ flexDirection: "row" }}>
-                    {columns.map((c, ci) => (
+
+                <View>
+                  {levels.map((lvl, li) => (
+                    <View
+                      key={lvl}
+                      style={{
+                        width: containerWidth,
+                        alignSelf: "center",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginBottom: 6,
+                      }}
+                    >
                       <View
-                        key={c}
                         style={{
-                          width: cellSize,
-                          paddingHorizontal: gap / 2,
-                          alignItems: "center",
-                          marginRight: ci < columns.length - 1 ? gap : 0,
+                          width: leftLabelWidth,
+                          height: cellSize,
+                          justifyContent: "center",
                         }}
                       >
                         <View
                           style={{
-                            backgroundColor: "#2F2F2F",
-                            paddingHorizontal: 6,
-                            paddingVertical: 4,
+                            backgroundColor: Colors.brown,
+                            paddingVertical: 6,
+                            paddingHorizontal: 8,
                             borderRadius: 6,
+                            alignSelf: "flex-start",
                           }}
                         >
                           <Text
                             style={{
                               color: Colors.cremit,
                               fontFamily: "CrimsonText-Regular",
-                              fontSize: 11,
+                              fontSize: 12,
                             }}
                           >
-                            {c}
+                            {lvl}
                           </Text>
                         </View>
                       </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-              <View>
-                {levels.map((lvl, li) => (
-                  <View
-                    key={lvl}
-                    style={{
-                      width: containerWidth,
-                      alignSelf: "center",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: leftLabelWidth,
-                        height: cellSize,
-                        justifyContent: "center",
-                      }}
-                    >
-                      <View
-                        style={{
-                          backgroundColor: Colors.brown,
-                          paddingVertical: 6,
-                          paddingHorizontal: 8,
-                          borderRadius: 6,
-                          alignSelf: "flex-start",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: Colors.cremit,
-                            fontFamily: "CrimsonText-Regular",
-                            fontSize: 12,
-                          }}
-                        >
-                          {lvl}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: "row" }}>
-                      {columns.map((c, ci) => {
-                        const isSelected =
-                          piece.selectedLevel === li &&
-                          piece.selectedColumn === ci;
-                        return (
-                          <View
-                            key={c}
-                            style={{
-                              width: cellSize,
-                              paddingHorizontal: gap / 2,
-                              marginRight: ci < columns.length - 1 ? gap : 0,
-                            }}
-                          >
+
+                      <View style={{ flexDirection: "row" }}>
+                        {columns.map((c, ci) => {
+                          const isSelected =
+                            piece.selectedLevel === li &&
+                            piece.selectedColumn === ci;
+                          return (
                             <View
+                              key={c}
                               style={{
                                 width: cellSize,
-                                height: cellSize,
-                                borderRadius: 6,
-                                backgroundColor: isSelected
-                                  ? Colors.brown
-                                  : "#EADFCB",
+                                paddingHorizontal: gap / 2,
+                                marginRight: ci < columns.length - 1 ? gap : 0,
                               }}
-                            />
-                          </View>
-                        );
-                      })}
+                            >
+                              <View
+                                style={{
+                                  width: cellSize,
+                                  height: cellSize,
+                                  borderRadius: 6,
+                                  backgroundColor: isSelected
+                                    ? Colors.brown
+                                    : "#EADFCB",
+                                }}
+                              />
+                            </View>
+                          );
+                        })}
+                      </View>
                     </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-            {/* Menciones */}
-            <View style={{ marginTop: 16 }}>
-              <Text
-                style={{
-                  fontFamily: "MateSC-Regular",
-                  fontWeight: "700",
-                  marginBottom: 8,
-                  color: Colors.black,
-                }}
-              >
-                MENCIONES DE LA PIEZA ARQUEOLÓGICA
-              </Text>
-              {piece.mentions && piece.mentions.length > 0 ? (
-                piece.mentions.map((m) => (
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* MENCIONES */}
+          <View
+            style={{
+              marginTop: 4,
+              marginBottom: 16,
+              backgroundColor: "#FFF",
+              padding: 12,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: "#E6DAC4",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontWeight: "700",
+                marginBottom: 8,
+                color: Colors.black,
+              }}
+            >
+              MENCIONES DE LA PIEZA ARQUEOLÓGICA
+            </Text>
+
+            {piece.mentions && piece.mentions.length > 0 ? (
+              piece.mentions.map((m) => (
+                <View
+                  key={m.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    backgroundColor: "#F7F5F2",
+                    padding: 8,
+                    borderRadius: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  {/* Columna de texto acotada */}
                   <View
-                    key={m.id}
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      backgroundColor: "#F7F5F2",
-                      padding: 8,
-                      borderRadius: 6,
-                      marginBottom: 6,
+                      flex: 1,
+                      marginRight: 8,
                     }}
                   >
-                    <Text style={{ fontFamily: "CrimsonText-Regular" }}>
+                    <Text
+                      style={{
+                        fontFamily: "CrimsonText-Regular",
+                        color: Colors.black,
+                        flexShrink: 1,
+                        ...(Platform.OS === "web"
+                          ? ({ wordBreak: "break-all" } as any)
+                          : {}),
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
                       {m.title}
                     </Text>
+
+                    {/* Si algún día querés mostrar también la URL: */}
+                    {/* {m.url && (
+            <Text
+              style={{
+                fontFamily: "CrimsonText-Regular",
+                fontSize: 11,
+                color: "#555",
+                marginTop: 2,
+                flexShrink: 1,
+                ...(Platform.OS === "web"
+                  ? ({ wordBreak: "break-all" } as any)
+                  : {}),
+              }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {m.url}
+            </Text>
+          )} */}
+                  </View>
+
+                  {m.url ? (
                     <TouchableOpacity
                       style={{
                         backgroundColor: Colors.green,
@@ -857,11 +997,9 @@ export default function ViewPiece() {
                         borderRadius: 6,
                       }}
                       onPress={() => {
-                        if (m.url) {
-                          console.log("Abrir mención", m.url);
-                        } else {
-                          console.log("Ver mención", m.id);
-                        }
+                        Linking.openURL(m.url!).catch((err) =>
+                          console.warn("No se pudo abrir la URL", err)
+                        );
                       }}
                     >
                       <Text
@@ -873,22 +1011,23 @@ export default function ViewPiece() {
                         VER
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                ))
-              ) : (
-                <Text
-                  style={{
-                    fontFamily: "CrimsonText-Regular",
-                    color: Colors.black,
-                  }}
-                >
-                  —
-                </Text>
-              )}
-            </View>
+                  ) : null}
+                </View>
+              ))
+            ) : (
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  color: Colors.black,
+                }}
+              >
+                —
+              </Text>
+            )}
           </View>
         </View>
       </ScrollView>
+
       {/* Modal de previsualización */}
       <Modal
         visible={!!previewUri}
@@ -904,9 +1043,8 @@ export default function ViewPiece() {
             justifyContent: "center",
             padding: 12,
           }}
-          onPress={() => setPreviewUri(null)} // tap afuera para cerrar
+          onPress={() => setPreviewUri(null)}
         >
-          {/* Botón cerrar (esquina sup. der.) */}
           <TouchableOpacity
             onPress={() => setPreviewUri(null)}
             style={{ position: "absolute", top: 24, right: 24, padding: 8 }}
@@ -915,7 +1053,6 @@ export default function ViewPiece() {
             <Text style={{ color: "#fff", fontSize: 18 }}>✕</Text>
           </TouchableOpacity>
 
-          {/* Imagen grande */}
           {previewUri ? (
             <Image
               source={{ uri: previewUri }}
@@ -930,7 +1067,6 @@ export default function ViewPiece() {
             />
           ) : null}
 
-          {/* Abrir original en pestaña nueva (solo web, opcional) */}
           {Platform.OS === "web" && previewUri ? (
             <TouchableOpacity
               onPress={(e) => {

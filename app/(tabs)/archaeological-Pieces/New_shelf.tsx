@@ -28,8 +28,7 @@ export default function New_shelf() {
       // El modelo del backend espera: { code: number }
       await createShelf.mutateAsync({ code: codeNum } as any);
       Alert.alert("Éxito", "Estantería creada correctamente.");
-      // Volvemos a la pantalla de la pieza (o a donde prefieras)
-      router.push("/(tabs)/archaeological-Pieces/New_piece");
+      router.back();
     } catch (e: any) {
       console.warn(e);
       Alert.alert("Error", e?.message ?? "No se pudo crear la estantería.");
@@ -37,18 +36,13 @@ export default function New_shelf() {
   };
 
   const handleCancelar = () => {
-    router.push("/(tabs)/archaeological-Pieces/New_piece");
+    router.back();
   };
 
   return (
     <View className="flex-1 bg-[#F7F0E6] items-center px-0">
       <View className="w-full">
-        <Navbar
-          title="Alta de Estantería"
-          showBackArrow
-          backToHome={false}
-          redirectTo="/(tabs)/archaeological-Pieces/New_piece"
-        />
+        <Navbar title="Alta de Estantería" showBackArrow />
       </View>
 
       <View className="w-full max-w-[500px] items-center self-center px-4">

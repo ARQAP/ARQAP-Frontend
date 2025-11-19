@@ -43,6 +43,8 @@ import {
   useUploadArtefactHistoricalRecord,
   useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
+import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
+import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
 
 // ---- Tipos locales ----
 type MentionUI = {
@@ -93,11 +95,20 @@ export default function EditPiece() {
   const [archPickerOpen, setArchPickerOpen] = useState(false);
   const [collPickerOpen, setCollPickerOpen] = useState(false);
   const [shelfPickerOpen, setShelfPickerOpen] = useState(false);
-
+  const [archaeologicalSitePickerOpen, setArchaeologicalSitePickerOpen] =
+    useState(false);
+  const [internalClassifierPickerOpen, setInternalClassifierPickerOpen] =
+    useState(false);
   // -------- relaciones (IDs) ----------
   const [collectionId, setCollectionId] = useState<number | null>(null);
   const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
   const [shelfCode, setShelfCode] = useState<string>("");
+  const [archaeologicalSiteId, setArchaeologicalSiteId] = useState<
+    number | null
+  >(null);
+  const [internalClassifierId, setInternalClassifierId] = useState<
+    number | null
+  >(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(2);
   const [selectedColumn, setSelectedColumn] = useState<number | null>(2);
 
@@ -120,6 +131,19 @@ export default function EditPiece() {
   const { data: archaeologists = [] } = useArchaeologists();
   const { data: shelfs = [] } = useShelves();
   const { data: locations = [] } = usePhysicalLocations();
+  const { data: archaeologicalSites = [] } = useAllArchaeologicalSites();
+  const { data: internalClassifiers = [] } = useInternalClassifiers();
+
+  // Etiqueta del clasificador interno seleccionado
+  const selectedInternalClassifierLabel = internalClassifierId
+    ? (() => {
+        const c = internalClassifiers.find(
+          (s) => s.id === internalClassifierId
+        );
+        if (!c) return "Seleccionar clasificador";
+        return `${c.number}-${c.color}`; // o lo que quieras mostrar
+      })()
+    : "Seleccionar clasificador";
 
   // -------- uploads (opcional como New_piece) ----------
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -205,6 +229,30 @@ export default function EditPiece() {
         })),
       [archaeologists]
     );
+
+  const archSiteItems: SimplePickerItem<
+    (typeof archaeologicalSites)[number]
+  >[] = useMemo(
+    () =>
+      archaeologicalSites.map((a) => ({
+        value: a.id!,
+        label: a.Name,
+        raw: a,
+      })),
+    [archaeologicalSites]
+  );
+
+  const internalClassifierItems: SimplePickerItem<
+    (typeof internalClassifiers)[number]
+  >[] = useMemo(
+    () =>
+      internalClassifiers.map((c) => ({
+        value: c.id!,
+        label: `${c.number}-${c.color}`,
+        raw: c,
+      })),
+    [internalClassifiers]
+  );
 
   const collItems: SimplePickerItem<(typeof collections)[number]>[] = useMemo(
     () =>
@@ -717,7 +765,8 @@ export default function EditPiece() {
         collectionId: collectionId ?? null,
         archaeologistId: archaeologistId ?? null,
         physicalLocationId: finalPhysicalLocationId, // <- garantizado o null si no hay selección
-        archaeologicalSiteId: null,
+        archaeologicalSiteId: archaeologicalSiteId ?? null,
+        internalClassifierId: internalClassifierId ?? null,
         // ⚠️ NO forzamos a null el INPL acá, se mantiene lo que ya tenga la pieza.
         // inplClassifierId: null,
       };
@@ -1101,7 +1150,35 @@ export default function EditPiece() {
             >
               Asociar pieza a un sitio arqueológico
             </Text>
-            <SimpleSelectRow label="Seleccionar sitio" subdued />
+            <SimpleSelectRow
+              label="Seleccionar sitio"
+              value={
+                archaeologicalSiteId
+                  ? (archaeologicalSites.find(
+                      (s) => s.id === archaeologicalSiteId
+                    )?.Name ?? "Seleccionar sitio")
+                  : "Seleccionar sitio"
+              }
+              onPress={() => setArchaeologicalSitePickerOpen(true)}
+            />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 6,
+                fontFamily: "MateSC-Regular",
+                color: Colors.black,
+              }}
+            >
+              Asociar pieza a un clasificador interno
+            </Text>
+            <SimpleSelectRow
+              label="Seleccionar clasificador"
+              value={selectedInternalClassifierLabel}
+              onPress={() => setInternalClassifierPickerOpen(true)}
+            />
           </View>
 
           <View style={{ width: windowWidth < 520 ? "100%" : 140 }}>
@@ -1939,6 +2016,32 @@ export default function EditPiece() {
           setArchPickerOpen(false);
         }}
         onClose={() => setArchPickerOpen(false)}
+      />
+
+      {/* Modal Sitio Arqueológico */}
+      <SimplePickerModal
+        visible={archaeologicalSitePickerOpen}
+        title="Seleccionar sitio arqueológico"
+        items={archSiteItems}
+        selectedValue={archaeologicalSiteId ?? null}
+        onSelect={(value) => {
+          setArchaeologicalSiteId(Number(value));
+          setArchaeologicalSitePickerOpen(false);
+        }}
+        onClose={() => setArchaeologicalSitePickerOpen(false)}
+      />
+
+      {/* Modal Clasificador Interno */}
+      <SimplePickerModal
+        visible={internalClassifierPickerOpen}
+        title="Seleccionar clasificador interno"
+        items={internalClassifierItems}
+        selectedValue={internalClassifierId ?? null}
+        onSelect={(value) => {
+          setInternalClassifierId(Number(value)); // ← solo esto
+          setInternalClassifierPickerOpen(false);
+        }}
+        onClose={() => setInternalClassifierPickerOpen(false)}
       />
 
       {/* Modal Colección */}

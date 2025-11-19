@@ -4,10 +4,10 @@ import type { Requester } from "./requesterRepository";
 
 export type Loan = {
   id?: number;
-  loanDate: string; // Fecha en formato ISO
-  loanTime: string; // Hora en formato HH:MM
-  returnDate?: string; // Fecha en formato ISO (opcional para creación)
-  returnTime?: string; // Hora en formato HH:MM (opcional para creación)
+  loanDate: string; // Datetime completo en formato ISO
+  loanTime: string; // Datetime completo en formato ISO (mismo que loanDate)
+  returnDate?: string; // Datetime completo en formato ISO (opcional)
+  returnTime?: string; // Datetime completo en formato ISO (opcional, mismo que returnDate)
   artefactId?: number | null;
   artefact?: Artefact | null;
   requesterId?: number | null;
@@ -18,6 +18,7 @@ export const LoanRepository = {
   getAll: async () => {
     const { data } = await apiClient.get("/loans/");
     return data as Loan[];
+    console.log("Fetched loans:", data);
   },
 
   getById: async (id: number) => {

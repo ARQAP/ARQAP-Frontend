@@ -431,6 +431,7 @@ export default function NewPiece() {
         return;
       }
 
+      // ---------- Ubicación física ----------
       let ensuredPhysicalLocationId = physicalLocationId ?? null;
 
       if (!ensuredPhysicalLocationId) {
@@ -453,7 +454,7 @@ export default function NewPiece() {
         ensuredPhysicalLocationId = createdLoc.id!;
       }
 
-      // 1) si hay ficha histórica INPL seleccionada, crear el clasificador INPL y obtener su id usando tu repo
+      // ---------- INPL ----------
       let inplClassifierIdCreated: number | null = null;
 
       if (
@@ -467,7 +468,6 @@ export default function NewPiece() {
         }
 
         try {
-          // Log para debugging
           console.log("Platform:", Platform.OS);
           console.log(
             "INPL File Reference:",
@@ -476,11 +476,10 @@ export default function NewPiece() {
               : inplFileNativeRef.current
           );
 
-          // El repo espera un array de archivos. En web: File; en nativo: { uri, name, type }
           const files =
             Platform.OS === "web"
               ? [inplFileWebRef.current as File]
-              : [inplFileNativeRef.current as any]; // RN FormData file
+              : [inplFileNativeRef.current as any];
 
           console.log("Files to send:", files);
           const dto = await INPLRepository.create(files);
@@ -505,24 +504,40 @@ export default function NewPiece() {
         }
       }
 
-      const payload = {
+      // ---------- Normalizador de links ----------
+      const norm = (s: string) =>
+        !s ? null : /^https?:\/\//i.test(s) ? s : `https://${s}`;
+
+      // ---------- Payload artefacto ----------
+      const artefactPayload = {
         name: name.trim(),
-        material: material.trim(), // Ya no permitimos null porque es obligatorio
+        material: material.trim(),
         observation: observation.trim() || null,
         available,
         description: description.trim() || null,
-
         collectionId: collectionId ?? null,
         archaeologistId: archaeologistId ?? null,
         internalClassifierId: internalClassifierId ?? null,
         physicalLocationId: ensuredPhysicalLocationId ?? null,
-
         archaeologicalSiteId,
         inplClassifierId: inplClassifierIdCreated ?? null,
       };
 
-      const created = await createArtefact.mutateAsync(payload);
+      // ---------- Payload menciones ----------
+      const mentionsPayload =
+        mentions?.map((m) => ({
+          title: (m.title ?? "").trim(),
+          link: norm(m.link),
+          description: (m.description ?? "").trim() || null,
+        })) ?? [];
 
+      // ---------- Crear artefacto + menciones en el backend ----------
+      const created = await ArtefactRepository.createWithMentions({
+        artefact: artefactPayload,
+        mentions: mentionsPayload,
+      });
+
+      // ---------- Subir imagen ----------
       if (Platform.OS === "web" && pictureFileRef.current) {
         await uploadPicture.mutateAsync({
           id: created.id!,
@@ -537,6 +552,7 @@ export default function NewPiece() {
         );
       }
 
+      // ---------- Subir ficha histórica ----------
       if (Platform.OS === "web" && recordFileRef.current) {
         await uploadRecord.mutateAsync({
           id: created.id!,
@@ -551,29 +567,7 @@ export default function NewPiece() {
         );
       }
 
-      const norm = (s: string) =>
-        !s ? null : /^https?:\/\//i.test(s) ? s : `https://${s}`;
-
-      if (mentions?.length) {
-        console.log("Creating mentions", mentions);
-        await Promise.all(
-          mentions.map((m) => {
-            const payload = {
-              localId: null,
-              artefactId: created.id!,
-              title: (m.title ?? "").trim(),
-              link: norm(m.link),
-              description: (m.description ?? "").trim() || null,
-            };
-
-            return ArtefactRepository.createMention(payload).then((res) => {
-              console.log("Created mention", payload, res);
-              return res;
-            });
-          })
-        );
-      }
-
+      // ---------- Limpiar estado ----------
       setPhotoUri(null);
       setDocName(null);
       pictureFileRef.current = null;
@@ -581,17 +575,19 @@ export default function NewPiece() {
       setInplPreviewUri(null);
       inplFileWebRef.current = null;
       inplFileNativeRef.current = null;
+      setMentions([]);
+      setMentionTitle("");
+      setMentionLink("");
+      setMentionDescription("");
 
       Alert.alert("OK", "Pieza creada correctamente.");
       router.push("/(tabs)/archaeological-Pieces/View_pieces");
     } catch (e: any) {
       console.warn(e);
 
-      // Manejar errores específicos del backend
       if (e?.response?.data?.error) {
         const errorMessage = e.response.data.error;
 
-        // Verificar si es un error de validación específico
         if (errorMessage.includes("nombre") || errorMessage.includes("Name")) {
           setNameError(errorMessage);
           return;
@@ -605,7 +601,6 @@ export default function NewPiece() {
           return;
         }
 
-        // Mostrar otros errores del servidor
         Alert.alert("Error", errorMessage);
       } else {
         Alert.alert("Error", e?.message ?? "No se pudo crear la pieza.");
@@ -1321,6 +1316,8 @@ export default function NewPiece() {
             backgroundColor: "#fff",
             padding: 12,
             borderRadius: 8,
+            borderWidth: 1,
+            borderColor: "#E6DAC4",
           }}
         >
           <Text
@@ -1335,7 +1332,6 @@ export default function NewPiece() {
           </Text>
 
           {/* inputs: nombre + enlace */}
-          {/* Stack vertically on small screens to avoid layout breakage */}
           <View
             style={{
               flexDirection: windowWidth < 520 ? "column" : "row",
@@ -1351,21 +1347,25 @@ export default function NewPiece() {
                   marginBottom: 6,
                 }}
               >
-                NOMBRE
+                Titulo
               </Text>
               <TextInput
                 value={mentionTitle}
                 onChangeText={setMentionTitle}
-                placeholder="Nombre"
+                placeholder="Titulo"
+                maxLength={100}
                 style={{
                   backgroundColor: "#fff",
                   borderRadius: 6,
                   padding: 8,
                   borderWidth: 1,
                   borderColor: "#E6DAC4",
+                  fontFamily: "CrimsonText-Regular",
+                  color: Colors.black,
                 }}
               />
             </View>
+
             <View style={{ width: windowWidth < 520 ? "100%" : 200 }}>
               <Text
                 style={{
@@ -1380,17 +1380,21 @@ export default function NewPiece() {
                 value={mentionLink}
                 onChangeText={setMentionLink}
                 placeholder="Enlace"
+                maxLength={246}
                 style={{
                   backgroundColor: "#fff",
                   borderRadius: 6,
                   padding: 8,
                   borderWidth: 1,
                   borderColor: "#E6DAC4",
+                  fontFamily: "CrimsonText-Regular",
+                  color: Colors.black,
                 }}
               />
             </View>
           </View>
 
+          {/* descripción */}
           <View style={{ marginBottom: 8 }}>
             <Text
               style={{
@@ -1413,10 +1417,13 @@ export default function NewPiece() {
                 minHeight: 80,
                 borderWidth: 1,
                 borderColor: "#E6DAC4",
+                fontFamily: "CrimsonText-Regular",
+                color: Colors.black,
               }}
             />
           </View>
 
+          {/* botón agregar */}
           <View style={{ alignItems: "flex-end", marginBottom: 12 }}>
             <TouchableOpacity
               style={{
@@ -1426,15 +1433,19 @@ export default function NewPiece() {
                 borderRadius: 8,
               }}
               onPress={() => {
-                // add mention
                 const title = mentionTitle.trim();
                 const link = mentionLink.trim();
                 const desc = mentionDescription.trim();
-                if (!title && !link) {
-                  // require at least a name or link
-                  return;
-                }
-                const m = { id: Date.now(), title, link, description: desc };
+
+                // al menos nombre o enlace
+                if (!title && !link) return;
+
+                const m = {
+                  id: Date.now(),
+                  title,
+                  link,
+                  description: desc,
+                };
                 setMentions((prev) => [m, ...prev]);
                 setMentionTitle("");
                 setMentionLink("");
@@ -1506,26 +1517,66 @@ export default function NewPiece() {
                   style={{
                     flexDirection: "row",
                     padding: 8,
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     borderBottomWidth: 1,
                     borderBottomColor: "#F0E6DB",
                   }}
                 >
-                  <Text style={{ flex: 2, fontFamily: "CrimsonText-Regular" }}>
-                    {m.title}
-                  </Text>
-                  <Text
-                    style={{
-                      flex: 2,
-                      fontFamily: "CrimsonText-Regular",
-                      color: "#2B6CB0",
-                    }}
-                  >
-                    {m.link}
-                  </Text>
-                  <Text style={{ flex: 3, fontFamily: "CrimsonText-Regular" }}>
-                    {m.description}
-                  </Text>
+                  {/* NOMBRE */}
+                  <View style={{ flex: 2, paddingRight: 4, minWidth: 0 }}>
+                    <Text
+                      style={{
+                        fontFamily: "CrimsonText-Regular",
+                        color: Colors.black,
+                        flexShrink: 1,
+                        ...(Platform.OS === "web"
+                          ? ({ wordBreak: "break-all" } as any)
+                          : {}),
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {m.title}
+                    </Text>
+                  </View>
+
+                  {/* ENLACE */}
+                  <View style={{ flex: 2, paddingRight: 4, minWidth: 0 }}>
+                    <Text
+                      style={{
+                        fontFamily: "CrimsonText-Regular",
+                        color: "#2B6CB0",
+                        flexShrink: 1,
+                        ...(Platform.OS === "web"
+                          ? ({ wordBreak: "break-all" } as any)
+                          : {}),
+                      }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {m.link}
+                    </Text>
+                  </View>
+
+                  {/* DESCRIPCIÓN */}
+                  <View style={{ flex: 3, paddingRight: 4, minWidth: 0 }}>
+                    <Text
+                      style={{
+                        fontFamily: "CrimsonText-Regular",
+                        color: Colors.black,
+                        flexShrink: 1,
+                        ...(Platform.OS === "web"
+                          ? ({ wordBreak: "break-word" } as any)
+                          : {}),
+                      }}
+                      numberOfLines={3}
+                      ellipsizeMode="tail"
+                    >
+                      {m.description}
+                    </Text>
+                  </View>
+
+                  {/* ACCIONES */}
                   <View style={{ width: 80, alignItems: "center" }}>
                     <TouchableOpacity
                       onPress={() =>

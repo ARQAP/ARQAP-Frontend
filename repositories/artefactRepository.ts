@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api";
+import { InternalClassifier } from "./internalClassifierRepository";
 
 export type Picture = {
   id?: number;
@@ -42,9 +43,18 @@ export type Artefact = {
   inplClassifierId?: number | null;
   inplClassifier?: unknown | null;
   internalClassifierId?: number | null;
-  internalClassifier?: unknown | null;
+  internalClassifier?: InternalClassifier | null;
   physicalLocationId?: number | null;
   physicalLocation?: unknown | null;
+};
+
+export type CreateArtefactWithMentionsPayload = {
+  artefact: Artefact;
+  mentions: Array<{
+    title: string;
+    link?: string | null;
+    description?: string | null;
+  }>;
 };
 
 export type Mention = {
@@ -136,5 +146,10 @@ export const ArtefactRepository = {
 
   deleteMention: async (artefactId: number, mentionId: number) => {
     await apiClient.delete(`/mentions/${mentionId}`);
+  },
+
+  createWithMentions: async (payload: CreateArtefactWithMentionsPayload) => {
+    const { data } = await apiClient.post("/artefacts/with-mentions", payload);
+    return data as Artefact;
   },
 };

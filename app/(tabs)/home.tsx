@@ -3,10 +3,11 @@ import { useArchaeologists } from "@/hooks/useArchaeologist";
 import { useArtefacts } from "@/hooks/useArtefact";
 import { useCollections } from "@/hooks/useCollections";
 import { useLoans } from "@/hooks/useLoan";
+import { useLogoutMutation } from "@/hooks/useUserAuth";
 import * as Font from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ActionButton from "../../components/ui/ActionButton";
 import Colors from "../../constants/Colors";
 import Card from "./Card";
@@ -15,6 +16,9 @@ import Navbar from "./Navbar";
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const router = useRouter();
+
+  // Hook para cerrar sesión
+  const logoutMutation = useLogoutMutation();
 
   // Obtener datos para contar elementos
   const { data: artefacts = [] } = useArtefacts();
@@ -27,6 +31,16 @@ export default function HomeScreen() {
   const activeLoans = loans.filter(
     (loan) => !loan.returnDate || !loan.returnTime
   );
+
+  // Función para manejar el logout
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      router.replace('/'); // Redirigir al login (index)
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   useEffect(() => {
     async function loadFonts() {
@@ -75,7 +89,7 @@ export default function HomeScreen() {
           cubeCount={artefacts.length}
         />
         <Card
-          title=" Colecciones Arqueológicas"
+          title="Colecciones Arqueológicas"
           subtitle="Organizar por colecciones"
           icon="book"
           cubeCount={collections.length}
@@ -98,7 +112,7 @@ export default function HomeScreen() {
           icon="exchange"
           cubeCount={activeLoans.length}
         />
-        <View className="items-center mt-7">
+        <View className="items-center mt-7 pb-8">
           <Text
             className="text-[28px] font-bold text-[#8B5E3C] mb-3"
             style={{ fontFamily: "MateSC-Regular" }}
@@ -123,6 +137,30 @@ export default function HomeScreen() {
               onPress={() => router.push("/(tabs)/collection/New_collection")}
             />
           </View>
+        </View>
+        
+        {/* Botón de Cerrar Sesión */}
+        <View className="items-center mt-8 pb-8">
+          <TouchableOpacity
+            onPress={handleLogout}
+            disabled={logoutMutation.isPending}
+            className={`rounded-lg px-8 py-3 ${
+              logoutMutation.isPending ? "bg-gray-400" : "bg-red-600"
+            }`}
+          >
+            {logoutMutation.isPending ? (
+              <View className="flex-row items-center">
+                <ActivityIndicator size="small" color="#fff" />
+                <Text className="text-white text-base ml-2" style={{ fontFamily: "CrimsonText-Regular" }}>
+                  Cerrando sesión...
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-white text-base font-medium" style={{ fontFamily: "CrimsonText-Regular" }}>
+                Cerrar Sesión
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
