@@ -81,3 +81,20 @@ export const useUploadArtefactHistoricalRecord = () => {
     },
   });
 };
+
+export const useCreateArtefactWithMentions = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      artefact: Artefact;
+      mentions: Array<{
+        title: string;
+        link?: string | null;
+        description?: string | null;
+      }>;
+    }) => ArtefactRepository.createWithMentions(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+    },
+  });
+};

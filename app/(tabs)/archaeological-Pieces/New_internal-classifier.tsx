@@ -48,7 +48,7 @@ export default function New_internal_classifier() {
 
       Alert.alert("Éxito", "Clasificador interno creado correctamente.");
       // Redirigí a donde quieras. Ej: volver a la pieza nueva:
-      router.push("/(tabs)/archaeological-Pieces/New_piece");
+      router.back();
 
       // Si preferís ir al detalle recién creado:
       // if (created?.id) router.push(`/(tabs)/inpl/View_internal_classifier?id=${created.id}`);
@@ -63,18 +63,13 @@ export default function New_internal_classifier() {
 
   const handleCancelar = () => {
     if (isBusy) return;
-    router.push("/(tabs)/archaeological-Pieces/New_piece");
+    router.back();
   };
 
   return (
     <View className="flex-1 bg-[#F7F0E6] items-center px-0">
       <View className="w-full">
-        <Navbar
-          title="Alta Clasificador Interno"
-          showBackArrow
-          backToHome={false}
-          redirectTo="/(tabs)/archaeological-Pieces/New_piece"
-        />
+        <Navbar title="Alta Clasificador Interno" showBackArrow />
       </View>
 
       <View className="w-full max-w-[500px] items-center self-center px-4">

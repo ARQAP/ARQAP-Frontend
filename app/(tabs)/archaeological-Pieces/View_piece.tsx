@@ -930,6 +930,7 @@ export default function ViewPiece() {
             >
               MENCIONES DE LA PIEZA ARQUEOLÓGICA
             </Text>
+
             {piece.mentions && piece.mentions.length > 0 ? (
               piece.mentions.map((m) => (
                 <View
@@ -944,9 +945,49 @@ export default function ViewPiece() {
                     marginBottom: 6,
                   }}
                 >
-                  <Text style={{ fontFamily: "CrimsonText-Regular" }}>
-                    {m.title}
-                  </Text>
+                  {/* Columna de texto acotada */}
+                  <View
+                    style={{
+                      flex: 1,
+                      marginRight: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "CrimsonText-Regular",
+                        color: Colors.black,
+                        flexShrink: 1,
+                        ...(Platform.OS === "web"
+                          ? ({ wordBreak: "break-all" } as any)
+                          : {}),
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {m.title}
+                    </Text>
+
+                    {/* Si algún día querés mostrar también la URL: */}
+                    {/* {m.url && (
+            <Text
+              style={{
+                fontFamily: "CrimsonText-Regular",
+                fontSize: 11,
+                color: "#555",
+                marginTop: 2,
+                flexShrink: 1,
+                ...(Platform.OS === "web"
+                  ? ({ wordBreak: "break-all" } as any)
+                  : {}),
+              }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {m.url}
+            </Text>
+          )} */}
+                  </View>
+
                   {m.url ? (
                     <TouchableOpacity
                       style={{

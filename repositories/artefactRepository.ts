@@ -48,6 +48,15 @@ export type Artefact = {
   physicalLocation?: unknown | null;
 };
 
+export type CreateArtefactWithMentionsPayload = {
+  artefact: Artefact;
+  mentions: Array<{
+    title: string;
+    link?: string | null;
+    description?: string | null;
+  }>;
+};
+
 export type Mention = {
   id?: number;
   artefactId: number;
@@ -137,5 +146,10 @@ export const ArtefactRepository = {
 
   deleteMention: async (artefactId: number, mentionId: number) => {
     await apiClient.delete(`/mentions/${mentionId}`);
+  },
+
+  createWithMentions: async (payload: CreateArtefactWithMentionsPayload) => {
+    const { data } = await apiClient.post("/artefacts/with-mentions", payload);
+    return data as Artefact;
   },
 };
