@@ -1,63 +1,98 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ViewStyle } from 'react-native';
-import { Dimensions, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+    Dimensions,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 import DepositoSvg from '../Distribucion Deposito.svg';
 import { apiClient } from '../lib/api';
 
 type ShelfBox = { id: string; x: number; y: number; w: number; h: number; label?: string };
 
-// Boxes extracted from the SVG (coordinates based on viewBox 0 0 559 539)
+// Tomado de "Distribucion Deposito.svg": viewBox="0 0 607 678"
+const VB_WIDTH = 607;
+const VB_HEIGHT = 678;
+
 const SHELVES: ShelfBox[] = [
   // Estantes izquierda (A y B)
-  { id: 's_87_205', x: 87.59, y: 205.207, w: 41.2, h: 50.278, label: 'Estante A1' },
-  { id: 's_87_255', x: 87.59, y: 255.486, w: 41.2, h: 50.976, label: 'Estante A2' },
-  { id: 's_87_306', x: 87.59, y: 306.462, w: 41.2, h: 50.976, label: 'Estante A3' },
-  { id: 's_128_205', x: 128.791, y: 205.207, w: 41.2, h: 50.278, label: 'Estante B1' },
-  { id: 's_128_255', x: 128.791, y: 255.486, w: 41.2, h: 50.976, label: 'Estante B2' },
-  { id: 's_128_306', x: 128.791, y: 306.462, w: 41.2, h: 50.976, label: 'Estante B3' },
-  // Estantes centro-izquierda (C y D)
-  { id: 's_225_140', x: 225.855, y: 140.963, w: 41.2, h: 60.055, label: 'Estante C1' },
-  { id: 's_225_201', x: 225.855, y: 201.018, w: 41.2, h: 60.055, label: 'Estante C2' },
-  { id: 's_225_261', x: 225.855, y: 261.072, w: 41.2, h: 60.055, label: 'Estante C3' },
-  { id: 's_225_321', x: 225.855, y: 321.127, w: 41.2, h: 60.055, label: 'Estante C4' },
-  { id: 's_267_140', x: 267.056, y: 140.963, w: 41.2, h: 60.055, label: 'Estante D1' },
-  { id: 's_267_201', x: 267.056, y: 201.018, w: 41.2, h: 60.055, label: 'Estante D2' },
-  { id: 's_267_261', x: 267.056, y: 261.072, w: 41.2, h: 60.055, label: 'Estante D3' },
-  { id: 's_267_321', x: 267.056, y: 321.127, w: 41.2, h: 60.055, label: 'Estante D4' },
-  // Estantes centro-derecha (E y F)
-  { id: 's_365_192', x: 365.517, y: 192.638, w: 41.2, h: 65.641, label: 'Estante E1' },
-  { id: 's_365_258', x: 365.517, y: 258.279, w: 41.2, h: 65.641, label: 'Estante E2' },
-  { id: 's_365_323', x: 365.517, y: 323.92, w: 41.2, h: 65.641, label: 'Estante E3' },
-  { id: 's_365_389', x: 365.517, y: 389.561, w: 41.2, h: 65.641, label: 'Estante E4' },
-  { id: 's_406_192', x: 406.717, y: 192.638, w: 41.2, h: 65.641, label: 'Estante F1' },
-  { id: 's_406_258', x: 406.717, y: 258.279, w: 41.2, h: 65.641, label: 'Estante F2' },
-  { id: 's_406_323', x: 406.717, y: 323.92, w: 41.2, h: 65.641, label: 'Estante F3' },
-  { id: 's_406_389', x: 406.717, y: 389.561, w: 41.2, h: 65.641, label: 'Estante F4' },
-  // Columna derecha
-  { id: 's_510_58', x: 510.067, y: 58.563, w: 46.787, h: 78.211, label: 'Columna R1' },
-  { id: 's_510_136', x: 510.067, y: 136.773, w: 46.787, h: 80.306, label: 'Columna R2' },
-  { id: 's_510_216', x: 510.067, y: 216.38, w: 46.787, h: 80.306, label: 'Columna R3' },
-  { id: 's_510_296', x: 510.067, y: 296.686, w: 46.787, h: 80.306, label: 'Columna R4' },
-  { id: 's_510_376', x: 510.067, y: 376.991, w: 46.787, h: 80.306, label: 'Columna R5' },
-  { id: 's_510_457', x: 510.067, y: 457.297, w: 46.787, h: 80.306, label: 'Columna R6' },
-  // Estantes inferiores
-  { id: 's_49_492', x: 49.882, y: 492.911, w: 60.753, h: 44.692, label: 'Estante Inf. A' },
-  { id: 's_110_492', x: 110.634, y: 492.911, w: 60.753, h: 44.692, label: 'Estante Inf. B' },
-  { id: 's_387_492', x: 387.863, y: 492.911, w: 60.753, h: 44.692, label: 'Estante Inf. C' },
-  { id: 's_448_492', x: 448.616, y: 492.911, w: 60.753, h: 44.692, label: 'Estante Inf. D' },
-  // Mesa central MT-1
-  { id: 's_225_381', x: 225.855, y: 381.181, w: 81.976, h: 60.055, label: 'Mesa MT-1' },
-  // Mesa superior MT-2
-  { id: 's_87_154', x: 87.59, y: 154.929, w: 82.4, h: 50.278, label: 'Mesa MT-2' },
-  // Mesa superior MT-3
-  { id: 's_365_126', x: 365.517, y: 126.997, w: 82.4, h: 65.641, label: 'Mesa MT-3' },
+  { id: 's_120_246', x: 120, y: 246, w: 41, h: 75, label: 'Estante A1' },
+  { id: 's_120_322', x: 120, y: 322, w: 41, h: 75, label: 'Estante A2' },
+  { id: 's_120_398', x: 120, y: 398, w: 41, h: 75, label: 'Estante A3' },
+  { id: 's_120_190', x: 120, y: 171, w: 41, h: 75, label: 'Estante A4' },
+  { id: 's_162_246', x: 162, y: 246, w: 41, h: 75, label: 'Estante B1' },
+  { id: 's_162_322', x: 162, y: 322, w: 41, h: 75, label: 'Estante B2' },
+  { id: 's_162_398', x: 162, y: 398, w: 41, h: 75, label: 'Estante B3' },
+  { id: 's_162_190', x: 162, y: 171, w: 41, h: 75, label: 'Estante B4' },
+
+  // Estantes centro (C y D)
+  { id: 's_259_454', x: 259, y: 454, w: 41, h: 75, label: 'Estante C1' },
+  { id: 's_259_378', x: 259, y: 378, w: 41, h: 75, label: 'Estante C2' },
+  { id: 's_259_302', x: 259, y: 302, w: 41, h: 75, label: 'Estante C3' },
+  { id: 's_259_226', x: 259, y: 226, w: 41, h: 75, label: 'Estante C4' },
+  { id: 's_301_454', x: 301, y: 454, w: 41, h: 75, label: 'Estante D1' },
+  { id: 's_301_378', x: 301, y: 378, w: 41, h: 75, label: 'Estante D2' },
+  { id: 's_301_302', x: 301, y: 302, w: 41, h: 75, label: 'Estante D3' },
+  { id: 's_301_226', x: 301, y: 226, w: 41, h: 75, label: 'Estante D4' },
+
+  // Estantes derecha (E y F)
+  { id: 's_399_467', x: 399, y: 467, w: 41, h: 75, label: 'Estante E1' },
+  { id: 's_399_391', x: 399, y: 391, w: 41, h: 75, label: 'Estante E2' },
+  { id: 's_399_315', x: 399, y: 315, w: 41, h: 75, label: 'Estante E3' },
+  { id: 's_399_240', x: 399, y: 225, w: 41, h: 89, label: 'Estante E4' },
+  { id: 's_441_467', x: 441, y: 467, w: 41, h: 75, label: 'Estante F1' },
+  { id: 's_441_391', x: 441, y: 391, w: 41, h: 75, label: 'Estante F2' },
+  { id: 's_441_315', x: 441, y: 315, w: 41, h: 75, label: 'Estante F3' },
+  { id: 's_441_240', x: 441, y: 225, w: 41, h: 89, label: 'Estante F4' },
+
+  // Estantes superiores (G)
+  { id: 's_121_92', x: 121, y: 92.4897, w: 138, h: 49.1171, label: 'Estante G1' },
+  { id: 's_259_92', x: 259, y: 92.4897, w: 138, h: 49.1171, label: 'Estante G2' },
+  { id: 's_397_92', x: 397, y: 92.4897, w: 138, h: 49.1171, label: 'Estante G3' },
+
+  // Mesas
+  { id: 's_203_172', x: 120, y: 172, w: 83, h: 73, label: 'Mesa MT-1' },
+  { id: 's_203_245', x: 259, y: 454, w: 83, h: 73, label: 'Mesa MT-2' },
+  { id: 's_399_226', x: 399, y: 226, w: 83, h: 88, label: 'Mesa MT-3' },
 ];
 
-// Map overlay ids to backend numeric shelf IDs. Fill these values to match your DB.
 const SHELF_ID_MAP: Record<string, number> = {
-  's_365_389': 1
-  // map each overlay id to the numeric shelf id used by the backend
+  's_120_246': 1,
+  's_120_322': 2,
+  's_120_398': 3,
+  's_120_190': 4,
+  's_162_246': 5,
+  's_162_322': 6,
+  's_162_398': 7,
+  's_162_190': 8,
+  's_259_454': 9,
+  's_259_378': 10,
+  's_259_302': 11,
+  's_259_226': 12,
+  's_301_454': 13,
+  's_301_378': 14,
+  's_301_302': 15,
+  's_301_226': 16,
+  's_399_315': 17,
+  's_399_391': 18,
+  's_399_467': 19,
+  's_399_240': 20,
+  's_441_315': 21,
+  's_441_391': 22,
+  's_441_467': 23,
+  's_441_240': 24,
+  's_121_92': 25,
+  's_259_92': 26,
+  's_397_92': 27,
+  's_203_172': 28,
+  's_203_245': 29,
+  's_399_226': 30,
 };
 
 export default function DepositMap({ style }: { style?: ViewStyle }) {
@@ -68,9 +103,19 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const [hoveredShelf, setHoveredShelf] = useState<string | null>(null);
   const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
-  
-  // Detectar si estamos en escritorio (pantalla ancha)
-  const isDesktop = Dimensions.get('window').width >= 768;
+  const [mtSelection, setMtSelection] = useState<{ mesa: ShelfBox; shelves: ShelfBox[] } | null>(null);
+  const [isInitialMount, setIsInitialMount] = useState(true);
+
+  const isDesktop = windowWidth >= 600;
+
+  useEffect(() => {
+    // Asegurar que tenemos el ancho correcto al montar
+    const currentWidth = Dimensions.get('window').width;
+    if (currentWidth !== windowWidth) {
+      setWindowWidth(currentWidth);
+    }
+    setIsInitialMount(false);
+  }, []);
 
   useEffect(() => {
     const sub = Dimensions.addEventListener?.('change', ({ window }) => {
@@ -78,25 +123,37 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
     });
     return () => sub?.remove?.();
   }, []);
-  
-  // router navigation removed temporarily (Ver piezas feature disabled)
+
+  // Vista mobile no soportada
+  if (!isDesktop && !isInitialMount) {
+    return (
+      <View style={[styles.container, style]}>
+        <View style={styles.mobileNotSupported}>
+          <Text style={styles.mobileNotSupportedIcon}>📱</Text>
+          <Text style={styles.mobileNotSupportedTitle}>Vista no disponible en móviles</Text>
+          <Text style={styles.mobileNotSupportedText}>
+            El mapa del depósito requiere una pantalla más grande para una mejor experiencia.
+            Por favor, accede desde una tablet o computadora.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   const fetchItemsForShelf = useCallback(async (shelf: ShelfBox) => {
     try {
       setLoading(true);
-      // Obtener el ID numérico del shelf desde el mapping o usar el ID del backend
       const shelfId = SHELF_ID_MAP[shelf.id];
-      
+
       if (!shelfId) {
         console.warn(`No shelf ID mapping found for ${shelf.id}. Please update SHELF_ID_MAP.`);
         setItems([]);
         return;
       }
 
-      // Usar el query parameter shelfId para filtrar en el backend
       const res = await apiClient.get(`/artefacts?shelfId=${shelfId}`);
       const artefacts: any[] = res.data || [];
-      
+
       setItems(artefacts);
     } catch (err) {
       console.warn('Error fetching artefacts', err);
@@ -106,201 +163,294 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
     }
   }, []);
 
-  const onShelfPress = useCallback((shelf: ShelfBox) => {
-    setSelected(shelf);
-    fetchItemsForShelf(shelf);
-  }, [fetchItemsForShelf]);
+  const onShelfPress = useCallback(
+    (shelf: ShelfBox) => {
+      if (shelf.label?.includes('Mesa MT-')) {
+        const mtNumber = shelf.label.match(/MT-(\d+)/)?.[1];
+        let associatedShelves: ShelfBox[] = [];
 
-  // derived details
+        if (mtNumber === '1') {
+          associatedShelves = SHELVES.filter(
+            (s) => s.label === 'Estante A4' || s.label === 'Estante B4'
+          );
+        } else if (mtNumber === '2') {
+          associatedShelves = SHELVES.filter(
+            (s) => s.label === 'Estante C1' || s.label === 'Estante D1'
+          );
+        } else if (mtNumber === '3') {
+          associatedShelves = SHELVES.filter(
+            (s) => s.label === 'Estante E4' || s.label === 'Estante F4'
+          );
+        }
+
+        setMtSelection({ mesa: shelf, shelves: associatedShelves });
+      } else {
+        setSelected(shelf);
+        fetchItemsForShelf(shelf);
+      }
+    },
+    [fetchItemsForShelf]
+  );
+
   const details = useMemo(() => {
     if (!items) return null;
     const count = items.length;
-    const collections = Array.from(new Set(items.map((i: any) => (i.collection && (i.collection.name || i.collection)) || null).filter(Boolean))).slice(0,5);
-    const archaeologists = Array.from(new Set(items.map((i: any) => {
-      const arch = i.archaeologist;
-      if (!arch) return null;
-      return arch.name || [arch.firstname, arch.lastname].filter(Boolean).join(' ');
-    }).filter(Boolean))).slice(0,5);
+    const collections = Array.from(
+      new Set(
+        items
+          .map((i: any) => (i.collection && (i.collection.name || i.collection)) || null)
+          .filter(Boolean)
+      )
+    ).slice(0, 5);
+    const archaeologists = Array.from(
+      new Set(
+        items
+          .map((i: any) => {
+            const arch = i.archaeologist;
+            if (!arch) return null;
+            return arch.name || [arch.firstname, arch.lastname].filter(Boolean).join(' ');
+          })
+          .filter(Boolean)
+      )
+    ).slice(0, 5);
     return { count, collections, archaeologists };
   }, [items]);
 
-  // onViewPieces removed: navigation to View_pieces is disabled for now
-
-  // Calcular dimensiones del SVG considerando preserveAspectRatio="xMidYMid meet"
-  const svgAspect = 559 / 539;
+  const svgAspect = VB_WIDTH / VB_HEIGHT;
   const containerAspect = containerLayout.width / Math.max(1, containerLayout.height);
-  // altura inicial sensible basada en el ancho de ventana (para móvil antes de onLayout)
-  const initialHeight = Math.min(700, Math.round(windowWidth / svgAspect));
-  
+  const initialHeight = 950;
+
   let svgWidth, svgHeight, offsetX, offsetY;
   if (containerAspect > svgAspect) {
-    // Contenedor más ancho: SVG limitado por altura
-    svgHeight = containerLayout.height;
+    svgHeight = containerLayout.height || initialHeight;
     svgWidth = svgHeight * svgAspect;
     offsetX = (containerLayout.width - svgWidth) / 2;
     offsetY = 0;
   } else {
-    // Contenedor más alto: SVG limitado por ancho
-    svgWidth = containerLayout.width;
+    svgWidth = containerLayout.width || windowWidth;
     svgHeight = svgWidth / svgAspect;
     offsetX = 0;
-    offsetY = (containerLayout.height - svgHeight) / 2;
+    offsetY = ((containerLayout.height || initialHeight) - svgHeight) / 2;
   }
 
   return (
-    <View style={[{ width: '100%', alignItems: 'center' }, style]}>
-      <View 
-        style={[
-          { width: '100%', height: containerLayout.height || initialHeight, position: 'relative' },
-          isDesktop && { maxWidth: 900, alignSelf: 'center' }
-        ]}
-        onLayout={(e) => setContainerLayout(e.nativeEvent.layout)}
-      >
-        {/* SVG component - se ajusta al contenedor manteniendo aspect ratio */}
-        <DepositoSvg 
-          width={containerLayout.width > 0 ? containerLayout.width : windowWidth}
-          height={containerLayout.height > 0 ? containerLayout.height : initialHeight}
-          viewBox="0 0 559 539"
-          preserveAspectRatio="xMidYMid meet"
-        />
+    <View style={[styles.container, style]}>
+      <View style={styles.contentWrapper}>
+        {/* Mapa SVG */}
+        <View
+          style={styles.mapContainer}
+          onLayout={(e) => setContainerLayout(e.nativeEvent.layout)}
+        >
+          <DepositoSvg
+            width={containerLayout.width || windowWidth}
+            height={containerLayout.height || initialHeight}
+            viewBox={`0 0 ${VB_WIDTH} ${VB_HEIGHT}`}
+            preserveAspectRatio="xMidYMid meet"
+          />
 
-        {/* Overlay hotspots - ajustados al SVG renderizado */}
-        {containerLayout.width > 0 && SHELVES.map(s => {
-          // Calcular posiciones absolutas considerando el offset del SVG
-          const left = offsetX + (s.x / 559) * svgWidth;
-          const top = offsetY + (s.y / 539) * svgHeight;
-          const width = (s.w / 559) * svgWidth;
-          const height = (s.h / 539) * svgHeight;
-          const isSelected = selected?.id === s.id;
-          const isHovered = hoveredShelf === s.id;
-          return (
-            <Pressable
-              key={s.id}
-              onPress={() => onShelfPress(s)}
-              onHoverIn={Platform.OS === 'web' ? () => setHoveredShelf(s.id) : undefined}
-              onHoverOut={Platform.OS === 'web' ? () => setHoveredShelf(null) : undefined}
-              style={[
-                styles.hotspot, 
-                { 
-                  left,
-                  top,
-                  width,
-                  height,
-                }
-              ]}
-              hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
-              android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
+          {/* Overlay hotspots */}
+          {containerLayout.width > 0 &&
+            SHELVES.map((s) => {
+              const left = offsetX + (s.x / VB_WIDTH) * svgWidth;
+              const top = offsetY + (s.y / VB_HEIGHT) * svgHeight;
+              const width = (s.w / VB_WIDTH) * svgWidth;
+              const height = (s.h / VB_HEIGHT) * svgHeight;
+              const isSelected = selected?.id === s.id;
+              const isHovered = hoveredShelf === s.id;
+              return (
+                <Pressable
+                  key={s.id}
+                  onPress={() => onShelfPress(s)}
+                  onHoverIn={Platform.OS === 'web' ? () => setHoveredShelf(s.id) : undefined}
+                  onHoverOut={Platform.OS === 'web' ? () => setHoveredShelf(null) : undefined}
+                  style={[
+                    styles.hotspot,
+                    { left, top, width, height },
+                    Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+                  ]}
+                  hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
+                  android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
+                >
+                  <View
+                    style={[
+                      styles.hotInner,
+                      isSelected
+                        ? styles.selectedHot
+                        : isHovered
+                        ? styles.hoveredHot
+                        : undefined,
+                    ]}
+                  />
+                  {isHovered && Platform.OS === 'web' && (
+                    <View style={styles.tooltip}>
+                      <Text style={styles.tooltipText}>{s.label}</Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+        </View>
+
+        {/* Panel lateral desktop */}
+        {isDesktop && (
+          <View style={styles.sidePanel}>
+            <ScrollView
+              style={styles.sidePanelScroll}
+              contentContainerStyle={styles.sidePanelContent}
+              showsVerticalScrollIndicator={false}
             >
-              <View style={[styles.hotInner, isSelected ? styles.selectedHot : isHovered ? styles.hoveredHot : undefined]} />
-              {isHovered && Platform.OS === 'web' && (
-                <View style={styles.tooltip}>
-                  <Text style={styles.tooltipText}>{s.label}</Text>
+              {!selected ? (
+                <View style={styles.placeholder}>
+                  <View style={styles.placeholderIconContainer}>
+                    <View style={styles.placeholderIconCircle}>
+                      <Text style={styles.placeholderEmoji}>🗺️</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.placeholderTitle}>Información del depósito</Text>
+                  <Text style={styles.placeholderSubtitle}>Selecciona una ubicación</Text>
+                  <Text style={styles.placeholderText}>
+                    Haz clic en cualquier estantería o mesa del mapa para ver su contenido y estadísticas.
+                  </Text>
                 </View>
+              ) : (
+                <>
+                  <Text style={styles.panelTitle}>{selected.label ?? 'Estantería'}</Text>
+
+                  {loading ? (
+                    <View style={styles.loadingContainer}>
+                      <Text style={styles.loadingText}>Cargando información...</Text>
+                    </View>
+                  ) : details ? (
+                    <>
+                      <View style={styles.statsCard}>
+                        <Text style={styles.statsNumber}>{details.count}</Text>
+                        <Text style={styles.statsLabel}>PIEZAS ARQUEOLÓGICAS</Text>
+                      </View>
+
+                      {details.collections.length > 0 && (
+                        <View style={styles.section}>
+                          <Text style={styles.sectionTitle}>Colecciones</Text>
+                          <View style={styles.chipContainer}>
+                            {details.collections.map((c: string) => (
+                              <View key={c} style={styles.chip}>
+                                <Text style={styles.chipText}>{c}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
+                      {details.archaeologists.length > 0 && (
+                        <View style={styles.section}>
+                          <Text style={styles.sectionTitle}>Investigadores</Text>
+                          <View style={styles.chipContainer}>
+                            {details.archaeologists.map((a: string) => (
+                              <View key={a} style={styles.chip}>
+                                <Text style={styles.chipText}>{a}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
+                      <Pressable
+                        style={styles.primaryButton}
+                        onPress={() => {
+                          if (!selected) return;
+                          const shelfId = SHELF_ID_MAP[selected.id];
+                          const params: any = {};
+                          if (shelfId !== undefined && shelfId !== null)
+                            params.shelfId = Number(shelfId);
+                          if (selected.label) params.shelfLabel = selected.label;
+                          router.push({
+                            pathname: '/(tabs)/archaeological-Pieces/View_pieces',
+                            params,
+                          });
+                        }}
+                      >
+                        <Text style={styles.primaryButtonText}>Ver piezas</Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={styles.secondaryButton}
+                        onPress={() => {
+                          if (!selected) return;
+                          const shelfId = SHELF_ID_MAP[selected.id];
+                          const params: any = {};
+                          if (shelfId !== undefined && shelfId !== null)
+                            params.shelfId = Number(shelfId);
+                          if (selected.label) params.shelfLabel = selected.label;
+                          router.push({
+                            pathname: '/(tabs)/archaeological-Pieces/shelf-detail',
+                            params,
+                          });
+                        }}
+                      >
+                        <Text style={styles.secondaryButtonText}>Ver detalle de estantería</Text>
+                      </Pressable>
+                    </>
+                  ) : null}
+                </>
               )}
-            </Pressable>
-          );
-        })}
+            </ScrollView>
+          </View>
+        )}
       </View>
 
-      {/* Bottom Sheet Modal / Side Panel - adaptativo */}
-      <Modal 
-        visible={!!selected} 
-        transparent 
-        animationType="fade" 
-        onRequestClose={() => { setSelected(null); setItems(null); }}
+      {/* Modal de selección para Mesas de Trabajo */}
+      <Modal
+        visible={!!mtSelection}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMtSelection(null)}
       >
-        <Pressable 
-          style={styles.modalOverlay} 
-          onPress={() => { setSelected(null); setItems(null); }}
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setMtSelection(null)}
         >
-          <Pressable style={[styles.bottomSheet, isDesktop && styles.desktopPanel]} onPress={(e) => e.stopPropagation()}>
-            {/* Handle bar */}
-            <View style={styles.handleBar} />
-            
-            <Text style={styles.sheetTitle}>{selected?.label ?? 'Estantería'}</Text>
-            
-            {loading && (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Cargando información...</Text>
-              </View>
-            )}
-            
-            {!loading && details && (
-              <View style={styles.contentContainer}>
-                {/* Stats Cards */}
-                <View style={styles.statsCard}>
-                  <Text style={styles.statsNumber}>{details.count}</Text>
-                  <Text style={styles.statsLabel}>Piezas arqueológicas</Text>
-                </View>
+          <Pressable
+            style={styles.mtModal}
+            onPress={(e) => e.stopPropagation()}
+          >
 
-                {/* Collections */}
-                {details.collections.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Colecciones</Text>
-                    <View style={styles.chipContainer}>
-                      {details.collections.map((c: string) => (
-                        <View key={c} style={styles.chip}>
-                          <Text style={styles.chipText}>{c}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
+            <Text style={styles.mtTitle}>{mtSelection?.mesa.label ?? 'Mesa de Trabajo'}</Text>
 
-                {/* Archaeologists */}
-                {details.archaeologists.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Investigadores</Text>
-                    <View style={styles.chipContainer}>
-                      {details.archaeologists.map((a: string) => (
-                        <View key={a} style={styles.chip}>
-                          <Text style={styles.chipText}>{a}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.mtScrollContent}>
+                <Text style={styles.mtSectionTitle}>Seleccione una ubicación:</Text>
 
-                <Pressable 
-                  style={styles.closeButton} 
-                  onPress={() => { setSelected(null); setItems(null); }}
-                >
-                  <Text style={styles.closeButtonText}>Cerrar</Text>
-                </Pressable>
-                {/* Primary action: view pieces for selected shelf */}
                 <Pressable
-                  style={[styles.primaryButton]}
+                  style={styles.mtOptionButton}
                   onPress={() => {
-                    if (!selected) return;
-                    const shelfId = SHELF_ID_MAP[selected.id];
-                    const params: any = {};
-                    // Ensure shelfId is sent as a number so the backend receives a numeric query param
-                    if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId);
-                    // also include a readable label for convenience
-                    if (selected.label) params.shelfLabel = selected.label;
-                    router.push({ pathname: '/(tabs)/archaeological-Pieces/View_pieces', params });
-                    // keep modal open or close? Close to show the list
-                    setSelected(null);
-                    setItems(null);
+                    if (mtSelection?.mesa) {
+                      setSelected(mtSelection.mesa);
+                      fetchItemsForShelf(mtSelection.mesa);
+                      setMtSelection(null);
+                    }
                   }}
                 >
-                  <Text style={[styles.closeButtonText]}>Ver piezas</Text>
+                  <Text style={styles.mtOptionText}>{mtSelection?.mesa.label}</Text>
                 </Pressable>
 
-                {/* Placeholder for future detailed SVG zoom */}
-                <Pressable
-                  style={[styles.secondaryButton]}
-                  onPress={() => {
-                    // future: abrir vista con SVG de detalle por niveles/columnas
-                    // actualmente sólo mostramos un placeholder
-                    console.log('Detalle de estantería - pendiente de implementación');
-                    // podríamos cerrar el modal para navegar a la vista futura
-                  }}
-                >
-                  <Text style={[styles.secondaryButtonText]}>Ver detalle (próx.)</Text>
+                {mtSelection?.shelves.map((shelf) => (
+                  <Pressable
+                    key={shelf.id}
+                    style={[styles.mtOptionButton, styles.mtShelfButton]}
+                    onPress={() => {
+                      setSelected(shelf);
+                      fetchItemsForShelf(shelf);
+                      setMtSelection(null);
+                    }}
+                  >
+                    <Text style={styles.mtOptionText}>{shelf.label}</Text>
+                  </Pressable>
+                ))}
+
+                <Pressable style={styles.mtCancelButton} onPress={() => setMtSelection(null)}>
+                  <Text style={styles.mtCancelText}>Cancelar</Text>
                 </Pressable>
               </View>
-            )}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -309,6 +459,255 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#FAFAF9',
+  },
+  mobileNotSupported: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: '#FAF8F6',
+  },
+  mobileNotSupportedIcon: {
+    fontSize: 64,
+    marginBottom: 24,
+  },
+  mobileNotSupportedTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#2F2F2F',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  mobileNotSupportedText: {
+    fontSize: 16,
+    color: '#6B705C',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 320,
+  },
+  contentWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+  },
+
+  // Hint flotante sobre el mapa
+  mapHint: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  mapHintCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    paddingHorizontal: 28,
+    paddingVertical: 24,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(231, 223, 213, 0.8)',
+    maxWidth: 340,
+    alignItems: 'center',
+    shadowColor: '#4A5D23',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  mapHintIcon: {
+    fontSize: 52,
+    marginBottom: 16,
+  },
+  mapHintTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#2F2F2F',
+    marginBottom: 10,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  mapHintText: {
+    fontSize: 14,
+    color: '#6B705C',
+    textAlign: 'center',
+    lineHeight: 21,
+    maxWidth: 280,
+  },
+
+  // Panel lateral desktop
+  sidePanel: {
+    width: 360,
+    backgroundColor: '#FAF8F6',
+    borderLeftWidth: 1,
+    borderLeftColor: '#E7DFD5',
+  },
+  sidePanelScroll: {
+    flex: 1,
+  },
+  sidePanelContent: {
+    padding: 28,
+  },
+
+  placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  placeholderIconContainer: {
+    marginBottom: 28,
+  },
+  placeholderIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#E7DFD5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4A5D23',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  placeholderEmoji: {
+    fontSize: 48,
+  },
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2F2F2F',
+    marginBottom: 6,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  placeholderSubtitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B705C',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#8A8A7E',
+    textAlign: 'center',
+    lineHeight: 21,
+    maxWidth: 280,
+  },
+
+  panelTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#2F2F2F',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B705C',
+  },
+  statsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E7DFD5',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statsNumber: {
+    fontSize: 52,
+    fontWeight: '700',
+    color: '#4A5D23',
+    marginBottom: 6,
+  },
+  statsLabel: {
+    fontSize: 12,
+    color: '#6B705C',
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2F2F2F',
+    marginBottom: 10,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    backgroundColor: '#B7C9A6',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#2F2F2F',
+    fontWeight: '600',
+  },
+  primaryButton: {
+    backgroundColor: '#4A5D23',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 10,
+    shadowColor: '#4A5D23',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#D9C6A5',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#2F2F2F',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Hotspots
   hotspot: {
     position: 'absolute',
     overflow: 'visible',
@@ -317,173 +716,103 @@ const styles = StyleSheet.create({
   hotInner: {
     flex: 1,
     backgroundColor: 'transparent',
+    borderRadius: 6,
   },
   selectedHot: {
-    backgroundColor: 'rgba(107, 112, 92, 0.15)', // green with opacity
-    borderWidth: 2,
-    borderColor: '#6B705C', // green from palette
+    backgroundColor: 'rgba(74, 93, 35, 0.4)',
+    borderWidth: 2.5,
+    borderColor: '#4A5D23',
   },
   hoveredHot: {
-    backgroundColor: 'rgba(107, 112, 92, 0.08)', // lighter green for hover
-    borderWidth: 1,
-    borderColor: '#9AAE8C', // mediumgreen
+    backgroundColor: 'rgba(74, 93, 35, 0.2)',
+    borderWidth: 2,
+    borderColor: '#9AAE8C',
   },
   tooltip: {
     position: 'absolute',
     bottom: '100%',
     left: '50%',
-    marginLeft: -40, // half of minWidth to center
-    backgroundColor: 'rgba(47, 47, 47, 0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginBottom: 4,
-    minWidth: 80,
-  } as ViewStyle,
-  tooltipText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500' as any,
-    textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(47, 47, 47, 0.5)', // black with opacity
-    justifyContent: 'flex-end',
-  },
-  bottomSheet: {
-    backgroundColor: '#F3E9DD', // cremit background
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
-    maxHeight: '70%',
-  },
-  // Panel lateral para escritorio
-  desktopPanel: {
-    position: 'absolute' as any,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    maxHeight: '100%',
-    width: 400,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#C9ADA1', // lightbrown
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  sheetTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2F2F2F', // black
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B705C', // green
-  },
-  contentContainer: {
-    gap: 16,
-  },
-  statsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D9C6A5', // cremit
+    marginLeft: -50,
+    backgroundColor: 'rgba(47, 47, 47, 0.95)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginBottom: 6,
+    minWidth: 100,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 6,
+  } as ViewStyle,
+  tooltipText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600' as any,
+    textAlign: 'center',
   },
-  statsNumber: {
-    fontSize: 48,
+
+  // Modal MT
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(47, 47, 47, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mtModal: {
+    backgroundColor: '#FAF8F6',
+    borderRadius: 24,
+    width: 420,
+    maxHeight: '80%',
+    padding: 24,
+  },
+  mtTitle: {
+    fontSize: 24,
     fontWeight: '700',
-    color: '#4A5D23', // darkgreen
-    marginBottom: 4,
-  },
-  statsLabel: {
-    fontSize: 14,
-    color: '#6B705C', // green
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  section: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2F2F2F', // black
-    marginBottom: 4,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: '#B7C9A6', // lightgreen
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  chipText: {
-    fontSize: 14,
-    color: '#2F2F2F', // black
-    fontWeight: '500',
-  },
-  closeButton: {
-    backgroundColor: '#6B705C', // green
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  primaryButton: {
-    backgroundColor: '#4A5D23',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#D9C6A5',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  secondaryButtonText: {
     color: '#2F2F2F',
-    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  mtScrollContent: {
+    gap: 12,
+  },
+  mtSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2F2F2F',
+    marginBottom: 8,
+  },
+  mtOptionButton: {
+    backgroundColor: '#4A5D23',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#4A5D23',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  mtShelfButton: {
+    backgroundColor: '#6B705C',
+  },
+  mtOptionText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  mtCancelButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#D9C6A5',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  mtCancelText: {
+    color: '#2F2F2F',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

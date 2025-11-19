@@ -1,111 +1,291 @@
+import { FontAwesome } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 
 type ActionCardProps = {
   title: string;
   description: string;
-  icon: string;
+  icon: keyof typeof FontAwesome.glyphMap;
   color: string;
   onPress: () => void;
 };
 
-const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProps) => (
-  <Pressable
-    onPress={onPress}
-    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 active:scale-95 transition-all"
-    style={{ minHeight: 140 }}
-  >
-    <View className="flex-row items-start justify-between">
-      <View className="flex-1">
-        <Text className="text-xl font-bold text-[#2F2F2F] mb-2">{title}</Text>
-        <Text className="text-sm text-gray-600 leading-5">{description}</Text>
+const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProps) => {
+  const { width } = useWindowDimensions();
+  const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isDesktop = width >= 1024;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      onHoverIn={() => setIsHovered(true)}
+      onHoverOut={() => setIsHovered(false)}
+      className="bg-white rounded-2xl border"
+      style={[
+        styles.cardShadow,
+        {
+          borderColor: isHovered && isDesktop ? color : 'rgba(0,0,0,0.06)',
+          borderWidth: isHovered && isDesktop ? 2 : 1,
+          paddingHorizontal: isDesktop ? 32 : 16,
+          paddingVertical: isDesktop ? 24 : 16,
+          minHeight: isDesktop ? 150 : 110,
+          shadowOpacity: isHovered && isDesktop ? 0.15 : 0.08,
+        },
+        {
+          transform: [
+            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 }
+          ],
+        },
+        isHovered && isDesktop && { translateY: -2 },
+        Platform.select({ web: isDesktop ? { cursor: "pointer" } : {} }),
+      ]}
+    >
+      <View className="flex-row items-center">
+        <View
+          className="rounded-xl items-center justify-center mr-5 shrink-0"
+          style={[
+            styles.iconShadow,
+            {
+              backgroundColor: color,
+              width: isDesktop ? 72 : 52,
+              height: isDesktop ? 72 : 52,
+              borderRadius: 18,
+              transform: [{ scale: isHovered && isDesktop ? 1.05 : 1 }],
+            },
+          ]}
+        >
+          <FontAwesome name={icon} size={isDesktop ? 34 : 24} color="#fff" />
+        </View>
+        <View className="flex-1">
+          <Text
+            className="font-bold mb-1.5"
+            style={[
+              styles.titleText,
+              {
+                color: isHovered && isDesktop ? color : Colors.black,
+                fontSize: isDesktop ? 29 : 19,
+                lineHeight: isDesktop ? 34 : 24,
+              },
+            ]}
+          >
+            {title}
+          </Text>
+          <Text
+            style={[
+              styles.descriptionText,
+              {
+                color: Colors.black,
+                opacity: 0.7,
+                fontSize: isDesktop ? 24 : 15,
+                lineHeight: isDesktop ? 26 : 20,
+              },
+            ]}
+            numberOfLines={2}
+          >
+            {description}
+          </Text>
+        </View>
       </View>
-      <View
-        className="w-12 h-12 rounded-full items-center justify-center ml-3"
-        style={{ backgroundColor: color }}
-      >
-        <Text className="text-2xl">{icon}</Text>
-      </View>
-    </View>
-  </Pressable>
-);
+
+      {isHovered && isDesktop && (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              borderRadius: 16,
+              backgroundColor: `${color}08`,
+            },
+          ]}
+        />
+      )}
+    </Pressable>
+  );
+};
 
 export default function ArchaeologicalPiecesIndex() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+
   return (
-    <View className="flex-1 bg-[#F3E9DD]">
+    <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
       <Navbar
         title="Piezas Arqueológicas"
         showBackArrow
         backToHome={true}
         redirectTo="/(tabs)/home"
       />
-      <ScrollView className="flex-1">
-        <View className="px-4 sm:px-8 lg:px-12 py-6 max-w-6xl mx-auto w-full">
+
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: isDesktop ? 48 : 32,
+        }}
+      >
+        {/* Contenedor central más ancho y más arriba en escritorio */}
+        <View
+          className="w-full mx-auto"
+          style={{
+              maxWidth: isDesktop ? 1360 : 720,
+              paddingHorizontal: isDesktop ? 35 : 16,
+              paddingTop: isDesktop ? 64 : 28,
+          }}
+        >
           {/* Header */}
-          <View className="mb-6">
-            <Text className="text-2xl font-bold text-[#2F2F2F] mb-2">
+          <View style={{ marginBottom: isDesktop ? 36 : 24 }} className="items-center">
+            <Text
+              style={[
+                styles.headerTitle,
+                {
+                  color: Colors.black,
+                  fontSize: isDesktop ? 65 : 28,
+                  lineHeight: isDesktop ? 75 : 34,
+                },
+              ]}
+            >
               Gestión del Inventario
             </Text>
-            <Text className="text-gray-600">
+            <Text
+              style={[
+                styles.headerSubtitle,
+                {
+                  marginTop: 8,
+                  color: Colors.black,
+                  opacity: 0.65,
+                  fontSize: isDesktop ? 35 : 16,
+                  textAlign: "center",
+                },
+              ]}
+            >
               Administre las piezas arqueológicas del museo
             </Text>
           </View>
 
+          {/* Pequeño subtítulo de sección en desktop, ayuda a jerarquizar */}
+          {isDesktop && (
+            <Text
+              style={[
+                styles.sectionLabel,
+                {
+                  marginBottom: 16,
+                  color: Colors.black,
+                  opacity: 0.6,
+                },
+              ]}
+            >
+              Acciones principales
+            </Text>
+          )}
+
           {/* Grid de acciones */}
-          <View className="gap-4">
-            {/* Primera fila - 2 columnas en desktop */}
-            <View className="flex-row gap-4 flex-wrap">
-              <View className="flex-1 min-w-[280px]">
+          <View style={{ rowGap: isDesktop ? 20 : 14 }}>
+            {/* Primera fila */}
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                columnGap: isDesktop ? 20 : 0,
+                rowGap: isDesktop ? 0 : 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
                 <ActionCard
                   title="Ver todas las piezas"
                   description="Consulte el catálogo completo del inventario"
-                  icon="📋"
-                  color="#B7C9A6"
-                  onPress={() => router.push("/(tabs)/archaeological-Pieces/View_pieces")}
+                  icon="clipboard"
+                  color={Colors.lightgreen}
+                  onPress={() =>
+                    router.push("/(tabs)/archaeological-Pieces/View_pieces")
+                  }
                 />
               </View>
-              <View className="flex-1 min-w-[280px]">
+              <View style={{ flex: 1 }}>
                 <ActionCard
                   title="Registrar nueva pieza"
                   description="Añada un nuevo artefacto al inventario"
-                  icon="➕"
-                  color="#6B705C"
-                  onPress={() => router.push("/(tabs)/archaeological-Pieces/New_piece")}
+                  icon="plus-circle"
+                  color={Colors.green}
+                  onPress={() =>
+                    router.push("/(tabs)/archaeological-Pieces/New_piece")
+                  }
                 />
               </View>
             </View>
 
             {/* Segunda fila - destacado */}
-            <View className="mt-2">
+            <View style={{ marginVertical: isDesktop ? 0 : 0 }}>
               <ActionCard
                 title="Mapa del Depósito"
                 description="Visualice la distribución de piezas en las estanterías del depósito"
-                icon="🗺️"
-                color="#4A5D23"
-                onPress={() => router.push("/(tabs)/archaeological-Pieces/deposit-map")}
+                icon="map"
+                color={Colors.darkgreen}
+                onPress={() =>
+                  router.push("/(tabs)/archaeological-Pieces/deposit-map")
+                }
               />
             </View>
 
-            {/* Tercera fila - utilidades */}
-            <View className="flex-row gap-4 flex-wrap mt-2">
-              <View className="flex-1 min-w-[280px]">
+            {/* Subtítulo para las herramientas */}
+            {isDesktop && (
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  {
+                    marginTop: 16,
+                    marginBottom: 4,
+                    color: Colors.black,
+                    opacity: 0.6,
+                  },
+                ]}
+              >
+                Herramientas de organización
+              </Text>
+            )}
+
+            {/* Tercera fila */}
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                columnGap: isDesktop ? 20 : 0,
+                rowGap: isDesktop ? 0 : 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
                 <ActionCard
                   title="Nueva estantería"
                   description="Agregue ubicaciones físicas"
-                  icon="📦"
-                  color="#C9ADA1"
-                  onPress={() => router.push("/(tabs)/archaeological-Pieces/New_shelf")}
+                  icon="archive"
+                  color={Colors.lightbrown}
+                  onPress={() =>
+                    router.push("/(tabs)/archaeological-Pieces/New_shelf")
+                  }
                 />
               </View>
-              <View className="flex-1 min-w-[280px]">
+              <View style={{ flex: 1 }}>
                 <ActionCard
                   title="Clasificador interno"
                   description="Configure etiquetas de clasificación"
-                  icon="🏷️"
-                  color="#D9C6A5"
-                  onPress={() => router.push("/(tabs)/archaeological-Pieces/New_internal-classifier")}
+                  icon="tag"
+                  color={Colors.cremit}
+                  onPress={() =>
+                    router.push(
+                      "/(tabs)/archaeological-Pieces/New_internal-classifier"
+                    )
+                  }
                 />
               </View>
             </View>
@@ -115,3 +295,42 @@ export default function ArchaeologicalPiecesIndex() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  cardShadow: {
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  iconShadow: {
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  headerTitle: {
+    fontFamily: "MateSC-Regular",
+    letterSpacing: 0.6,
+    textAlign: "center",
+  },
+  headerSubtitle: {
+    fontFamily: "CrimsonText-Regular",
+  },
+  sectionLabel: {
+    fontFamily: "CrimsonText-Regular",
+    fontSize: 20,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+  },
+  titleText: {
+    fontFamily: "MateSC-Regular",
+    letterSpacing: 0.3,
+  },
+  descriptionText: {
+    fontFamily: "CrimsonText-Regular",
+  },
+});
