@@ -15,23 +15,17 @@ interface CardProps {
 export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
   const router = useRouter();
   const handlePress = () => {
-    const t = title || "";
-    if (/pieza/i.test(t)) {
-      router.push({ pathname: "/(tabs)/archaeological-Pieces" });
-      return;
-    }
     if (title === "Arqueólogos") {
       router.push({ pathname: "/(tabs)/archaeologist/View_archaeologist" });
     } else if (title === "Sitios Arqueológicos") {
       router.push({ pathname: "/(tabs)/location/Location" });
     } else if (title === "Préstamos") {
       router.push({ pathname: "/(tabs)/loan/View_loan" });
-    } else if (
-      title === "Piezas Arqueológicas" ||
-      title === "Piezas arqueologicas"
-    ) {
+    } else if (title === "Colecciones Arqueológicas") {
+      router.push({ pathname: "/(tabs)/collection/View_collection" });
+    } else if (/pieza/i.test(title)) {
       router.push({ pathname: "/(tabs)/archaeological-Pieces" });
-    } else if (title === " Colecciones Arqueológicas" || /colección/i.test(title)) {
+    } else if (/colección/i.test(title)) {
       router.push({ pathname: "/(tabs)/collection/View_collection" });
     }
   };
