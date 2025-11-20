@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -62,18 +62,18 @@ export default function ArchaeologicalSite({
        </View>
      </View>
 
-     <Feather name="chevron-right" size={20} color="#8B5E3C" />
+     <Ionicons name="chevron-forward-outline" size={20} color="#8B5E3C" />
    </View>
 
    <View style={{ borderTopWidth: 1, borderTopColor: '#F1E8DA', paddingTop: 12 }}>
-     <InfoItem icon="map-pin" label="Ubicación" value={Location} />
-     <InfoItem icon="info" label="Descripción" value={Description} multiline />
+     <InfoItem icon="location-outline" label="Ubicación" value={Location} />
+     <InfoItem icon="information-circle-outline" label="Descripción" value={Description} multiline />
    </View>
   </TouchableOpacity>
  );
 }
 
-type FeatherIconNames = "map-pin" | "globe" | "calendar" | "info" | "flag";
+type IoniconsIconNames = "location-outline" | "globe-outline" | "calendar-outline" | "information-circle-outline" | "flag-outline";
 
 function InfoItem({
  icon,
@@ -81,7 +81,7 @@ function InfoItem({
  value,
  multiline = false,
 }: {
- icon: FeatherIconNames;
+ icon: IoniconsIconNames;
  label: string;
  value: string;
  multiline?: boolean;
@@ -89,7 +89,7 @@ function InfoItem({
  return (
   <View className="flex-row items-start mb-3">
    <View className="w-8 h-8 rounded-full items-center justify-center mr-2 mt-0.5 bg-[#8B5E3C]">
-    <Feather name={icon} size={16} color="#FEF3C7" />
+    <Ionicons name={icon} size={16} color="#FEF3C7" />
    </View>
    <View className="flex-1">
     <Text

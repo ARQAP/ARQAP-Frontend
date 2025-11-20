@@ -1,16 +1,16 @@
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import Button from "../../../components/ui/Button";
 import SimplePickerModal from '../../../components/ui/SimpleModal';
@@ -337,7 +337,7 @@ export default function New_location() {
                 className="absolute right-3 top-2 p-1"
                 onPress={handleClearPaisSearch}
               >
-                <Feather name="x" size={20} color="#A68B5B" />
+                <Ionicons name="close-outline" size={20} color="#A68B5B" />
               </TouchableOpacity>
             )}
           </View>
@@ -352,7 +352,7 @@ export default function New_location() {
             >
               Crear nuevo País
             </Text>
-            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
           </TouchableOpacity>
         </View>
 
@@ -383,7 +383,7 @@ export default function New_location() {
                 className="absolute right-3 top-2 p-1"
                 onPress={handleClearRegionSearch}
               >
-                <Feather name="x" size={20} color="#A68B5B" />
+                <Ionicons name="close-outline" size={20} color="#A68B5B" />
               </TouchableOpacity>
             )}
           </View>
@@ -398,7 +398,7 @@ export default function New_location() {
             >
               Crear nueva Región
             </Text>
-            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
           </TouchableOpacity>
         </View>
 

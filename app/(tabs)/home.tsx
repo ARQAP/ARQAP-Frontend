@@ -85,31 +85,31 @@ export default function HomeScreen() {
         <Card
           title="Piezas Arqueológicas"
           subtitle="Registrar y Gestionar las piezas"
-          icon="archive"
+          icon="archive-outline"
           cubeCount={artefacts.length}
         />
         <Card
           title="Colecciones Arqueológicas"
           subtitle="Organizar por colecciones"
-          icon="book"
+          icon="book-outline"
           cubeCount={collections.length}
         />
         <Card
           title="Sitios Arqueológicos"
           subtitle="Gestionar ubicaciones"
-          icon="map-marker"
+          icon="location-outline"
           cubeCount={sites.length}
         />
         <Card
           title="Arqueólogos"
           subtitle="Gestionar Especialistas"
-          icon="user"
+          icon="person-outline"
           cubeCount={archaeologists.length}
         />
         <Card
           title="Préstamos"
           subtitle="Préstamos activos"
-          icon="exchange"
+          icon="swap-horizontal-outline"
           cubeCount={activeLoans.length}
         />
         <View className="items-center mt-7 pb-8">

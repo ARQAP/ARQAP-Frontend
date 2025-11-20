@@ -1,4 +1,4 @@
-import { FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
@@ -84,7 +84,7 @@ export default function ViewDetailLoan() {
               })
             }
           >
-            <FontAwesome name="pencil" size={22} color="#222" />
+            <Ionicons name="create-outline" size={22} color="#222" />
           </TouchableOpacity>
         </View>
 

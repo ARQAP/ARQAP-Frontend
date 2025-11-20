@@ -1,8 +1,7 @@
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
-import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
 export default function ViewSite() {
@@ -48,7 +47,7 @@ return (
   {/* --- Bloque de Información mejorado --- */}
   <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, borderWidth: 1, borderColor: '#F0E6D6' }}>
     <View style={{ marginBottom: 20 }}>
-      <DetailItem icon="map-pin" label="Ubicación" value={location} />
+      <DetailItem icon="location-outline" label="Ubicación" value={location} />
     </View>
     
     <View style={{ marginBottom: 16 }}>
@@ -68,7 +67,7 @@ return (
   <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, borderWidth: 1, borderColor: '#F0E6D6' }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
       <View style={{ backgroundColor: '#A67C52', padding: 12, borderRadius: 14, marginRight: 12 }}>
-        <Feather name="info" size={22} color="#F7F5F2" />
+        <Ionicons name="information-circle-outline" size={22} color="#F7F5F2" />
       </View>
       <Text style={{ fontFamily: 'MateSC-Regular', fontSize: 22, color: '#3d2c13', fontWeight: '700' }}>
         Descripción
@@ -83,21 +82,21 @@ return (
 );
 }
 
-type FeatherIconNames = "map-pin" | "globe" | "flag" | "calendar";
+type IoniconsIconNames = "location-outline" | "globe-outline" | "flag-outline" | "calendar-outline";
 
 function DetailItem({
 icon,
 label,
 value,
 }: {
-icon: FeatherIconNames;
+icon: IoniconsIconNames;
 label: string;
 value: string;
 }) {
 return (
 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
 <View style={{ backgroundColor: '#A67C52', padding: 10, borderRadius: 12, marginRight: 16 }}>
- <Feather name={icon} size={18} color="#F7F5F2" />
+ <Ionicons name={icon} size={18} color="#F7F5F2" />
 </View>
 <View style={{ flex: 1 }}>
  <Text style={{ fontFamily: 'MateSC-Regular', fontSize: 16, color: '#8B5E3C', marginBottom: 4, fontWeight: '600' }}>

@@ -1,6 +1,6 @@
 // app/(tabs)/archaeological-Pieces/View_pieces.tsx
-import { FontAwesome } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,8 +19,8 @@ import InfoRow from "../../../components/ui/InfoRow";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 
-import { useArtefacts, useDeleteArtefact } from "../../../hooks/useArtefact";
 import type { Artefact } from "@/repositories/artefactRepository";
+import { useArtefacts, useDeleteArtefact } from "../../../hooks/useArtefact";
 
 // Tipo extendido para incluir campos adicionales que se usan en la UI
 type Piece = Artefact & {
@@ -453,22 +453,22 @@ export default function ViewPieces() {
 
                       <View style={{ marginBottom: 6 }}>
                         <InfoRow
-                          icon="cube"
+                          icon="cube-outline"
                           label="MATERIAL"
                           value={p.material || ""}
                         />
                         <InfoRow
-                          icon="map-marker"
+                          icon="location-outline"
                           label="SITIO ARQUEOLOGICO"
                           value={p.site || ""}
                         />
                         <InfoRow
-                          icon="user"
+                          icon="person-outline"
                           label="ARQUEOLOGO"
                           value={p.archaeologist || ""}
                         />
                         <InfoRow
-                          icon="archive"
+                          icon="archive-outline"
                           label="COLECCION"
                           value={p.collection || ""}
                         />
@@ -496,8 +496,8 @@ export default function ViewPieces() {
                         style={{ padding: 8 }}
                         accessibilityLabel={`Opciones para pieza ${p.name}`}
                       >
-                        <FontAwesome
-                          name="ellipsis-v"
+                        <Ionicons
+                          name="ellipsis-vertical"
                           size={18}
                           color={Colors.black}
                         />
@@ -531,8 +531,8 @@ export default function ViewPieces() {
                               borderBottomColor: "#e0e0e0",
                             }}
                           >
-                            <FontAwesome
-                              name="edit"
+                            <Ionicons
+                              name="create-outline"
                               size={16}
                               color={Colors.brown}
                               style={{ marginRight: 10 }}
@@ -556,8 +556,8 @@ export default function ViewPieces() {
                               padding: 12,
                             }}
                           >
-                            <FontAwesome
-                              name="trash"
+                            <Ionicons
+                              name="trash-outline"
                               size={16}
                               color={Colors.brown}
                               style={{ marginRight: 10 }}

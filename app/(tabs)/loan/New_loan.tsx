@@ -1,24 +1,23 @@
-import { useRouter, useFocusEffect } from "expo-router";
-import React, { useState, useMemo, useCallback } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { FontAwesome, Feather } from "@expo/vector-icons";
-import Button from "@/components/ui/Button";
 import Navbar from "@/app/(tabs)/Navbar";
+import Button from "@/components/ui/Button";
 import SimplePickerModal, {
-  SimplePickerItem,
+    SimplePickerItem,
 } from "@/components/ui/SimpleModal";
-import { useArtefacts } from "@/hooks/useArtefact";
-import { useRequesters } from "@/hooks/useRequester";
-import { useCreateLoan } from "@/hooks/useLoan";
-import { useQueryClient } from "@tanstack/react-query";
-import type { Loan } from "@/repositories/loanRepository";
 import Colors from "@/constants/Colors";
+import { useArtefacts } from "@/hooks/useArtefact";
+import { useCreateLoan } from "@/hooks/useLoan";
+import { useRequesters } from "@/hooks/useRequester";
+import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 export default function NewLoan() {
   const router = useRouter();
@@ -211,7 +210,7 @@ export default function NewLoan() {
             >
               {selectedArtefactName || "Seleccionar pieza arqueológica..."}
             </Text>
-            <FontAwesome name="chevron-down" size={14} color="#999" />
+            <Ionicons name="chevron-down-outline" size={14} color="#999" />
           </TouchableOpacity>
 
           {errors.artefact && (
@@ -255,7 +254,7 @@ export default function NewLoan() {
             >
               {selectedRequesterName || "Seleccionar solicitante..."}
             </Text>
-            <FontAwesome name="chevron-down" size={14} color="#999" />
+            <Ionicons name="chevron-down-outline" size={14} color="#999" />
           </TouchableOpacity>
 
           {errors.requester && (
@@ -284,7 +283,7 @@ export default function NewLoan() {
             >
               Crear nuevo Solicitante
             </Text>
-            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
           </TouchableOpacity>
         </View>
 
@@ -318,7 +317,7 @@ export default function NewLoan() {
                 marginBottom: 8,
               }}
             >
-              <FontAwesome name="calendar" size={16} color={Colors.brown} />
+              <Ionicons name="calendar-outline" size={16} color={Colors.brown} />
               <Text
                 style={{
                   marginLeft: 10,
@@ -332,7 +331,7 @@ export default function NewLoan() {
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <FontAwesome name="clock-o" size={16} color={Colors.brown} />
+              <Ionicons name="time-outline" size={16} color={Colors.brown} />
               <Text
                 style={{
                   marginLeft: 10,

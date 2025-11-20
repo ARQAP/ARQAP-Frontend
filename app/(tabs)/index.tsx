@@ -1,5 +1,5 @@
 import { useLoginMutation } from "@/hooks/useUserAuth";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -19,7 +19,6 @@ export default function IndexScreen() {
   const [fontsLoaded] = useFonts({
     MateSC: require("../../assets/fonts/MateSC-Regular.ttf"),
     CrimsonText: require("../../assets/fonts/CrimsonText-Regular.ttf"),
-    ...MaterialIcons.font,
   });
 
   const router = useRouter();
@@ -87,8 +86,8 @@ export default function IndexScreen() {
                 className="flex-row items-center border-2 rounded-lg mb-2"
                 style={{ borderColor: Colors.accent, backgroundColor: "#F7F5F2" }}
               >
-                <MaterialIcons
-                  name="person"
+                <Ionicons
+                  name="person-outline"
                   size={22}
                   color={Colors.accent}
                   style={{ marginRight: 6 }}
@@ -109,8 +108,8 @@ export default function IndexScreen() {
                 className="flex-row items-center border-2 rounded-lg"
                 style={{ borderColor: Colors.accent, backgroundColor: "#F7F5F2" }}
               >
-                <MaterialIcons
-                  name="lock"
+                <Ionicons
+                  name="lock-closed-outline"
                   size={22}
                   color={Colors.accent}
                   style={{ marginRight: 6 }}

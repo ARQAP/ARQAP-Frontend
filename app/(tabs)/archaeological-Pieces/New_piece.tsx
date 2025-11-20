@@ -1,45 +1,45 @@
 // app/(tabs)/archaeological-Pieces/New_piece.tsx
 import React, { useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  Image,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Switch,
-  useWindowDimensions,
+    Alert,
+    Image,
+    Platform,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
-import Navbar from "../Navbar";
 import Button from "../../../components/ui/Button";
 import Colors from "../../../constants/Colors";
+import Navbar from "../Navbar";
 
-import { useRouter } from "expo-router";
-import { ArtefactRepository } from "@/repositories/artefactRepository";
-import {
-  useCreateArtefact,
-  useUploadArtefactHistoricalRecord,
-  useUploadArtefactPicture,
-} from "@/hooks/useArtefact";
-import { useCollections } from "../../../hooks/useCollections";
-import { useArchaeologists } from "@/hooks/useArchaeologist";
-import { useShelf, useShelves } from "../../../hooks/useShelf";
-import {
-  usePhysicalLocations,
-  useCreatePhysicalLocation,
-} from "@/hooks/usePhysicalLocation";
-import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
+import { useArchaeologists } from "@/hooks/useArchaeologist";
+import {
+    useCreateArtefact,
+    useUploadArtefactHistoricalRecord,
+    useUploadArtefactPicture,
+} from "@/hooks/useArtefact";
+import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
+import {
+    useCreatePhysicalLocation,
+    usePhysicalLocations,
+} from "@/hooks/usePhysicalLocation";
+import { ArtefactRepository } from "@/repositories/artefactRepository";
+import { useRouter } from "expo-router";
+import { useCollections } from "../../../hooks/useCollections";
+import { useShelves } from "../../../hooks/useShelf";
 
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
-import SimplePickerModal, {
-  SimplePickerItem,
-} from "../../../components/ui/SimpleModal";
-import { INPLRepository } from "@/repositories/inplClassifierRepository";
 import { apiClient } from "@/lib/api";
+import { INPLRepository } from "@/repositories/inplClassifierRepository";
+import SimplePickerModal, {
+    SimplePickerItem,
+} from "../../../components/ui/SimpleModal";
 
 export default function NewPiece() {
   const router = useRouter();
@@ -849,7 +849,7 @@ export default function NewPiece() {
             >
               Crear nuevo Clasificador Interno
             </Text>
-            <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
           </TouchableOpacity>
         </View>
 
@@ -1122,7 +1122,7 @@ export default function NewPiece() {
               >
                 Crear nueva Estantería
               </Text>
-              <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+              <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
             </TouchableOpacity>
           </View>
         </View>

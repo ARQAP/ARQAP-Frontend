@@ -1,15 +1,18 @@
-import React from 'react';
-import { Text, View } from 'react-native';
-import DepositMap from '../../../components/DepositMap';
-import Navbar from '../Navbar';
+import { View } from "react-native"
+import DepositMap from "../../../components/DepositMap"
+import Navbar from "../Navbar"
+
+const Colors = {
+  cream: "#F3E9DD",
+}
 
 export default function Deposit() {
   return (
-    <View className="flex-1 bg-[#F3E9DD]">
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar title="Mapa del depósito" backToHome />
-      <View className="flex-1">
+      <View style={{ flex: 1 }}>
         <DepositMap />
       </View>
     </View>
-  );
+  )
 }
