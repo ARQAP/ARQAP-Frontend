@@ -1,50 +1,49 @@
 // app/(tabs)/archaeological-Pieces/Edit_piece.tsx
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Switch,
-  Image,
-  Platform,
-  Alert,
-  useWindowDimensions,
+    Alert,
+    Image,
+    Platform,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import Navbar from "../Navbar";
 import Button from "../../../components/ui/Button";
 import Colors from "../../../constants/Colors";
-import { Feather } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import Navbar from "../Navbar";
 
-import {
-  INPLRepository,
-  INPLClassifierDTO,
-} from "@/repositories/inplClassifierRepository";
-import { useCollections } from "../../../hooks/useCollections";
-import { useArchaeologists } from "../../../hooks/useArchaeologist";
-import { useShelves } from "../../../hooks/useShelf";
 import { useMentionsByArtefactId } from "@/hooks/useMentions";
 import {
-  usePhysicalLocations,
-  useCreatePhysicalLocation,
-  indexToLevel,
-  indexToColumn,
+    INPLRepository
+} from "@/repositories/inplClassifierRepository";
+import { useArchaeologists } from "../../../hooks/useArchaeologist";
+import { useCollections } from "../../../hooks/useCollections";
+import {
+    indexToColumn,
+    indexToLevel,
+    useCreatePhysicalLocation,
+    usePhysicalLocations,
 } from "../../../hooks/usePhysicalLocation";
+import { useShelves } from "../../../hooks/useShelf";
 
 import SimplePickerModal, {
-  SimplePickerItem,
+    SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
 
-import { ArtefactRepository } from "@/repositories/artefactRepository";
-import {
-  useUploadArtefactHistoricalRecord,
-  useUploadArtefactPicture,
-} from "@/hooks/useArtefact";
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
+import {
+    useUploadArtefactHistoricalRecord,
+    useUploadArtefactPicture,
+} from "@/hooks/useArtefact";
 import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
+import { ArtefactRepository } from "@/repositories/artefactRepository";
 
 // ---- Tipos locales ----
 type MentionUI = {
@@ -1223,7 +1222,7 @@ export default function EditPiece() {
               >
                 Crear nueva Estantería
               </Text>
-              <Feather name="arrow-up-right" size={16} color="#A68B5B" />
+              <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
             </TouchableOpacity>
           </View>
         </View>

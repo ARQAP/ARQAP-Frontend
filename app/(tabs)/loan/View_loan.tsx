@@ -1,21 +1,21 @@
+import Navbar from "@/app/(tabs)/Navbar";
+import { LoanCard } from "@/components/ui";
+import Button from "@/components/ui/Button";
+import Colors from "@/constants/Colors";
+import { useLoans, useUpdateLoan } from "@/hooks/useLoan";
+import { Loan } from "@/repositories/loanRepository";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Text,
-  View,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  Platform,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import Button from "@/components/ui/Button";
-import Navbar from "@/app/(tabs)/Navbar";
-import { useLoans, useUpdateLoan } from "@/hooks/useLoan";
-import { LoanCard, GenericList } from "@/components/ui";
-import { Loan } from "@/repositories/loanRepository";
-import Colors from "@/constants/Colors";
-import { MaterialIcons } from "@expo/vector-icons";
 
 export default function ViewLoan() {
   const router = useRouter();
@@ -246,11 +246,11 @@ export default function ViewLoan() {
                   Préstamos Activos ({activeLoans.length})
                 </Text>
               </View>
-              <MaterialIcons
+              <Ionicons
                 name={
                   isActiveSectionExpanded
-                    ? "keyboard-arrow-up"
-                    : "keyboard-arrow-down"
+                    ? "chevron-up-outline"
+                    : "chevron-down-outline"
                 }
                 size={24}
                 color={Colors.brown}
@@ -317,11 +317,11 @@ export default function ViewLoan() {
                   Préstamos Finalizados ({finishedLoans.length})
                 </Text>
               </View>
-              <MaterialIcons
+              <Ionicons
                 name={
                   isFinishedSectionExpanded
-                    ? "keyboard-arrow-up"
-                    : "keyboard-arrow-down"
+                    ? "chevron-up-outline"
+                    : "chevron-down-outline"
                 }
                 size={24}
                 color={Colors.green}

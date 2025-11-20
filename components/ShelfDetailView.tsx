@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
@@ -315,7 +316,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
               }}
             >
               <View className="flex-row items-center gap-2 mb-[10px]">
-                <Text className="text-xl">📦</Text>
+                <Ionicons name="cube-outline" size={20} color={Colors.green} />
                 <Text 
                   className="text-[11px] font-bold uppercase" 
                   style={{ color: Colors.green, letterSpacing: 1.2 }}
@@ -401,7 +402,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
               }}
             >
               <View className="flex-row items-center gap-2 mb-[10px]">
-                <Text className="text-xl">🎨</Text>
+                <Ionicons name="color-palette-outline" size={20} color={Colors.green} />
                 <Text 
                   className="text-[11px] font-bold uppercase" 
                   style={{ color: Colors.green, letterSpacing: 1.2 }}
@@ -467,9 +468,11 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
               }}
             >
               <View className="flex-row items-center gap-2 mb-[10px]">
-                <Text className="text-xl">
-                  {selectedSlotInfo ? '📍' : '👆'}
-                </Text>
+                <Ionicons 
+                  name={selectedSlotInfo ? 'location' : 'hand-left-outline'} 
+                  size={20} 
+                  color={Colors.green} 
+                />
                 <Text 
                   className="text-[11px] font-bold uppercase" 
                   style={{ color: Colors.green, letterSpacing: 1.2 }}
@@ -529,7 +532,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                       transform: [{ scale: pressed ? 0.97 : 1 }],
                     })}
                   >
-                    <Text style={{ fontSize: 18 }}>🔍</Text>
+                    <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
                     <Text 
                       style={{ 
                         fontSize: 15, 
@@ -541,12 +544,15 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                       Ver piezas
                     </Text>
                   </Pressable>
-                  <Text 
-                    className="text-[13px] italic" 
-                    style={{ color: Colors.brown, lineHeight: 19 }}
-                  >
-                    💡 Visualiza las piezas arqueológicas almacenadas en esta ubicación.
-                  </Text>
+                  <View className="flex-row items-start gap-2">
+                    <Ionicons name="bulb-outline" size={16} color={Colors.brown} style={{ marginTop: 2 }} />
+                    <Text 
+                      className="text-[13px] italic flex-1" 
+                      style={{ color: Colors.brown, lineHeight: 19 }}
+                    >
+                      Visualiza las piezas arqueológicas almacenadas en esta ubicación.
+                    </Text>
+                  </View>
                 </>
               ) : (
                 <Text 

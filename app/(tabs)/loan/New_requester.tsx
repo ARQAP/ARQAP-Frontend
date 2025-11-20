@@ -1,26 +1,26 @@
+import Navbar from "@/app/(tabs)/Navbar";
+import Button from "@/components/ui/Button";
+import SimplePickerModal, {
+    SimplePickerItem,
+} from "@/components/ui/SimpleModal";
+import Colors from "@/constants/Colors";
+import { useCreateRequester } from "@/hooks/useRequester";
+import type {
+    Requester,
+    RequesterType,
+} from "@/repositories/requesterRepository";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  ActivityIndicator,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Platform,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
-import Button from "@/components/ui/Button";
-import Navbar from "@/app/(tabs)/Navbar";
-import SimplePickerModal, {
-  SimplePickerItem,
-} from "@/components/ui/SimpleModal";
-import { useCreateRequester } from "@/hooks/useRequester";
-import type {
-  Requester,
-  RequesterType,
-} from "@/repositories/requesterRepository";
-import Colors from "@/constants/Colors";
 
 export default function NewRequester() {
   const router = useRouter();
@@ -154,7 +154,7 @@ export default function NewRequester() {
             <Text style={{ color: type ? "#3d2c13" : "#A68B5B" }}>
               {type || "Seleccionar tipo"}
             </Text>
-            <FontAwesome name="chevron-down" size={12} color="#A68B5B" />
+            <Ionicons name="chevron-down-outline" size={12} color="#A68B5B" />
           </TouchableOpacity>
           {errors.type && (
             <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>

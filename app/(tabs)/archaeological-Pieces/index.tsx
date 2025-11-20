@@ -1,4 +1,4 @@
-import { FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -16,7 +16,7 @@ import Navbar from "../Navbar";
 type ActionCardProps = {
   title: string;
   description: string;
-  icon: keyof typeof FontAwesome.glyphMap;
+  icon: keyof typeof Ionicons.glyphMap;
   color: string;
   onPress: () => void;
 };
@@ -68,7 +68,7 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
             },
           ]}
         >
-          <FontAwesome name={icon} size={isDesktop ? 34 : 24} color="#fff" />
+          <Ionicons name={icon} size={isDesktop ? 34 : 24} color="#fff" />
         </View>
         <View className="flex-1">
           <Text
@@ -77,8 +77,8 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
               styles.titleText,
               {
                 color: isHovered && isDesktop ? color : Colors.black,
-                fontSize: isDesktop ? 29 : 19,
-                lineHeight: isDesktop ? 34 : 24,
+                fontSize: isDesktop ? 25 : 19,
+                lineHeight: isDesktop ? 32 : 24,
               },
             ]}
           >
@@ -90,8 +90,8 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
               {
                 color: Colors.black,
                 opacity: 0.7,
-                fontSize: isDesktop ? 24 : 15,
-                lineHeight: isDesktop ? 26 : 20,
+                fontSize: isDesktop ? 22 : 15,
+                lineHeight: isDesktop ? 28 : 20,
               },
             ]}
             numberOfLines={2}
@@ -143,7 +143,7 @@ export default function ArchaeologicalPiecesIndex() {
           style={{
               maxWidth: isDesktop ? 1360 : 720,
               paddingHorizontal: isDesktop ? 35 : 16,
-              paddingTop: isDesktop ? 64 : 28,
+              paddingTop: isDesktop ? 35 : 5,
           }}
         >
           {/* Header */}
@@ -153,7 +153,7 @@ export default function ArchaeologicalPiecesIndex() {
                 styles.headerTitle,
                 {
                   color: Colors.black,
-                  fontSize: isDesktop ? 65 : 28,
+                  fontSize: isDesktop ? 60 : 28,
                   lineHeight: isDesktop ? 75 : 34,
                 },
               ]}
@@ -167,7 +167,7 @@ export default function ArchaeologicalPiecesIndex() {
                   marginTop: 8,
                   color: Colors.black,
                   opacity: 0.65,
-                  fontSize: isDesktop ? 35 : 16,
+                  fontSize: isDesktop ? 30 : 16,
                   textAlign: "center",
                 },
               ]}
@@ -206,7 +206,7 @@ export default function ArchaeologicalPiecesIndex() {
                 <ActionCard
                   title="Ver todas las piezas"
                   description="Consulte el catálogo completo del inventario"
-                  icon="clipboard"
+                  icon="clipboard-outline"
                   color={Colors.lightgreen}
                   onPress={() =>
                     router.push("/(tabs)/archaeological-Pieces/View_pieces")
@@ -217,7 +217,7 @@ export default function ArchaeologicalPiecesIndex() {
                 <ActionCard
                   title="Registrar nueva pieza"
                   description="Añada un nuevo artefacto al inventario"
-                  icon="plus-circle"
+                  icon="add-circle-outline"
                   color={Colors.green}
                   onPress={() =>
                     router.push("/(tabs)/archaeological-Pieces/New_piece")
@@ -231,7 +231,7 @@ export default function ArchaeologicalPiecesIndex() {
               <ActionCard
                 title="Mapa del Depósito"
                 description="Visualice la distribución de piezas en las estanterías del depósito"
-                icon="map"
+                icon="map-outline"
                 color={Colors.darkgreen}
                 onPress={() =>
                   router.push("/(tabs)/archaeological-Pieces/deposit-map")
@@ -268,7 +268,7 @@ export default function ArchaeologicalPiecesIndex() {
                 <ActionCard
                   title="Nueva estantería"
                   description="Agregue ubicaciones físicas"
-                  icon="archive"
+                  icon="archive-outline"
                   color={Colors.lightbrown}
                   onPress={() =>
                     router.push("/(tabs)/archaeological-Pieces/New_shelf")
@@ -279,7 +279,7 @@ export default function ArchaeologicalPiecesIndex() {
                 <ActionCard
                   title="Clasificador interno"
                   description="Configure etiquetas de clasificación"
-                  icon="tag"
+                  icon="pricetag-outline"
                   color={Colors.cremit}
                   onPress={() =>
                     router.push(

@@ -1,9 +1,11 @@
-"use client";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+// app/(tabs)/archaeological-Pieces/View_pieces.tsx
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -11,17 +13,15 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
 import InfoRow from "../../../components/ui/InfoRow";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 
-import { useArtefacts, useDeleteArtefact } from "../../../hooks/useArtefact";
 import type { Artefact } from "@/repositories/artefactRepository";
+import { useArtefacts, useDeleteArtefact } from "../../../hooks/useArtefact";
 
 // Tipo extendido para incluir campos adicionales que se usan en la UI
 type Piece = Artefact & {
@@ -674,22 +674,22 @@ export default function ViewPieces() {
 
                       <View style={{ gap: Platform.OS === "web" ? 10 : 6 }}>
                         <InfoRow
-                          icon="cube"
+                          icon="cube-outline"
                           label="MATERIAL"
                           value={p.material || ""}
                         />
                         <InfoRow
-                          icon="map-marker"
+                          icon="location-outline"
                           label="SITIO ARQUEOLOGICO"
                           value={p.site || ""}
                         />
                         <InfoRow
-                          icon="user"
+                          icon="person-outline"
                           label="ARQUEOLOGO"
                           value={p.archaeologist || ""}
                         />
                         <InfoRow
-                          icon="archive"
+                          icon="archive-outline"
                           label="COLECCION"
                           value={p.collection || ""}
                         />
@@ -725,10 +725,76 @@ export default function ViewPieces() {
                       >
                         <Ionicons
                           name="ellipsis-vertical"
-                          size={20}
-                          color={Colors.green}
+                          size={18}
+                          color={Colors.black}
                         />
                       </TouchableOpacity>
+
+                      {/* Menú desplegable */}
+                      {menuVisible === String(p.id) && (
+                        <View
+                          style={{
+                            position: "absolute",
+                            top: 40,
+                            right: 8,
+                            backgroundColor: "white",
+                            borderRadius: 8,
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 4,
+                            elevation: 10,
+                            zIndex: 1000,
+                            width: 120,
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => handleEdit(p.id!)}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              padding: 12,
+                              borderBottomWidth: 1,
+                              borderBottomColor: "#e0e0e0",
+                            }}
+                          >
+                            <Ionicons
+                              name="create-outline"
+                              size={16}
+                              color={Colors.brown}
+                              style={{ marginRight: 10 }}
+                            />
+                            <Text style={{ fontSize: 16, color: Colors.brown }}>
+                              Editar
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => {
+                              console.log(
+                                "Delete button pressed, piece ID:",
+                                p.id
+                              );
+                              handleDelete(p.id!);
+                            }}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              padding: 12,
+                            }}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={16}
+                              color={Colors.brown}
+                              style={{ marginRight: 10 }}
+                            />
+                            <Text style={{ fontSize: 16, color: Colors.brown }}>
+                              Eliminar
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   </View>
 

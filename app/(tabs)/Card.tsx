@@ -1,4 +1,4 @@
-import { FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -6,10 +6,10 @@ import CubeBadge from "../../components/ui/CubeBadge";
 import Colors from "../../constants/Colors";
 
 interface CardProps {
-    title: string;
-    subtitle: string;
-    icon?: keyof typeof FontAwesome.glyphMap;
-    cubeCount?: number;
+  title: string;
+  subtitle: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  cubeCount?: number;
 }
 
 export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
@@ -52,12 +52,12 @@ export default function Card({ title, subtitle, icon, cubeCount }: CardProps) {
                     {subtitle}
                 </Text>
             </View>
-            <View style={styles.iconContainer}>
+            <View className="ml-4 items-center justify-center">
                 {cubeCount !== undefined ? (
                     <CubeBadge count={cubeCount} icon={icon} />
                 ) : icon ? (
-                    <View style={styles.iconCircle}>
-                        <FontAwesome name={icon} size={22} color="#fff" />
+                    <View className="w-12 h-12 rounded-full bg-white/15 items-center justify-center">
+                        <Ionicons name={icon} size={22} color="#fff" />
                     </View>
                 ) : null}
             </View>

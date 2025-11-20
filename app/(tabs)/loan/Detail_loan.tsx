@@ -1,16 +1,16 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
+import Navbar from "@/app/(tabs)/Navbar";
+import Colors from "@/constants/Colors";
+import { useLoans } from "@/hooks/useLoan";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
-  ScrollView,
-  Text,
-  View,
-  ActivityIndicator,
-  TouchableOpacity,
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
-import Navbar from "@/app/(tabs)/Navbar";
-import { useLoans } from "@/hooks/useLoan";
-import Colors from "@/constants/Colors";
 
 export default function DetailLoan() {
   const router = useRouter();
@@ -129,8 +129,8 @@ export default function DetailLoan() {
             gap: 10,
           }}
         >
-          <Feather
-            name={isFinished ? "check-circle" : "clock"}
+          <Ionicons
+            name={isFinished ? "checkmark-circle-outline" : "time-outline"}
             size={24}
             color="white"
           />
@@ -370,7 +370,7 @@ export default function DetailLoan() {
               marginBottom: 20,
             }}
           >
-            <Feather name="check-circle" size={20} color="white" />
+            <Ionicons name="checkmark-circle-outline" size={20} color="white" />
             <Text
               style={{
                 color: "white",

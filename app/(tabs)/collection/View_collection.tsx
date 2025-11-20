@@ -1,4 +1,4 @@
-import { FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -11,10 +11,10 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import Navbar from "../Navbar";
-import { useCollections, useDeleteCollection } from "../../../hooks/useCollections";
 import { CollectionCard, GenericList } from "../../../components/ui";
+import { useCollections, useDeleteCollection } from "../../../hooks/useCollections";
 import { Collection } from "../../../repositories/collectionRepository";
+import Navbar from "../Navbar";
 
 export default function ViewCollection() {
     const [fontsLoaded] = useFonts({
@@ -104,8 +104,8 @@ export default function ViewCollection() {
                             </TouchableOpacity>
 
                             <View className="flex-row items-center border-2 border-[#6B705C] rounded-lg px-3 py-2 bg-white mb-4">
-                                <FontAwesome
-                                    name="search"
+                                <Ionicons
+                                    name="search-outline"
                                     size={20}
                                     color="#6B705C"
                                     style={{ marginRight: 8 }}
@@ -167,8 +167,8 @@ export default function ViewCollection() {
                         </TouchableOpacity>
 
                         <View className="flex-row items-center border-2 border-[#6B705C] rounded-lg px-3 py-2 bg-white mb-4">
-                            <FontAwesome
-                                name="search"
+                            <Ionicons
+                                name="search-outline"
                                 size={20}
                                 color="#6B705C"
                                 style={{ marginRight: 8 }}

@@ -1,22 +1,20 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
+import Navbar from "@/app/(tabs)/Navbar";
+import Colors from "@/constants/Colors";
+import { useLoans, useUpdateLoan } from "@/hooks/useLoan";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ScrollView,
-  Text,
-  View,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-  Platform,
-  Modal,
-  TextInput,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { FontAwesome, Feather } from "@expo/vector-icons";
-import Button from "@/components/ui/Button";
-import Navbar from "@/app/(tabs)/Navbar";
-import { useLoans, useUpdateLoan } from "@/hooks/useLoan";
-import Colors from "@/constants/Colors";
 
 export default function FinishLoan() {
   const router = useRouter();
@@ -137,7 +135,7 @@ export default function FinishLoan() {
             <Text style={{ color: returnDate ? Colors.brown : "#999" }}>
               {returnDate ? formatDate(returnDate) : "Seleccionar fecha"}
             </Text>
-            <FontAwesome name="calendar" size={16} color={Colors.brown} />
+            <Ionicons name="calendar-outline" size={16} color={Colors.brown} />
           </TouchableOpacity>
 
           <Modal
@@ -258,7 +256,7 @@ export default function FinishLoan() {
           <Text style={{ color: returnDate ? Colors.brown : "#999" }}>
             {returnDate ? formatDate(returnDate) : "Seleccionar fecha"}
           </Text>
-          <FontAwesome name="calendar" size={16} color={Colors.brown} />
+          <Ionicons name="calendar-outline" size={16} color={Colors.brown} />
         </TouchableOpacity>
 
         {showPicker && (
@@ -304,7 +302,7 @@ export default function FinishLoan() {
             <Text style={{ color: returnTime ? Colors.brown : "#999" }}>
               {returnTime || "Seleccionar hora"}
             </Text>
-            <FontAwesome name="clock-o" size={16} color={Colors.brown} />
+            <Ionicons name="time-outline" size={16} color={Colors.brown} />
           </TouchableOpacity>
 
           <Modal
@@ -425,7 +423,7 @@ export default function FinishLoan() {
           <Text style={{ color: returnTime ? Colors.brown : "#999" }}>
             {returnTime || "Seleccionar hora"}
           </Text>
-          <FontAwesome name="clock-o" size={16} color={Colors.brown} />
+          <Ionicons name="time-outline" size={16} color={Colors.brown} />
         </TouchableOpacity>
 
         {showPicker && (
@@ -677,7 +675,7 @@ export default function FinishLoan() {
               gap: 8,
             }}
           >
-            <Feather name="check-circle" size={20} color="white" />
+            <Ionicons name="checkmark-circle-outline" size={20} color="white" />
             <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>
               {updateLoanMutation.isPending ? "Finalizando..." : "Finalizar"}
             </Text>

@@ -1,19 +1,19 @@
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Alert,
-  Platform,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { ArchaeologicalSiteCard, GenericList } from "../../../components/ui";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
-import { ArchaeologicalSiteCard, GenericList } from "../../../components/ui";
 // Importar el hook de lectura de la API y el tipo
 import { useAllArchaeologicalSites, useDeleteArchaeologicalSite } from "../../../hooks/useArchaeologicalsite";
 import { ArchaeologicalSite as SiteType } from "../../../repositories/archaeologicalsiteRepository";
@@ -162,7 +162,7 @@ export default function Location() {
                 </Text>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F5F2', borderRadius: 12, borderWidth: 1, borderColor: '#E6DAC4', paddingHorizontal: 12, paddingVertical: 8 }}>
-                  <Feather name="search" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
+                  <Ionicons name="search-outline" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
                   <TextInput
                     placeholder="Buscar por nombre..."
                     value={searchTerm}
@@ -174,7 +174,7 @@ export default function Location() {
                   />
                   {searchTerm.length > 0 && (
                     <TouchableOpacity onPress={handleClearSearch} style={{ padding: 6 }} accessibilityLabel="Limpiar búsqueda">
-                      <Feather name="x" size={18} color="#A68B5B" />
+                      <Ionicons name="close-outline" size={18} color="#A68B5B" />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -241,7 +241,7 @@ export default function Location() {
               </Text>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F5F2', borderRadius: 12, borderWidth: 1, borderColor: '#E6DAC4', paddingHorizontal: 12, paddingVertical: 8 }}>
-                <Feather name="search" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
+                <Ionicons name="search-outline" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
                 <TextInput
                   placeholder="Buscar por nombre..."
                   value={searchTerm}
@@ -253,7 +253,7 @@ export default function Location() {
                 />
                 {searchTerm.length > 0 && (
                   <TouchableOpacity onPress={handleClearSearch} style={{ padding: 6 }} accessibilityLabel="Limpiar búsqueda">
-                    <Feather name="x" size={18} color="#A68B5B" />
+                    <Ionicons name="close-outline" size={18} color="#A68B5B" />
                   </TouchableOpacity>
                 )}
               </View>
