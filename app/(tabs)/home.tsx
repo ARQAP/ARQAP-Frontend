@@ -145,7 +145,7 @@ export default function HomeScreen() {
             onPress={handleLogout}
             disabled={logoutMutation.isPending}
             className={`rounded-lg px-8 py-3 ${
-              logoutMutation.isPending ? "bg-gray-400" : "bg-red-600"
+              logoutMutation.isPending ? "bg-gray-400" : "bg-[#A3473B]"
             }`}
           >
             {logoutMutation.isPending ? (
