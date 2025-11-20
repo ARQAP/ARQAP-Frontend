@@ -123,6 +123,8 @@ export default function IndexScreen() {
                   style={{ fontFamily: "CrimsonText-Regular" }}
                   value={password}
                   onChangeText={setPassword}
+                  onSubmitEditing={handleLogin}
+                  returnKeyType="done"
                 />
               </View>
             </View>
