@@ -9,6 +9,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    BackHandler,
+    Platform,
     ScrollView,
     Text,
     TouchableOpacity,
@@ -34,6 +36,21 @@ export default function HomeScreen() {
     const activeLoans = loans.filter(
         (loan) => !loan.returnDate || !loan.returnTime
     );
+
+    // Interceptar el botón de atrás del hardware en Android
+    useEffect(() => {
+        if (Platform.OS === "android") {
+            const backHandler = BackHandler.addEventListener(
+                "hardwareBackPress",
+                () => {
+                    // Prevenir navegación hacia atrás desde home
+                    return true; // true = interceptar y no permitir
+                }
+            );
+
+            return () => backHandler.remove();
+        }
+    }, []);
 
     const handleLogout = async () => {
         try {

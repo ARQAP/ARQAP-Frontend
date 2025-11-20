@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
                 const currentPath = `/${segments.join("/")}`;
                 const isLoginPage =
                     currentPath === "/(tabs)" ||
-                    currentPath === "/(tabs)/index"
+                    currentPath === "/(tabs)/index";
                 if (!isLoginPage) {
                     router.replace("/(tabs)");
                 }
@@ -35,6 +35,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
                     segments.length === 1;
 
                 if (isLoginPage) {
+                    // Usar replace para evitar que puedan volver atrás al login
                     router.replace("/(tabs)/home");
                 }
             }

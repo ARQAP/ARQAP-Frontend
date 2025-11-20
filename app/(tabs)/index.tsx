@@ -1,8 +1,8 @@
-import { useLoginMutation } from "@/hooks/useUserAuth";
+import { useIsAuthenticated, useLoginMutation } from "@/hooks/useUserAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -22,17 +22,25 @@ export default function IndexScreen() {
     });
 
     const router = useRouter();
+    const { data: token, isLoading } = useIsAuthenticated();
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const loginMutation = useLoginMutation();
+
+    // Si ya está autenticado, redirigir inmediatamente
+    useEffect(() => {
+        if (!isLoading && token) {
+            router.replace("/(tabs)/home");
+        }
+    }, [token, isLoading, router]);
 
     const handleLogin = async () => {
         if (!username || !password) return;
 
         try {
             await loginMutation.mutateAsync({ username, password });
-            // No necesitamos redirigir manualmente, ProtectedRoute se encarga
+            // El useEffect se encargará de la redirección
             setUsername("");
             setPassword("");
         } catch (error) {
@@ -40,7 +48,7 @@ export default function IndexScreen() {
         }
     };
 
-    if (!fontsLoaded) {
+    if (!fontsLoaded || (token && !isLoading)) {
         return (
             <View className="flex-1 justify-center items-center">
                 <ActivityIndicator size="large" color={Colors.brown} />
