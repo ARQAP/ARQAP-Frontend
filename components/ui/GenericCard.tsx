@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   Alert,
   StyleSheet,
   Pressable,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Colors from '@/constants/Colors';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Colors from "@/constants/Colors";
 
 export interface CardField {
   label: string;
@@ -43,28 +43,30 @@ const GenericCard: React.FC<GenericCardProps> = ({
   id,
   fields,
   actions,
-  cardType = '',
+  cardType = "",
   customStyles = {},
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const titleField = fields.find(field => field.isTitle);
-  const subtitleField = fields.find(field => field.isSubtitle);
-  const dataFields = fields.filter(field => !field.isTitle && !field.isSubtitle);
+  const titleField = fields.find((field) => field.isTitle);
+  const subtitleField = fields.find((field) => field.isSubtitle);
+  const dataFields = fields.filter(
+    (field) => !field.isTitle && !field.isSubtitle
+  );
 
   const handleActionPress = (action: CardAction) => {
     setMenuVisible(false);
-    
+
     if (action.destructive) {
       Alert.alert(
-        'Confirmar acción',
+        "Confirmar acción",
         `¿Estás seguro que deseas ${action.label.toLowerCase()}?`,
         [
-          { text: 'Cancelar', style: 'cancel' },
-          { 
-            text: 'Confirmar', 
-            style: 'destructive',
-            onPress: action.onPress 
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Confirmar",
+            style: "destructive",
+            onPress: action.onPress,
           },
         ]
       );
@@ -84,12 +86,15 @@ const GenericCard: React.FC<GenericCardProps> = ({
             </Text>
           )}
           {subtitleField && (
-            <Text style={[styles.subtitle, customStyles.subtitle]} numberOfLines={1}>
+            <Text
+              style={[styles.subtitle, customStyles.subtitle]}
+              numberOfLines={1}
+            >
               {subtitleField.value}
             </Text>
           )}
         </View>
-        
+
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => setMenuVisible(true)}
@@ -101,16 +106,22 @@ const GenericCard: React.FC<GenericCardProps> = ({
       {/* Campos de datos */}
       {dataFields.length > 0 && (
         <View style={styles.fieldsContainer}>
-          {dataFields.map((field, index) => (
-            field.value !== undefined && field.value !== null && field.value !== '' && (
-              <View key={index} style={styles.fieldRow}>
-                <Text style={styles.fieldLabel}>{field.label}:</Text>
-                <Text style={[styles.fieldValue, customStyles.field]} numberOfLines={2}>
-                  {String(field.value)}
-                </Text>
-              </View>
-            )
-          ))}
+          {dataFields.map(
+            (field, index) =>
+              field.value !== undefined &&
+              field.value !== null &&
+              field.value !== "" && (
+                <View key={index} style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>{field.label}:</Text>
+                  <Text
+                    style={[styles.fieldValue, customStyles.field]}
+                    numberOfLines={2}
+                  >
+                    {String(field.value)}
+                  </Text>
+                </View>
+              )
+          )}
         </View>
       )}
 
@@ -139,7 +150,10 @@ const GenericCard: React.FC<GenericCardProps> = ({
                 <Ionicons
                   name={action.icon}
                   size={20}
-                  color={action.color || (action.destructive ? Colors.brown : Colors.green)}
+                  color={
+                    action.color ||
+                    (action.destructive ? Colors.brown : Colors.green)
+                  }
                 />
                 <Text
                   style={[
@@ -160,14 +174,14 @@ const GenericCard: React.FC<GenericCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 16,
     padding: 18,
     marginVertical: 8,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
-    shadowColor: '#000',
+    borderColor: "#E8E8E8",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -177,9 +191,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   titleContainer: {
@@ -188,32 +202,32 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.black,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
     color: Colors.green,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   menuButton: {
     padding: 6,
     borderRadius: 20,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: "#E8E8E8",
   },
   fieldsContainer: {
     gap: 8,
   },
   fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   fieldLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: Colors.green,
     marginRight: 8,
     minWidth: 80,
@@ -225,17 +239,17 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   menuContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 16,
     minWidth: 200,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
-    shadowColor: '#000',
+    borderColor: "#E8E8E8",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -245,8 +259,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightbrown,
@@ -255,7 +269,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   destructiveMenuItem: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: "#FFF5F5",
   },
   menuItemText: {
     marginLeft: 12,

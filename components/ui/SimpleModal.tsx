@@ -1,6 +1,14 @@
-// components/ui/SimplePickerModal.tsx
-import React, { useMemo, useState } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 
 export type SimplePickerItem<T = any> = {
   value: number | string;
@@ -15,6 +23,7 @@ type Props<T = any> = {
   selectedValue: number | string | null;
   onSelect: (value: number | string) => void;
   onClose: () => void;
+  onSearchTextChange?: (text: string) => void;
 };
 
 function SimplePickerModal<T = any>({
@@ -24,27 +33,66 @@ function SimplePickerModal<T = any>({
   selectedValue,
   onSelect,
   onClose,
+  onSearchTextChange,
 }: Props<T>) {
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return items;
-    return items.filter(i => i.label.toLowerCase().includes(t));
+    return items.filter((i) => i.label.toLowerCase().includes(t));
   }, [items, q]);
 
+  const handleClose = () => {
+    if (onSearchTextChange && q.trim()) {
+      onSearchTextChange(q.trim());
+    }
+    onClose();
+  };
+
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 16 }}>
-        <View style={{ backgroundColor: "#fff", borderRadius: 10, padding: 12, maxHeight: "80%" }}>
-          <Text style={{ fontWeight: "700", fontSize: 16, marginBottom: 8 }}>{title}</Text>
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={handleClose}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.4)",
+          justifyContent: "center",
+          padding: 16,
+        }}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, width: "100%" }}
+          activeOpacity={1}
+          onPress={handleClose}
+        />
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 10,
+            padding: 12,
+            maxHeight: "80%",
+          }}
+        >
+          <Text style={{ fontWeight: "700", fontSize: 16, marginBottom: 8 }}>
+            {title}
+          </Text>
           <TextInput
             placeholder="Buscar..."
             value={q}
             onChangeText={setQ}
-            style={{ backgroundColor: "#f5f5f5", borderRadius: 8, padding: 8, marginBottom: 8 }}
+            style={{
+              backgroundColor: "#f5f5f5",
+              borderRadius: 8,
+              padding: 8,
+              marginBottom: 8,
+            }}
           />
           <ScrollView style={{ maxHeight: 320 }}>
-            {filtered.map(i => {
+            {filtered.map((i) => {
               const selected = i.value === selectedValue;
               return (
                 <TouchableOpacity
@@ -66,10 +114,18 @@ function SimplePickerModal<T = any>({
             })}
           </ScrollView>
 
-          <TouchableOpacity onPress={onClose} style={{ alignSelf: "flex-end", padding: 10 }}>
+          <TouchableOpacity
+            onPress={handleClose}
+            style={{ alignSelf: "flex-end", padding: 10 }}
+          >
             <Text style={{ fontWeight: "600" }}>Cerrar</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={{ flex: 1, width: "100%" }}
+          activeOpacity={1}
+          onPress={handleClose}
+        />
       </View>
     </Modal>
   );
