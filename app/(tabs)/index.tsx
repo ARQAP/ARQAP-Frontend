@@ -27,16 +27,17 @@ export default function IndexScreen() {
     const [password, setPassword] = useState("");
     const loginMutation = useLoginMutation();
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (!username || !password) return;
-        loginMutation.mutate(
-            { username, password },
-            {
-                onSuccess: () => {
-                    router.push("/(tabs)/home");
-                },
-            }
-        );
+
+        try {
+            await loginMutation.mutateAsync({ username, password });
+            // No necesitamos redirigir manualmente, ProtectedRoute se encarga
+            setUsername("");
+            setPassword("");
+        } catch (error) {
+            console.error("Error en login:", error);
+        }
     };
 
     if (!fontsLoaded) {

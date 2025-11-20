@@ -4,13 +4,11 @@ import { useArtefacts } from "@/hooks/useArtefact";
 import { useCollections } from "@/hooks/useCollections";
 import { useLoans } from "@/hooks/useLoan";
 import { useLogoutMutation } from "@/hooks/useUserAuth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Platform,
     ScrollView,
     Text,
     TouchableOpacity,
@@ -40,32 +38,9 @@ export default function HomeScreen() {
     const handleLogout = async () => {
         try {
             await logoutMutation.mutateAsync();
-
-            if (Platform.OS === "web") {
-                if (typeof window !== "undefined") {
-                    localStorage.removeItem("auth_token");
-                }
-            } else {
-                await AsyncStorage.removeItem("auth_token");
-            }
-
-            router.replace("/");
+            // ProtectedRoute se encargará de redirigir al login
         } catch (error) {
             console.error("Error al cerrar sesión:", error);
-
-            try {
-                if (Platform.OS === "web") {
-                    if (typeof window !== "undefined") {
-                        localStorage.removeItem("auth_token");
-                    }
-                } else {
-                    await AsyncStorage.removeItem("auth_token");
-                }
-            } catch (storageError) {
-                console.error("Error al limpiar token:", storageError);
-            }
-
-            router.replace("/");
         }
     };
 
