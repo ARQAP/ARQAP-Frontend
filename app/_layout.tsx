@@ -33,6 +33,14 @@ export default function RootLayout() {
                     <Stack
                         screenOptions={{
                             headerShown: false,
+                            // Configuración global de animaciones más natural
+                            animation: "slide_from_right",
+                            gestureEnabled: true,
+                            gestureDirection: "horizontal",
+                            presentation: "card",
+                            animationDuration: 300,
+                            // Configurar comportamiento de back
+                            animationTypeForReplace: "pop",
                         }}
                     >
                         <Stack.Screen

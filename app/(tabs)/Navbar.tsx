@@ -14,6 +14,28 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
+    const handleBackPress = () => {
+        if (backToHome) {
+            // Para ir al home desde cualquier lugar, usar replace con animación hacia la derecha
+            router.replace("/(tabs)/home");
+        } else if (redirectTo) {
+            // Si hay una ruta específica, usar back() para mantener la pila de navegación
+            router.back();
+        } else {
+            // Navegación normal hacia atrás - esto mostrará deslizamiento hacia la derecha
+            router.back();
+        }
+    };
+
+    const handleLogoPress = () => {
+        // Para el logo, verificar si ya estamos en home
+        const currentRoute = router.canGoBack();
+        if (currentRoute) {
+            // Si podemos ir atrás, usar replace para evitar duplicar home
+            router.replace("/(tabs)/home");
+        }
+    };
+
     return (
         <View
             className="w-full bg-[#D9C6A5] flex-row items-center h-[80px] px-4"
@@ -23,20 +45,13 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
                 height: 80 + insets.top,
             }}
         >
-            {/* Área izquierda: flecha + título multilinea */}
             <View
                 className="flex-1 flex-row items-center"
                 style={{ maxWidth: "100%" }}
             >
                 {showBackArrow && (
                     <TouchableOpacity
-                        onPress={() =>
-                            backToHome
-                                ? router.push("/(tabs)/home")
-                                : redirectTo
-                                  ? router.push(redirectTo as any)
-                                  : router.back()
-                        }
+                        onPress={handleBackPress}
                         className="mr-2"
                         activeOpacity={1}
                     >
@@ -64,9 +79,8 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
                 </Text>
             </View>
 
-            {/* Logo movido a la derecha */}
             <TouchableOpacity
-                onPress={() => router.push("/(tabs)/home")}
+                onPress={handleLogoPress}
                 style={{
                     justifyContent: "center",
                     alignItems: "center",
