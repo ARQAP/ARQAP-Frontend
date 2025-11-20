@@ -1,7 +1,6 @@
-// app/(tabs)/archaeological-Pieces/View_pieces.tsx
-import { FontAwesome } from "@expo/vector-icons";
+"use client";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +11,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
 import InfoRow from "../../../components/ui/InfoRow";
@@ -39,7 +40,9 @@ export default function ViewPieces() {
   // Convert shelfId from query params (string) to number before sending to the backend
   const shelfIdNum = shelfIdParam != null ? Number(shelfIdParam) : undefined;
   const { data, isLoading, isError, refetch } = useArtefacts(
-    typeof shelfIdNum === 'number' && !Number.isNaN(shelfIdNum) ? { shelfId: shelfIdNum } : undefined
+    typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum)
+      ? { shelfId: shelfIdNum }
+      : undefined
   );
   const deleteMutation = useDeleteArtefact();
 
@@ -86,35 +89,14 @@ export default function ViewPieces() {
       });
     };
 
-    console.log("Showing delete confirmation for:", pieceName);
-    console.log("Platform.OS:", Platform.OS);
-
-    if (Platform.OS === "web") {
-      console.log("Using web confirm dialog");
-      const confirmed = window.confirm(
-        `¿Eliminar ${pieceName}? Esta acción es irreversible.`
-      );
-      if (confirmed) doDelete();
-      return;
-    }
-
-    console.log("Using React Native Alert");
-    try {
-      Alert.alert(
-        "Eliminar",
-        `¿Eliminar ${pieceName}? Esta acción es irreversible.`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Eliminar", style: "destructive", onPress: doDelete },
-        ]
-      );
-    } catch (error) {
-      console.error("Error showing Alert:", error);
-      const confirmed = confirm(
-        `¿Eliminar ${pieceName}? Esta acción es irreversible.`
-      );
-      if (confirmed) doDelete();
-    }
+    Alert.alert(
+      "Confirmar acción",
+      `¿Estás seguro que deseas eliminar ${pieceName}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Confirmar", style: "destructive", onPress: doDelete },
+      ]
+    );
   };
 
   const pieces: Piece[] = useMemo(() => {
@@ -257,72 +239,180 @@ export default function ViewPieces() {
         <ScrollView
           contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
         >
-          <View style={{ width: "90%", maxWidth: 700, padding: 16 }}>
+          <View
+            style={{
+              width: "90%",
+              maxWidth: Platform.OS === "web" ? 1400 : 700,
+              padding: Platform.OS === "web" ? 32 : 16,
+            }}
+          >
             <Button
               title="REGISTRAR PIEZA ARQUEOLÓGICA"
-              className="bg-[#6B705C] rounded-lg py-3 items-center mb-4"
-              textClassName="text-white"
+              className={
+                Platform.OS === "web"
+                  ? "bg-[#6B705C] rounded-xl py-5 px-8 items-center mb-8 shadow-lg"
+                  : "bg-[#6B705C] rounded-lg py-3 items-center mb-4"
+              }
+              textClassName={
+                Platform.OS === "web"
+                  ? "text-white text-base font-bold tracking-wider"
+                  : "text-white"
+              }
               onPress={() =>
                 router.push("/(tabs)/archaeological-Pieces/New_piece")
               }
             />
 
-            {/* Filtros */}
             <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 8,
-                marginBottom: 12,
-              }}
+              style={
+                Platform.OS === "web"
+                  ? {
+                      display: "grid" as any,
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(300px, 1fr))",
+                      gap: 16,
+                      marginBottom: 32,
+                      padding: 28,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 16,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 12,
+                      elevation: 2,
+                      borderWidth: 1,
+                      borderColor: "#E8DFD0",
+                    }
+                  : {
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 8,
+                      marginBottom: 12,
+                    }
+              }
             >
+              {Platform.OS === "web" && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <Ionicons
+                    name="filter"
+                    size={22}
+                    color="#6B705C"
+                    style={{ marginRight: 10 }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 19,
+                      fontWeight: "700",
+                      color: "#6B705C",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    FILTROS DE BÚSQUEDA
+                  </Text>
+                </View>
+              )}
+
               <TextInput
                 placeholder="Filtrar por nombre"
                 value={query}
                 onChangeText={setQuery}
-                style={{
-                  flex: 1,
-                  minWidth: 200,
-                  backgroundColor: "#F7F5F2",
-                  borderRadius: 8,
-                  padding: 10,
-                }}
+                style={
+                  Platform.OS === "web"
+                    ? {
+                        backgroundColor: "#FAFAF8",
+                        borderRadius: 10,
+                        padding: 15,
+                        fontSize: 15,
+                        borderWidth: 1,
+                        borderColor: "#E8DFD0",
+                        fontWeight: "500",
+                      }
+                    : {
+                        flex: 1,
+                        minWidth: 200,
+                        backgroundColor: "#F7F5F2",
+                        borderRadius: 8,
+                        padding: 10,
+                      }
+                }
               />
               <TextInput
                 placeholder="Filtrar por material"
                 value={filterMaterial}
                 onChangeText={setFilterMaterial}
-                style={{
-                  flex: 1,
-                  minWidth: 200,
-                  backgroundColor: "#F7F5F2",
-                  borderRadius: 8,
-                  padding: 10,
-                }}
+                style={
+                  Platform.OS === "web"
+                    ? {
+                        backgroundColor: "#FAFAF8",
+                        borderRadius: 10,
+                        padding: 15,
+                        fontSize: 15,
+                        borderWidth: 1,
+                        borderColor: "#E8DFD0",
+                        fontWeight: "500",
+                      }
+                    : {
+                        flex: 1,
+                        minWidth: 200,
+                        backgroundColor: "#F7F5F2",
+                        borderRadius: 8,
+                        padding: 10,
+                      }
+                }
               />
               <TextInput
                 placeholder="Filtrar por colección"
                 value={filterCollection}
                 onChangeText={setFilterCollection}
-                style={{
-                  flex: 1,
-                  minWidth: 200,
-                  backgroundColor: "#F7F5F2",
-                  borderRadius: 8,
-                  padding: 10,
-                }}
+                style={
+                  Platform.OS === "web"
+                    ? {
+                        backgroundColor: "#FAFAF8",
+                        borderRadius: 10,
+                        padding: 15,
+                        fontSize: 15,
+                        borderWidth: 1,
+                        borderColor: "#E8DFD0",
+                        fontWeight: "500",
+                      }
+                    : {
+                        flex: 1,
+                        minWidth: 200,
+                        backgroundColor: "#F7F5F2",
+                        borderRadius: 8,
+                        padding: 10,
+                      }
+                }
               />
               <TextInput
                 placeholder="Filtrar por sitio arqueológico"
                 value={filterSite}
                 onChangeText={setFilterSite}
-                style={{
-                  flex: 1,
-                  minWidth: 200,
-                  backgroundColor: "#F7F5F2",
-                  borderRadius: 8,
-                  padding: 10,
-                }}
+                style={
+                  Platform.OS === "web"
+                    ? {
+                        backgroundColor: "#FAFAF8",
+                        borderRadius: 10,
+                        padding: 15,
+                        fontSize: 15,
+                        borderWidth: 1,
+                        borderColor: "#E8DFD0",
+                        fontWeight: "500",
+                      }
+                    : {
+                        flex: 1,
+                        minWidth: 200,
+                        backgroundColor: "#F7F5F2",
+                        borderRadius: 8,
+                        padding: 10,
+                      }
+                }
               />
               <TextInput
                 placeholder="Filtrar por numero de estante"
@@ -331,16 +421,27 @@ export default function ViewPieces() {
                   setFilterShelf(text.replace(/[^0-9]/g, ""))
                 }
                 keyboardType="numeric"
-                style={{
-                  flex: 1,
-                  minWidth: 200,
-                  backgroundColor: "#F7F5F2",
-                  borderRadius: 8,
-                  padding: 10,
-                }}
+                style={
+                  Platform.OS === "web"
+                    ? {
+                        backgroundColor: "#FAFAF8",
+                        borderRadius: 10,
+                        padding: 15,
+                        fontSize: 15,
+                        borderWidth: 1,
+                        borderColor: "#E8DFD0",
+                        fontWeight: "500",
+                      }
+                    : {
+                        flex: 1,
+                        minWidth: 200,
+                        backgroundColor: "#F7F5F2",
+                        borderRadius: 8,
+                        padding: 10,
+                      }
+                }
               />
 
-              {/* Filtros adicionales solo si hay estante */}
               {filterShelf !== "" && (
                 <>
                   <TextInput
@@ -350,13 +451,25 @@ export default function ViewPieces() {
                       setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
                     }
                     keyboardType="numeric"
-                    style={{
-                      flex: 1,
-                      minWidth: 200,
-                      backgroundColor: "#F7F5F2",
-                      borderRadius: 8,
-                      padding: 10,
-                    }}
+                    style={
+                      Platform.OS === "web"
+                        ? {
+                            backgroundColor: "#FAFAF8",
+                            borderRadius: 10,
+                            padding: 15,
+                            fontSize: 15,
+                            borderWidth: 1,
+                            borderColor: "#E8DFD0",
+                            fontWeight: "500",
+                          }
+                        : {
+                            flex: 1,
+                            minWidth: 200,
+                            backgroundColor: "#F7F5F2",
+                            borderRadius: 8,
+                            padding: 10,
+                          }
+                    }
                   />
                   <TextInput
                     placeholder="Filtrar por columna (A-D)"
@@ -370,24 +483,85 @@ export default function ViewPieces() {
                       )
                     }
                     autoCapitalize="characters"
-                    style={{
-                      flex: 1,
-                      minWidth: 200,
-                      backgroundColor: "#F7F5F2",
-                      borderRadius: 8,
-                      padding: 10,
-                    }}
+                    style={
+                      Platform.OS === "web"
+                        ? {
+                            backgroundColor: "#FAFAF8",
+                            borderRadius: 10,
+                            padding: 15,
+                            fontSize: 15,
+                            borderWidth: 1,
+                            borderColor: "#E8DFD0",
+                            fontWeight: "500",
+                          }
+                        : {
+                            flex: 1,
+                            minWidth: 200,
+                            backgroundColor: "#F7F5F2",
+                            borderRadius: 8,
+                            padding: 10,
+                          }
+                    }
                   />
                 </>
               )}
             </View>
 
-            <Text style={{ marginBottom: 8, color: "#222", fontWeight: "700" }}>
-              {filtered.length} PIEZAS ENCONTRADAS
-            </Text>
+            <View
+              style={
+                Platform.OS === "web"
+                  ? {
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 24,
+                      paddingLeft: 4,
+                    }
+                  : {
+                      marginBottom: 8,
+                    }
+              }
+            >
+              {Platform.OS === "web" && (
+                <Ionicons
+                  name="checkbox-outline"
+                  size={20}
+                  color="#6B705C"
+                  style={{ marginRight: 8 }}
+                />
+              )}
+              <Text
+                style={
+                  Platform.OS === "web"
+                    ? {
+                        color: "#555",
+                        fontWeight: "700",
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                      }
+                    : {
+                        color: "#222",
+                        fontWeight: "700",
+                      }
+                }
+              >
+                {filtered.length} PIEZAS ENCONTRADAS
+              </Text>
+            </View>
 
             <Pressable
-              style={{ display: "flex", gap: 12 }}
+              style={
+                Platform.OS === "web"
+                  ? {
+                      display: "grid" as any,
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(420px, 1fr))",
+                      gap: 28,
+                    }
+                  : {
+                      display: "flex",
+                      gap: 12,
+                    }
+              }
               onPress={() => menuVisible && setMenuVisible(null)}
             >
               {filtered.map((p) => (
@@ -399,27 +573,85 @@ export default function ViewPieces() {
                     )
                   }
                   activeOpacity={0.9}
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 8,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderColor: "#e6dac4",
-                  }}
+                  style={
+                    Platform.OS === "web"
+                      ? {
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 16,
+                          padding: 24,
+                          borderWidth: 1,
+                          borderColor: "#E8DFD0",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.08,
+                          shadowRadius: 16,
+                          position: "relative",
+                          overflow: "hidden",
+                        }
+                      : {
+                          backgroundColor: "#fff",
+                          borderRadius: 8,
+                          padding: 12,
+                          borderWidth: 1,
+                          borderColor: "#e6dac4",
+                        }
+                  }
+                  // @ts-ignore - Web-only hover effects
+                  onMouseEnter={
+                    Platform.OS === "web"
+                      ? (e: any) => {
+                          e.currentTarget.style.transform = "translateY(-6px)";
+                          e.currentTarget.style.shadowOpacity = "0.16";
+                          e.currentTarget.style.borderColor = "#6B705C";
+                        }
+                      : undefined
+                  }
+                  onMouseLeave={
+                    Platform.OS === "web"
+                      ? (e: any) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.shadowOpacity = "0.08";
+                          e.currentTarget.style.borderColor = "#E8DFD0";
+                        }
+                      : undefined
+                  }
                 >
                   <View
                     style={{
                       flexDirection: "row",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       justifyContent: "space-between",
                     }}
                   >
                     <View style={{ flex: 1 }}>
+                      <Text
+                        style={
+                          Platform.OS === "web"
+                            ? {
+                                fontSize: 26,
+                                fontWeight: "700",
+                                marginBottom: 16,
+                                fontFamily: "CrimsonText-Regular",
+                                color: "#2c2c2c",
+                                letterSpacing: 0.3,
+                                lineHeight: 32,
+                              }
+                            : {
+                                fontSize: 20,
+                                fontWeight: "700",
+                                marginBottom: 8,
+                                fontFamily: "CrimsonText-Regular",
+                              }
+                        }
+                      >
+                        {p.name}
+                      </Text>
+
                       <View
                         style={{
                           flexDirection: "row",
-                          gap: 8,
-                          marginBottom: 8,
+                          gap: 10,
+                          marginBottom: 18,
                           flexWrap: "wrap",
                         }}
                       >
@@ -440,18 +672,7 @@ export default function ViewPieces() {
                         />
                       </View>
 
-                      <Text
-                        style={{
-                          fontSize: 20,
-                          fontWeight: "700",
-                          marginBottom: 8,
-                          fontFamily: "CrimsonText-Regular",
-                        }}
-                      >
-                        {p.name}
-                      </Text>
-
-                      <View style={{ marginBottom: 6 }}>
+                      <View style={{ gap: Platform.OS === "web" ? 10 : 6 }}>
                         <InfoRow
                           icon="cube"
                           label="MATERIAL"
@@ -484,7 +705,6 @@ export default function ViewPieces() {
                     >
                       <TouchableOpacity
                         onPress={(e) => {
-                          // evitar que dispare el onPress del card
                           // @ts-ignore RN synthetic event
                           e.stopPropagation?.();
                           if (p.id) {
@@ -493,83 +713,116 @@ export default function ViewPieces() {
                             );
                           }
                         }}
-                        style={{ padding: 8 }}
+                        style={{
+                          padding: 6,
+                          borderRadius: 20,
+                          backgroundColor: "#F8F9FA",
+                          borderWidth: 1,
+                          borderColor: "#E8E8E8",
+                        }}
+                        activeOpacity={0.7}
                         accessibilityLabel={`Opciones para pieza ${p.name}`}
                       >
-                        <FontAwesome
-                          name="ellipsis-v"
-                          size={18}
-                          color={Colors.black}
+                        <Ionicons
+                          name="ellipsis-vertical"
+                          size={20}
+                          color={Colors.green}
                         />
                       </TouchableOpacity>
-
-                      {/* Menú desplegable */}
-                      {menuVisible === String(p.id) && (
-                        <View
-                          style={{
-                            position: "absolute",
-                            top: 40,
-                            right: 8,
-                            backgroundColor: "white",
-                            borderRadius: 8,
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 4,
-                            elevation: 10,
-                            zIndex: 1000,
-                            width: 120,
-                          }}
-                        >
-                          <TouchableOpacity
-                            onPress={() => handleEdit(p.id!)}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: 12,
-                              borderBottomWidth: 1,
-                              borderBottomColor: "#e0e0e0",
-                            }}
-                          >
-                            <FontAwesome
-                              name="edit"
-                              size={16}
-                              color={Colors.brown}
-                              style={{ marginRight: 10 }}
-                            />
-                            <Text style={{ fontSize: 16, color: Colors.brown }}>
-                              Editar
-                            </Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            onPress={() => {
-                              console.log(
-                                "Delete button pressed, piece ID:",
-                                p.id
-                              );
-                              handleDelete(p.id!);
-                            }}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: 12,
-                            }}
-                          >
-                            <FontAwesome
-                              name="trash"
-                              size={16}
-                              color={Colors.brown}
-                              style={{ marginRight: 10 }}
-                            />
-                            <Text style={{ fontSize: 16, color: Colors.brown }}>
-                              Eliminar
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
                     </View>
                   </View>
+
+                  <Modal
+                    visible={menuVisible === String(p.id)}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setMenuVisible(null)}
+                  >
+                    <Pressable
+                      style={{
+                        flex: 1,
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                      onPress={() => setMenuVisible(null)}
+                    >
+                      <View
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: 16,
+                          minWidth: 200,
+                          borderWidth: 1,
+                          borderColor: "#E8E8E8",
+                          shadowColor: "#000",
+                          shadowOffset: {
+                            width: 0,
+                            height: 8,
+                          },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 12,
+                          elevation: 10,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() => handleEdit(p.id!)}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: 16,
+                            borderBottomWidth: 1,
+                            borderBottomColor: Colors.lightbrown,
+                          }}
+                        >
+                          <Ionicons
+                            name="pencil"
+                            size={20}
+                            color={Colors.green}
+                          />
+                          <Text
+                            style={{
+                              marginLeft: 12,
+                              fontSize: 16,
+                              color: Colors.black,
+                            }}
+                          >
+                            Editar
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() => {
+                            console.log(
+                              "Delete button pressed, piece ID:",
+                              p.id
+                            );
+                            handleDelete(p.id!);
+                          }}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: 16,
+                            backgroundColor: "#FFF5F5",
+                          }}
+                        >
+                          <Ionicons
+                            name="trash"
+                            size={20}
+                            color={Colors.brown}
+                          />
+                          <Text
+                            style={{
+                              marginLeft: 12,
+                              fontSize: 16,
+                              color: Colors.brown,
+                            }}
+                          >
+                            Eliminar
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </Pressable>
+                  </Modal>
                 </TouchableOpacity>
               ))}
             </Pressable>
