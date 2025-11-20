@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 
 export type SimplePickerItem<T = any> = {
   value: number | string;
@@ -80,17 +81,35 @@ function SimplePickerModal<T = any>({
           <Text style={{ fontWeight: "700", fontSize: 16, marginBottom: 8 }}>
             {title}
           </Text>
-          <TextInput
-            placeholder="Buscar..."
-            value={q}
-            onChangeText={setQ}
+
+          {/* Input de búsqueda con icono de lupita */}
+          <View
             style={{
+              flexDirection: "row",
+              alignItems: "center",
               backgroundColor: "#f5f5f5",
               borderRadius: 8,
-              padding: 8,
+              paddingHorizontal: 8,
               marginBottom: 8,
             }}
-          />
+          >
+            <Feather
+              name="search"
+              size={18}
+              color="#8B5E3C"
+              style={{ marginRight: 6 }}
+            />
+            <TextInput
+              placeholder="Buscar..."
+              value={q}
+              onChangeText={setQ}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+              }}
+            />
+          </View>
+
           <ScrollView style={{ maxHeight: 320 }}>
             {filtered.map((i) => {
               const selected = i.value === selectedValue;
