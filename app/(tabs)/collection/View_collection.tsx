@@ -1,17 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Platform,
+    ScrollView,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
+import Button from "../../../components/ui/Button";
 import { CollectionCard, GenericList } from "../../../components/ui";
+import SimplePickerModal, {
+  type SimplePickerItem,
+} from "../../../components/ui/SimpleModal";
 import { useCollections, useDeleteCollection } from "../../../hooks/useCollections";
 import { Collection } from "../../../repositories/collectionRepository";
 import Navbar from "../Navbar";
@@ -23,15 +27,40 @@ export default function ViewCollection() {
     });
 
     const router = useRouter();
+    const [selectedCollectionId, setSelectedCollectionId] = useState<number | string | null>(null);
     const [searchText, setSearchText] = useState("");
+    const [showPicker, setShowPicker] = useState(false);
     
     // Hooks de react-query
     const { data: collections = [], isLoading, isError, error, refetch, isRefetching } = useCollections();
     const deleteMutation = useDeleteCollection();
 
-    const filteredCollections = collections.filter((collection) =>
-        collection.name.toLowerCase().includes(searchText.toLowerCase())
-    );
+    // Preparar items para el SimplePickerModal
+    const collectionItems = useMemo<SimplePickerItem<Collection>[]>(() => {
+        return collections.map((collection) => ({
+            value: collection.id || `${collection.name}`,
+            label: collection.name,
+            raw: collection,
+        }));
+    }, [collections]);
+
+    // Filtrado basado en selección o búsqueda por texto
+    const filteredCollections = useMemo(() => {
+        if (selectedCollectionId) {
+            return collections.filter(
+                (collection) =>
+                    collection.id === selectedCollectionId ||
+                    `${collection.name}` === selectedCollectionId
+            );
+        }
+        if (searchText.trim()) {
+            const searchLower = searchText.toLowerCase();
+            return collections.filter((collection) =>
+                collection.name.toLowerCase().includes(searchLower)
+            );
+        }
+        return collections;
+    }, [collections, selectedCollectionId, searchText]);
 
     const handleEdit = (collection: Collection) => {
         router.push({
@@ -50,6 +79,21 @@ export default function ViewCollection() {
         }
     };
 
+    const clearSearch = () => {
+        setSelectedCollectionId(null);
+        setSearchText("");
+    };
+
+    const searchDisplayText = useMemo(() => {
+        if (selectedCollectionId) {
+            return collectionItems.find((i) => i.value === selectedCollectionId)?.label;
+        }
+        if (searchText) {
+            return `Buscando: "${searchText}"`;
+        }
+        return null;
+    }, [selectedCollectionId, searchText, collectionItems]);
+
     const renderCollectionCard = (collection: Collection) => (
         <CollectionCard
             collection={collection}
@@ -58,157 +102,273 @@ export default function ViewCollection() {
         />
     );
 
-    if (!fontsLoaded) {
+    if (!fontsLoaded || isLoading) {
         return (
-            <View className="flex-1 justify-center items-center bg-[#F3E9DD]">
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundColor: "#F3E9DD",
+                }}
+            >
                 <ActivityIndicator size="large" color="#8B5E3C" />
+                <Text style={{ marginTop: 10, color: "#8B5E3C", fontFamily: "CrimsonText-Regular" }}>
+                    Cargando colecciones...
+                </Text>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-[#F3E9DD]">
+        <View className="flex-1 bg-[#F3E9DD] p-0">
             <Navbar
                 title="Colecciones Arqueológicas"
                 showBackArrow
                 backToHome
             />
 
-            {/* Contenedor responsive - diferentes layouts para web y móvil */}
-            {Platform.OS === 'web' ? (
-                // Layout para web
-                <View style={{ 
-                    flex: 1,
-                    paddingHorizontal: 20,
-                }}>
-                    <View style={{ 
-                        width: '100%', 
-                        maxWidth: 900,
-                        alignSelf: 'center',
-                    }}>
-                        {/* Header con botón de crear y búsqueda */}
-                        <View className="mt-6">
-                            <TouchableOpacity
-                                className="bg-[#6B705C] rounded-xl py-4 items-center mb-6"
-                                activeOpacity={0.8}
-                                onPress={() =>
-                                    router.push("/(tabs)/collection/New_collection" as any)
-                                }
-                            >
-                                <Text
-                                    className="text-white text-lg"
-                                    style={{ fontFamily: "MateSC-Regular" }}
-                                >
-                                    Registrar Colección Arqueológica
-                                </Text>
-                            </TouchableOpacity>
-
-                            <View className="flex-row items-center border-2 border-[#6B705C] rounded-lg px-3 py-2 bg-white mb-4">
-                                <Ionicons
-                                    name="search-outline"
-                                    size={20}
-                                    color="#6B705C"
-                                    style={{ marginRight: 8 }}
-                                />
-                                <TextInput
-                                    placeholder="Buscar por nombre"
-                                    placeholderTextColor="#A68B5B"
-                                    className="flex-1 text-base text-[#222]"
-                                    style={{ fontFamily: "CrimsonText-Regular" }}
-                                    value={searchText}
-                                    onChangeText={setSearchText}
-                                />
-                            </View>
-
-                            <Text
-                                className="text-[#8B5E3C] text-base mb-2"
-                                style={{ fontFamily: "MateSC-Regular" }}
-                            >
-                                {filteredCollections.length} Colecciones Arqueológicas encontradas
-                            </Text>
-                        </View>
-
-                        {/* Lista de colecciones usando el componente estandarizado */}
-                        <View className="flex-1">
-                            <GenericList
-                                data={filteredCollections}
-                                renderItem={renderCollectionCard}
-                                keyExtractor={(item) => item.id?.toString() || ''}
-                                isLoading={isLoading}
-                                isRefreshing={isRefetching}
-                                onRefresh={refetch}
-                                emptyStateMessage="No hay colecciones registradas"
-                                error={isError ? (error as Error)?.message : null}
-                                customStyles={{
-                                    container: { backgroundColor: 'transparent', paddingTop: 0 }
-                                }}
-                            />
-                        </View>
-                    </View>
-                </View>
-            ) : (
-                // Layout para móvil - estructura simple
-                <View style={{ flex: 1, padding: 20 }}>
-                    {/* Header con botón de crear y búsqueda */}
-                    <View style={{ marginTop: 20 }}>
-                        <TouchableOpacity
-                            className="bg-[#6B705C] rounded-xl py-4 items-center mb-6"
-                            activeOpacity={0.8}
-                            onPress={() =>
-                                router.push("/(tabs)/collection/New_collection" as any)
-                            }
-                        >
-                            <Text
-                                className="text-white text-lg"
-                                style={{ fontFamily: "MateSC-Regular" }}
-                            >
-                                Registrar Colección Arqueológica
-                            </Text>
-                        </TouchableOpacity>
-
-                        <View className="flex-row items-center border-2 border-[#6B705C] rounded-lg px-3 py-2 bg-white mb-4">
-                            <Ionicons
-                                name="search-outline"
-                                size={20}
-                                color="#6B705C"
-                                style={{ marginRight: 8 }}
-                            />
-                            <TextInput
-                                placeholder="Buscar por nombre"
-                                placeholderTextColor="#A68B5B"
-                                className="flex-1 text-base text-[#222]"
-                                style={{ fontFamily: "CrimsonText-Regular" }}
-                                value={searchText}
-                                onChangeText={setSearchText}
-                            />
-                        </View>
-
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{
+                    paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+                    paddingTop: Platform.OS === "web" ? 40 : 20,
+                    paddingBottom: Platform.OS === "web" ? 32 : 20,
+                }}
+            >
+                <View
+                    style={{
+                        width: "100%",
+                        maxWidth: 1100,
+                        alignSelf: "center",
+                    }}
+                >
+                    {/* Encabezado */}
+                    <View
+                        style={{
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 16,
+                            padding: 28,
+                            marginBottom: 32,
+                            shadowColor: "#8B5E3C",
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.08,
+                            shadowRadius: 12,
+                            elevation: 3,
+                        }}
+                    >
                         <Text
-                            className="text-[#8B5E3C] text-base mb-2"
-                            style={{ fontFamily: "MateSC-Regular" }}
+                            style={{
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 28,
+                                color: "#8B5E3C",
+                                marginBottom: 8,
+                                fontWeight: "600",
+                            }}
                         >
-                            {filteredCollections.length} Colecciones Arqueológicas encontradas
+                            Gestión de Colecciones
                         </Text>
-                    </View>
+                        <Text
+                            style={{
+                                fontFamily: "CrimsonText-Regular",
+                                fontSize: 16,
+                                color: "#A0785D",
+                                marginBottom: 24,
+                            }}
+                        >
+                            Administra y consulta el registro de colecciones arqueológicas del sistema
+                        </Text>
 
-                    {/* Lista de colecciones usando el componente estandarizado */}
-                    <View style={{ flex: 1 }}>
-                        <GenericList
-                            data={filteredCollections}
-                            renderItem={renderCollectionCard}
-                            keyExtractor={(item) => item.id?.toString() || ''}
-                            isLoading={isLoading}
-                            isRefreshing={isRefetching}
-                            onRefresh={refetch}
-                            emptyStateMessage="No hay colecciones registradas"
-                            error={isError ? (error as Error)?.message : null}
-                            customStyles={{
-                                container: { backgroundColor: 'transparent', paddingTop: 0 }
+                        <Button
+                            title="+ Registrar nueva colección"
+                            onPress={() => router.push("/(tabs)/collection/New_collection" as any)}
+                            textStyle={{
+                                fontFamily: "MateSC-Regular",
+                                fontWeight: "bold",
+                                fontSize: 15,
                             }}
                         />
                     </View>
+
+                    {/* Búsqueda */}
+                    <View
+                        style={{
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 16,
+                            padding: 24,
+                            marginBottom: 24,
+                            shadowColor: "#8B5E3C",
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.08,
+                            shadowRadius: 12,
+                            elevation: 3,
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 18,
+                                color: "#8B5E3C",
+                                marginBottom: 16,
+                                fontWeight: "600",
+                            }}
+                        >
+                            Búsqueda
+                        </Text>
+
+                        <TouchableOpacity
+                            onPress={() => setShowPicker(true)}
+                            style={{
+                                backgroundColor: "#F7F5F2",
+                                borderRadius: 12,
+                                paddingHorizontal: 16,
+                                paddingVertical: 12,
+                                borderWidth: 1,
+                                borderColor: "#E5D4C1",
+                                flexDirection: "row",
+                                alignItems: "center",
+                            }}
+                        >
+                            <Ionicons
+                                name="search"
+                                size={18}
+                                color="#8B5E3C"
+                                style={{ marginRight: 8 }}
+                            />
+                            <Text
+                                style={{
+                                    fontFamily: "CrimsonText-Regular",
+                                    fontSize: 16,
+                                    color: searchDisplayText ? "#8B5E3C" : "#B8967D",
+                                    flex: 1,
+                                }}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                            >
+                                {searchDisplayText || "Buscar colección..."}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {(selectedCollectionId || searchText) && (
+                            <TouchableOpacity
+                                onPress={clearSearch}
+                                style={{
+                                    marginTop: 12,
+                                    alignSelf: "flex-start",
+                                    backgroundColor: "#E5D4C1",
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 8,
+                                    borderRadius: 8,
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        fontFamily: "CrimsonText-Regular",
+                                        fontSize: 14,
+                                        color: "#8B5E3C",
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    ✕ Limpiar búsqueda
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginTop: 16,
+                                paddingTop: 16,
+                                borderTopWidth: 1,
+                                borderTopColor: "#E5D4C1",
+                            }}
+                        >
+                            <View
+                                style={{
+                                    backgroundColor: "#8B5E3C",
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: 4,
+                                    marginRight: 10,
+                                }}
+                            />
+                            <Text
+                                style={{
+                                    fontFamily: "CrimsonText-Regular",
+                                    fontSize: 17,
+                                    color: "#8B5E3C",
+                                    fontWeight: "600",
+                                }}
+                            >
+                                {filteredCollections.length}{" "}
+                                {filteredCollections.length === 1
+                                    ? "Colección encontrada"
+                                    : "Colecciones encontradas"}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Lista de colecciones */}
+                    <View
+                        style={{
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 16,
+                            padding: 24,
+                            shadowColor: "#8B5E3C",
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.08,
+                            shadowRadius: 12,
+                            elevation: 3,
+                        }}
+                    >
+                        {filteredCollections.length === 0 ? (
+                            <Text
+                                style={{
+                                    fontFamily: "CrimsonText-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                }}
+                            >
+                                No hay colecciones registradas.
+                            </Text>
+                        ) : (
+                            <View style={{ flex: 1 }}>
+                                <GenericList
+                                    data={filteredCollections}
+                                    renderItem={renderCollectionCard}
+                                    keyExtractor={(item) => item.id?.toString() || ''}
+                                    isLoading={false}
+                                    isRefreshing={isRefetching}
+                                    onRefresh={refetch}
+                                    emptyStateMessage="No hay colecciones registradas"
+                                    error={isError ? (error as Error)?.message : null}
+                                    customStyles={{
+                                        container: { backgroundColor: 'transparent', paddingTop: 0 }
+                                    }}
+                                />
+                            </View>
+                        )}
+                    </View>
                 </View>
-            )}
+            </ScrollView>
+
+            <SimplePickerModal
+                visible={showPicker}
+                title="Seleccionar Colección"
+                items={collectionItems}
+                selectedValue={selectedCollectionId}
+                onSelect={(value) => {
+                    setSelectedCollectionId(value);
+                    setSearchText("");
+                    setShowPicker(false);
+                }}
+                onClose={() => setShowPicker(false)}
+                onSearchTextChange={(text) => {
+                    setSearchText(text);
+                    setSelectedCollectionId(null);
+                }}
+            />
         </View>
     );
 }
