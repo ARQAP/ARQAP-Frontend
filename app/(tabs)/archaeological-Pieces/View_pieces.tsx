@@ -1,14 +1,14 @@
 // app/(tabs)/archaeological-Pieces/View_pieces.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -32,8 +32,8 @@ type Piece = ArtefactSummary & {
   archaeologist?: string;
   collection?: string;
   shelf?: string;
-  levelLabel?: string;
-  columnLabel?: string;
+  level?: string;
+  column?: string;
 };
 
 export default function ViewPieces() {
@@ -52,6 +52,7 @@ export default function ViewPieces() {
 
   const deleteMutation = useDeleteArtefact();
 
+  const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");
   const [filterCollection, setFilterCollection] = useState("");
@@ -65,6 +66,14 @@ export default function ViewPieces() {
   // Estado para el menú desplegable
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setQuery(rawQuery);
+    }, 250);
+
+    return () => clearTimeout(handle);
+  }, [rawQuery]);
+
   const pieces: Piece[] = useMemo(() => {
     const list = (data ?? []) as ArtefactSummary[];
 
@@ -75,10 +84,8 @@ export default function ViewPieces() {
 
       const shelf =
         a.shelfCode == null ? undefined : `Estantería ${String(a.shelfCode)}`;
-      const levelLabel =
-        a.level == null ? undefined : `Nivel ${String(a.level)}`;
-      const columnLabel =
-        a.column == null ? undefined : `Columna ${String(a.column)}`;
+      const level = a.level == null ? undefined : `Nivel ${String(a.level)}`;
+      const column = a.column == null ? undefined : `Columna ${String(a.column)}`;
 
       return {
         ...a,
@@ -86,8 +93,8 @@ export default function ViewPieces() {
         archaeologist,
         collection,
         shelf,
-        levelLabel,
-        columnLabel,
+        level,
+        column,
       };
     });
   }, [data]);
@@ -171,7 +178,7 @@ export default function ViewPieces() {
 
       // ====== NIVEL (solo número) ======
       if (filterShelfLevel.trim() !== "") {
-        const levelText = p.levelLabel || "";
+        const levelText = p.level || "";
         const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
 
         if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
@@ -180,7 +187,7 @@ export default function ViewPieces() {
       // ====== COLUMNA (letra A-D) ======
       if (filterShelfColumn.trim() !== "") {
         const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
-        const colPieza = (p.columnLabel || "")
+        const colPieza = (p.column || "")
           .toUpperCase()
           .replace(/COLUMNA/i, "")
           .trim(); // A/B/C/D
@@ -200,6 +207,822 @@ export default function ViewPieces() {
     filterShelfLevel,
     filterShelfColumn,
   ]);
+
+  const isWeb = Platform.OS === "web";
+  const isMobile = Platform.OS === "android" || Platform.OS === "ios";
+  const MAX_CONTENT_WIDTH = 1400;
+
+  // ==================== VISTA WEB ====================
+  const webListHeader = (
+    <View
+      style={{
+        width: "90%",
+        maxWidth: MAX_CONTENT_WIDTH,
+        padding: 32,
+        alignSelf: "center",
+      }}
+    >
+      <Button
+        title="REGISTRAR PIEZA ARQUEOLÓGICA"
+        className="bg-[#6B705C] rounded-xl py-5 px-8 items-center mb-8 shadow-lg"
+        textClassName="text-white text-base font-bold tracking-wider"
+        onPress={() => router.push("/(tabs)/archaeological-Pieces/New_piece")}
+      />
+
+      <View
+        style={{
+          display: "grid" as any,
+          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+          gap: 16,
+          marginBottom: 32,
+          padding: 28,
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: "#E8DFD0",
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <Ionicons
+            name="filter"
+            size={22}
+            color="#6B705C"
+            style={{ marginRight: 10 }}
+          />
+          <Text
+            style={{
+              fontSize: 19,
+              fontWeight: "700",
+              color: "#6B705C",
+              letterSpacing: 0.5,
+            }}
+          >
+            FILTROS DE BÚSQUEDA
+          </Text>
+        </View>
+
+        <TextInput
+          placeholder="Filtrar por nombre"
+          value={rawQuery}
+          onChangeText={setRawQuery}
+          style={{
+            backgroundColor: "#FAFAF8",
+            borderRadius: 10,
+            padding: 15,
+            fontSize: 15,
+            borderWidth: 1,
+            borderColor: "#E8DFD0",
+            fontWeight: "500",
+          }}
+        />
+        <TextInput
+          placeholder="Filtrar por material"
+          value={filterMaterial}
+          onChangeText={setFilterMaterial}
+          style={{
+            backgroundColor: "#FAFAF8",
+            borderRadius: 10,
+            padding: 15,
+            fontSize: 15,
+            borderWidth: 1,
+            borderColor: "#E8DFD0",
+            fontWeight: "500",
+          }}
+        />
+        <TextInput
+          placeholder="Filtrar por colección"
+          value={filterCollection}
+          onChangeText={setFilterCollection}
+          style={{
+            backgroundColor: "#FAFAF8",
+            borderRadius: 10,
+            padding: 15,
+            fontSize: 15,
+            borderWidth: 1,
+            borderColor: "#E8DFD0",
+            fontWeight: "500",
+          }}
+        />
+        <TextInput
+          placeholder="Filtrar por sitio arqueológico"
+          value={filterSite}
+          onChangeText={setFilterSite}
+          style={{
+            backgroundColor: "#FAFAF8",
+            borderRadius: 10,
+            padding: 15,
+            fontSize: 15,
+            borderWidth: 1,
+            borderColor: "#E8DFD0",
+            fontWeight: "500",
+          }}
+        />
+        <TextInput
+          placeholder="Filtrar por numero de estante"
+          value={filterShelf}
+          onChangeText={(text) => setFilterShelf(text.replace(/[^0-9]/g, ""))}
+          keyboardType="numeric"
+          style={{
+            backgroundColor: "#FAFAF8",
+            borderRadius: 10,
+            padding: 15,
+            fontSize: 15,
+            borderWidth: 1,
+            borderColor: "#E8DFD0",
+            fontWeight: "500",
+          }}
+        />
+
+        {filterShelf !== "" && (
+          <>
+            <TextInput
+              placeholder="Filtrar por nivel (1-4)"
+              value={filterShelfLevel}
+              onChangeText={(text) =>
+                setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
+              }
+              keyboardType="numeric"
+              style={{
+                backgroundColor: "#FAFAF8",
+                borderRadius: 10,
+                padding: 15,
+                fontSize: 15,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+                fontWeight: "500",
+              }}
+            />
+            <TextInput
+              placeholder="Filtrar por columna (A-D)"
+              value={filterShelfColumn}
+              onChangeText={(text) =>
+                setFilterShelfColumn(
+                  text.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 1)
+                )
+              }
+              autoCapitalize="characters"
+              style={{
+                backgroundColor: "#FAFAF8",
+                borderRadius: 10,
+                padding: 15,
+                fontSize: 15,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+                fontWeight: "500",
+              }}
+            />
+          </>
+        )}
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginTop: 24,
+          marginBottom: 24,
+          paddingLeft: 4,
+        }}
+      >
+        <Ionicons
+          name="checkbox-outline"
+          size={20}
+          color="#6B705C"
+          style={{ marginRight: 8 }}
+        />
+        <Text
+          style={{
+            color: "#555",
+            fontWeight: "700",
+            fontSize: 16,
+            letterSpacing: 0.5,
+          }}
+        >
+          {filtered.length} PIEZAS ENCONTRADAS
+        </Text>
+      </View>
+    </View>
+  );
+
+  // ==================== RENDER WEB ====================
+  const renderWebView = () => {
+    const webRenderPiece = ({ item }: { item: Piece }) => {
+      const p = item;
+      return (
+        <View style={{ flex: 1, minWidth: 0, marginBottom: 24 }}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push(`/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`)
+            }
+            activeOpacity={0.9}
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              borderWidth: 1,
+              borderColor: "#E8DFD0",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 16,
+              position: "relative",
+              overflow: "hidden",
+              minWidth: 0,
+            }}
+            // @ts-ignore - Web-only hover effects
+            onMouseEnter={(e: any) => {
+              e.currentTarget.style.transform = "translateY(-6px)";
+              e.currentTarget.style.shadowOpacity = "0.16";
+              e.currentTarget.style.borderColor = "#6B705C";
+            }}
+            onMouseLeave={(e: any) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.shadowOpacity = "0.08";
+              e.currentTarget.style.borderColor = "#E8DFD0";
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 26,
+                    fontWeight: "700",
+                    marginBottom: 16,
+                    fontFamily: "CrimsonText-Regular",
+                    color: "#2c2c2c",
+                    letterSpacing: 0.3,
+                    lineHeight: 32,
+                  }}
+                >
+                  {p.name}
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 10,
+                    marginBottom: 18,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Badge
+                    text={p.shelf || ""}
+                    background={Colors.green}
+                    textColor={Colors.cremit}
+                  />
+                  <Badge
+                    text={p.level || ""}
+                    background={Colors.brown}
+                    textColor={Colors.cremit}
+                  />
+                  <Badge
+                    text={p.column || ""}
+                    background={Colors.black}
+                    textColor={Colors.cremit}
+                  />
+                </View>
+
+                <View style={{ gap: 10 }}>
+                  <InfoRow
+                    icon="cube-outline"
+                    label="MATERIAL"
+                    value={p.material || ""}
+                  />
+                  <InfoRow
+                    icon="location-outline"
+                    label="SITIO ARQUEOLOGICO"
+                    value={p.site || ""}
+                  />
+                  <InfoRow
+                    icon="person-outline"
+                    label="ARQUEOLOGO"
+                    value={p.archaeologist || ""}
+                  />
+                  <InfoRow
+                    icon="archive-outline"
+                    label="COLECCION"
+                    value={p.collection || ""}
+                  />
+                </View>
+              </View>
+
+              <View
+                style={{
+                  marginLeft: 12,
+                  alignItems: "center",
+                  position: "relative",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={(e) => {
+                    // @ts-ignore RN synthetic event
+                    e.stopPropagation?.();
+                    if (p.id) {
+                      setMenuVisible(
+                        menuVisible === String(p.id) ? null : String(p.id)
+                      );
+                    }
+                  }}
+                  style={{
+                    padding: 6,
+                    borderRadius: 20,
+                    backgroundColor: "#F8F9FA",
+                    borderWidth: 1,
+                    borderColor: "#E8E8E8",
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityLabel={`Opciones para pieza ${p.name}`}
+                >
+                  <Ionicons name="ellipsis-vertical" size={18} color={Colors.black} />
+                </TouchableOpacity>
+
+                {menuVisible === String(p.id) && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 40,
+                      right: 8,
+                      backgroundColor: "white",
+                      borderRadius: 8,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 4,
+                      elevation: 10,
+                      zIndex: 1000,
+                      width: 120,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => handleEdit(p.id!)}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        padding: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: "#e0e0e0",
+                      }}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={16}
+                        color={Colors.brown}
+                        style={{ marginRight: 10 }}
+                      />
+                      <Text style={{ fontSize: 16, color: Colors.brown }}>
+                        Editar
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => handleDelete(p.id!)}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        padding: 12,
+                      }}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={16}
+                        color={Colors.brown}
+                        style={{ marginRight: 10 }}
+                      />
+                      <Text style={{ fontSize: 16, color: Colors.brown }}>
+                        Eliminar
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      );
+    };
+
+    return (
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={webRenderPiece}
+        ListHeaderComponent={webListHeader}
+        keyboardShouldPersistTaps="handled"
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => setMenuVisible(null)}
+        extraData={menuVisible}
+        numColumns={3}
+        columnWrapperStyle={{
+          width: "90%",
+          maxWidth: MAX_CONTENT_WIDTH,
+          alignSelf: "center",
+          justifyContent: "flex-start",
+          gap: 20,
+          paddingHorizontal: 4,
+        }}
+        contentContainerStyle={{
+          paddingBottom: 40,
+        }}
+      />
+    );
+  };
+
+  // ==================== RENDER MOBILE ====================
+  const renderMobileView = () => {
+    const mobileListHeader = (
+      <View style={{ padding: 16 }}>
+        <Button
+          title="REGISTRAR PIEZA ARQUEOLÓGICA"
+          className="bg-[#6B705C] rounded-lg py-3 items-center mb-6"
+          textClassName="text-white"
+          onPress={() => router.push("/(tabs)/archaeological-Pieces/New_piece")}
+        />
+
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 16,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "700",
+              color: "#6B705C",
+              marginBottom: 12,
+            }}
+          >
+            FILTROS DE BÚSQUEDA
+          </Text>
+
+          <View style={{ gap: 12 }}>
+            <TextInput
+              placeholder="Filtrar por nombre"
+              value={rawQuery}
+              onChangeText={setRawQuery}
+              style={{
+                backgroundColor: "#F7F5F2",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+              }}
+            />
+            <TextInput
+              placeholder="Filtrar por material"
+              value={filterMaterial}
+              onChangeText={setFilterMaterial}
+              style={{
+                backgroundColor: "#F7F5F2",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+              }}
+            />
+            <TextInput
+              placeholder="Filtrar por colección"
+              value={filterCollection}
+              onChangeText={setFilterCollection}
+              style={{
+                backgroundColor: "#F7F5F2",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+              }}
+            />
+            <TextInput
+              placeholder="Filtrar por sitio arqueológico"
+              value={filterSite}
+              onChangeText={setFilterSite}
+              style={{
+                backgroundColor: "#F7F5F2",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+              }}
+            />
+            <TextInput
+              placeholder="Filtrar por numero de estante"
+              value={filterShelf}
+              onChangeText={(text) => setFilterShelf(text.replace(/[^0-9]/g, ""))}
+              keyboardType="numeric"
+              style={{
+                backgroundColor: "#F7F5F2",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: "#E8DFD0",
+              }}
+            />
+
+            {filterShelf !== "" && (
+              <>
+                <TextInput
+                  placeholder="Filtrar por nivel (1-4)"
+                  value={filterShelfLevel}
+                  onChangeText={(text) =>
+                    setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
+                  }
+                  keyboardType="numeric"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 14,
+                    borderWidth: 1,
+                    borderColor: "#E8DFD0",
+                  }}
+                />
+                <TextInput
+                  placeholder="Filtrar por columna (A-D)"
+                  value={filterShelfColumn}
+                  onChangeText={(text) =>
+                    setFilterShelfColumn(
+                      text.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 1)
+                    )
+                  }
+                  autoCapitalize="characters"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 14,
+                    borderWidth: 1,
+                    borderColor: "#E8DFD0",
+                  }}
+                />
+              </>
+            )}
+          </View>
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <Text
+            style={{
+              color: "#222",
+              fontWeight: "700",
+              fontSize: 14,
+            }}
+          >
+            {filtered.length} PIEZAS ENCONTRADAS
+          </Text>
+        </View>
+      </View>
+    );
+
+    const mobileRenderPiece = ({ item }: { item: Piece }) => {
+      const p = item;
+      return (
+        <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push(`/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`)
+            }
+            activeOpacity={0.9}
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 12,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: "#e6dac4",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    marginBottom: 10,
+                    fontFamily: "CrimsonText-Regular",
+                    color: "#2c2c2c",
+                  }}
+                >
+                  {p.name}
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 8,
+                    marginBottom: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Badge
+                    text={p.shelf || ""}
+                    background={Colors.green}
+                    textColor={Colors.cremit}
+                  />
+                  <Badge
+                    text={p.level || ""}
+                    background={Colors.brown}
+                    textColor={Colors.cremit}
+                  />
+                  <Badge
+                    text={p.column || ""}
+                    background={Colors.black}
+                    textColor={Colors.cremit}
+                  />
+                </View>
+
+                <View style={{ gap: 8 }}>
+                  <InfoRow
+                    icon="cube-outline"
+                    label="MATERIAL"
+                    value={p.material || ""}
+                  />
+                  <InfoRow
+                    icon="location-outline"
+                    label="SITIO ARQUEOLOGICO"
+                    value={p.site || ""}
+                  />
+                  {p.archaeologist && (
+                    <InfoRow
+                      icon="person-outline"
+                      label="ARQUEOLOGO"
+                      value={p.archaeologist}
+                    />
+                  )}
+                  {p.collection && (
+                    <InfoRow
+                      icon="archive-outline"
+                      label="COLECCION"
+                      value={p.collection}
+                    />
+                  )}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={(e) => {
+                  // @ts-ignore RN synthetic event
+                  e.stopPropagation?.();
+                  if (p.id) {
+                    setMenuVisible(
+                      menuVisible === String(p.id) ? null : String(p.id)
+                    );
+                  }
+                }}
+                style={{
+                  padding: 8,
+                  borderRadius: 20,
+                  backgroundColor: "#F8F9FA",
+                  borderWidth: 1,
+                  borderColor: "#E8E8E8",
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="ellipsis-vertical" size={20} color={Colors.black} />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+
+          <Modal
+            visible={menuVisible === String(p.id)}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setMenuVisible(null)}
+          >
+            <Pressable
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              onPress={() => setMenuVisible(null)}
+            >
+              <View
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: 16,
+                  minWidth: 200,
+                  borderWidth: 1,
+                  borderColor: "#E8E8E8",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 12,
+                  elevation: 10,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => handleEdit(p.id!)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.lightbrown,
+                  }}
+                >
+                  <Ionicons name="pencil" size={20} color={Colors.green} />
+                  <Text
+                    style={{
+                      marginLeft: 12,
+                      fontSize: 16,
+                      color: Colors.black,
+                    }}
+                  >
+                    Editar
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => handleDelete(p.id!)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 16,
+                    backgroundColor: "#FFF5F5",
+                  }}
+                >
+                  <Ionicons name="trash" size={20} color={Colors.brown} />
+                  <Text
+                    style={{
+                      marginLeft: 12,
+                      fontSize: 16,
+                      color: Colors.brown,
+                    }}
+                  >
+                    Eliminar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Modal>
+        </View>
+      );
+    };
+
+    return (
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={mobileRenderPiece}
+        ListHeaderComponent={mobileListHeader}
+        keyboardShouldPersistTaps="handled"
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => setMenuVisible(null)}
+        extraData={menuVisible}
+        contentContainerStyle={{
+          paddingBottom: 40,
+        }}
+      />
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
@@ -222,665 +1045,10 @@ export default function ViewPieces() {
           </Text>
           <Button title="Reintentar" onPress={() => refetch()} />
         </View>
+      ) : isMobile ? (
+        renderMobileView()
       ) : (
-        <ScrollView
-          contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
-        >
-          <View
-            style={{
-              width: "90%",
-              maxWidth: Platform.OS === "web" ? 1400 : 700,
-              padding: Platform.OS === "web" ? 32 : 16,
-            }}
-          >
-            <Button
-              title="REGISTRAR PIEZA ARQUEOLÓGICA"
-              className={
-                Platform.OS === "web"
-                  ? "bg-[#6B705C] rounded-xl py-5 px-8 items-center mb-8 shadow-lg"
-                  : "bg-[#6B705C] rounded-lg py-3 items-center mb-4"
-              }
-              textClassName={
-                Platform.OS === "web"
-                  ? "text-white text-base font-bold tracking-wider"
-                  : "text-white"
-              }
-              onPress={() =>
-                router.push("/(tabs)/archaeological-Pieces/New_piece")
-              }
-            />
-
-            <View
-              style={
-                Platform.OS === "web"
-                  ? {
-                      display: "grid" as any,
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(300px, 1fr))",
-                      gap: 16,
-                      marginBottom: 32,
-                      padding: 28,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 16,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.06,
-                      shadowRadius: 12,
-                      elevation: 2,
-                      borderWidth: 1,
-                      borderColor: "#E8DFD0",
-                    }
-                  : {
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      gap: 8,
-                      marginBottom: 12,
-                    }
-              }
-            >
-              {Platform.OS === "web" && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginBottom: 12,
-                  }}
-                >
-                  <Ionicons
-                    name="filter"
-                    size={22}
-                    color="#6B705C"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 19,
-                      fontWeight: "700",
-                      color: "#6B705C",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    FILTROS DE BÚSQUEDA
-                  </Text>
-                </View>
-              )}
-
-              <TextInput
-                placeholder="Filtrar por nombre"
-                value={query}
-                onChangeText={setQuery}
-                style={
-                  Platform.OS === "web"
-                    ? {
-                        backgroundColor: "#FAFAF8",
-                        borderRadius: 10,
-                        padding: 15,
-                        fontSize: 15,
-                        borderWidth: 1,
-                        borderColor: "#E8DFD0",
-                        fontWeight: "500",
-                      }
-                    : {
-                        flex: 1,
-                        minWidth: 200,
-                        backgroundColor: "#F7F5F2",
-                        borderRadius: 8,
-                        padding: 10,
-                      }
-                }
-              />
-              <TextInput
-                placeholder="Filtrar por material"
-                value={filterMaterial}
-                onChangeText={setFilterMaterial}
-                style={
-                  Platform.OS === "web"
-                    ? {
-                        backgroundColor: "#FAFAF8",
-                        borderRadius: 10,
-                        padding: 15,
-                        fontSize: 15,
-                        borderWidth: 1,
-                        borderColor: "#E8DFD0",
-                        fontWeight: "500",
-                      }
-                    : {
-                        flex: 1,
-                        minWidth: 200,
-                        backgroundColor: "#F7F5F2",
-                        borderRadius: 8,
-                        padding: 10,
-                      }
-                }
-              />
-              <TextInput
-                placeholder="Filtrar por colección"
-                value={filterCollection}
-                onChangeText={setFilterCollection}
-                style={
-                  Platform.OS === "web"
-                    ? {
-                        backgroundColor: "#FAFAF8",
-                        borderRadius: 10,
-                        padding: 15,
-                        fontSize: 15,
-                        borderWidth: 1,
-                        borderColor: "#E8DFD0",
-                        fontWeight: "500",
-                      }
-                    : {
-                        flex: 1,
-                        minWidth: 200,
-                        backgroundColor: "#F7F5F2",
-                        borderRadius: 8,
-                        padding: 10,
-                      }
-                }
-              />
-              <TextInput
-                placeholder="Filtrar por sitio arqueológico"
-                value={filterSite}
-                onChangeText={setFilterSite}
-                style={
-                  Platform.OS === "web"
-                    ? {
-                        backgroundColor: "#FAFAF8",
-                        borderRadius: 10,
-                        padding: 15,
-                        fontSize: 15,
-                        borderWidth: 1,
-                        borderColor: "#E8DFD0",
-                        fontWeight: "500",
-                      }
-                    : {
-                        flex: 1,
-                        minWidth: 200,
-                        backgroundColor: "#F7F5F2",
-                        borderRadius: 8,
-                        padding: 10,
-                      }
-                }
-              />
-              <TextInput
-                placeholder="Filtrar por numero de estante"
-                value={filterShelf}
-                onChangeText={(text) =>
-                  setFilterShelf(text.replace(/[^0-9]/g, ""))
-                }
-                keyboardType="numeric"
-                style={
-                  Platform.OS === "web"
-                    ? {
-                        backgroundColor: "#FAFAF8",
-                        borderRadius: 10,
-                        padding: 15,
-                        fontSize: 15,
-                        borderWidth: 1,
-                        borderColor: "#E8DFD0",
-                        fontWeight: "500",
-                      }
-                    : {
-                        flex: 1,
-                        minWidth: 200,
-                        backgroundColor: "#F7F5F2",
-                        borderRadius: 8,
-                        padding: 10,
-                      }
-                }
-              />
-
-              {filterShelf !== "" && (
-                <>
-                  <TextInput
-                    placeholder="Filtrar por nivel (1-4)"
-                    value={filterShelfLevel}
-                    onChangeText={(text) =>
-                      setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
-                    }
-                    keyboardType="numeric"
-                    style={
-                      Platform.OS === "web"
-                        ? {
-                            backgroundColor: "#FAFAF8",
-                            borderRadius: 10,
-                            padding: 15,
-                            fontSize: 15,
-                            borderWidth: 1,
-                            borderColor: "#E8DFD0",
-                            fontWeight: "500",
-                          }
-                        : {
-                            flex: 1,
-                            minWidth: 200,
-                            backgroundColor: "#F7F5F2",
-                            borderRadius: 8,
-                            padding: 10,
-                          }
-                    }
-                  />
-                  <TextInput
-                    placeholder="Filtrar por columna (A-D)"
-                    value={filterShelfColumn}
-                    onChangeText={(text) =>
-                      setFilterShelfColumn(
-                        text
-                          .replace(/[^A-Za-z]/g, "")
-                          .toUpperCase()
-                          .slice(0, 1)
-                      )
-                    }
-                    autoCapitalize="characters"
-                    style={
-                      Platform.OS === "web"
-                        ? {
-                            backgroundColor: "#FAFAF8",
-                            borderRadius: 10,
-                            padding: 15,
-                            fontSize: 15,
-                            borderWidth: 1,
-                            borderColor: "#E8DFD0",
-                            fontWeight: "500",
-                          }
-                        : {
-                            flex: 1,
-                            minWidth: 200,
-                            backgroundColor: "#F7F5F2",
-                            borderRadius: 8,
-                            padding: 10,
-                          }
-                    }
-                  />
-                </>
-              )}
-            </View>
-
-            <View
-              style={
-                Platform.OS === "web"
-                  ? {
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginBottom: 24,
-                      paddingLeft: 4,
-                    }
-                  : {
-                      marginBottom: 8,
-                    }
-              }
-            >
-              {Platform.OS === "web" && (
-                <Ionicons
-                  name="checkbox-outline"
-                  size={20}
-                  color="#6B705C"
-                  style={{ marginRight: 8 }}
-                />
-              )}
-              <Text
-                style={
-                  Platform.OS === "web"
-                    ? {
-                        color: "#555",
-                        fontWeight: "700",
-                        fontSize: 16,
-                        letterSpacing: 0.5,
-                      }
-                    : {
-                        color: "#222",
-                        fontWeight: "700",
-                      }
-                }
-              >
-                {filtered.length} PIEZAS ENCONTRADAS
-              </Text>
-            </View>
-
-            <Pressable
-              style={
-                Platform.OS === "web"
-                  ? {
-                      display: "grid" as any,
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(420px, 1fr))",
-                      gap: 28,
-                    }
-                  : {
-                      display: "flex",
-                      gap: 12,
-                    }
-              }
-              onPress={() => menuVisible && setMenuVisible(null)}
-            >
-              {filtered.map((p) => (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() =>
-                    router.push(
-                      `/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`
-                    )
-                  }
-                  activeOpacity={0.9}
-                  style={
-                    Platform.OS === "web"
-                      ? {
-                          backgroundColor: "#FFFFFF",
-                          borderRadius: 16,
-                          padding: 24,
-                          borderWidth: 1,
-                          borderColor: "#E8DFD0",
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.08,
-                          shadowRadius: 16,
-                          position: "relative",
-                          overflow: "hidden",
-                        }
-                      : {
-                          backgroundColor: "#fff",
-                          borderRadius: 8,
-                          padding: 12,
-                          borderWidth: 1,
-                          borderColor: "#e6dac4",
-                        }
-                  }
-                  // @ts-ignore - Web-only hover effects
-                  onMouseEnter={
-                    Platform.OS === "web"
-                      ? (e: any) => {
-                          e.currentTarget.style.transform = "translateY(-6px)";
-                          e.currentTarget.style.shadowOpacity = "0.16";
-                          e.currentTarget.style.borderColor = "#6B705C";
-                        }
-                      : undefined
-                  }
-                  onMouseLeave={
-                    Platform.OS === "web"
-                      ? (e: any) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.shadowOpacity = "0.08";
-                          e.currentTarget.style.borderColor = "#E8DFD0";
-                        }
-                      : undefined
-                  }
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={
-                          Platform.OS === "web"
-                            ? {
-                                fontSize: 26,
-                                fontWeight: "700",
-                                marginBottom: 16,
-                                fontFamily: "CrimsonText-Regular",
-                                color: "#2c2c2c",
-                                letterSpacing: 0.3,
-                                lineHeight: 32,
-                              }
-                            : {
-                                fontSize: 20,
-                                fontWeight: "700",
-                                marginBottom: 8,
-                                fontFamily: "CrimsonText-Regular",
-                              }
-                        }
-                      >
-                        {p.name}
-                      </Text>
-
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          gap: 10,
-                          marginBottom: 18,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <Badge
-                          text={p.shelf || ""}
-                          background={Colors.green}
-                          textColor={Colors.cremit}
-                        />
-                        <Badge
-                          text={p.levelLabel || ""}
-                          background={Colors.brown}
-                          textColor={Colors.cremit}
-                        />
-                        <Badge
-                          text={p.columnLabel || ""}
-                          background={Colors.black}
-                          textColor={Colors.cremit}
-                        />
-                      </View>
-
-                      <View style={{ gap: Platform.OS === "web" ? 10 : 6 }}>
-                        <InfoRow
-                          icon="cube-outline"
-                          label="MATERIAL"
-                          value={p.material || ""}
-                        />
-                        <InfoRow
-                          icon="location-outline"
-                          label="SITIO ARQUEOLOGICO"
-                          value={p.site || ""}
-                        />
-                        <InfoRow
-                          icon="person-outline"
-                          label="ARQUEOLOGO"
-                          value={p.archaeologist || ""}
-                        />
-                        <InfoRow
-                          icon="archive-outline"
-                          label="COLECCION"
-                          value={p.collection || ""}
-                        />
-                      </View>
-                    </View>
-
-                    <View
-                      style={{
-                        marginLeft: 12,
-                        alignItems: "center",
-                        position: "relative",
-                      }}
-                    >
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          // @ts-ignore RN synthetic event
-                          e.stopPropagation?.();
-                          if (p.id) {
-                            setMenuVisible(
-                              menuVisible === String(p.id) ? null : String(p.id)
-                            );
-                          }
-                        }}
-                        style={{
-                          padding: 6,
-                          borderRadius: 20,
-                          backgroundColor: "#F8F9FA",
-                          borderWidth: 1,
-                          borderColor: "#E8E8E8",
-                        }}
-                        activeOpacity={0.7}
-                        accessibilityLabel={`Opciones para pieza ${p.name}`}
-                      >
-                        <Ionicons
-                          name="ellipsis-vertical"
-                          size={18}
-                          color={Colors.black}
-                        />
-                      </TouchableOpacity>
-
-                      {/* Menú desplegable */}
-                      {menuVisible === String(p.id) && (
-                        <View
-                          style={{
-                            position: "absolute",
-                            top: 40,
-                            right: 8,
-                            backgroundColor: "white",
-                            borderRadius: 8,
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 4,
-                            elevation: 10,
-                            zIndex: 1000,
-                            width: 120,
-                          }}
-                        >
-                          <TouchableOpacity
-                            onPress={() => handleEdit(p.id!)}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: 12,
-                              borderBottomWidth: 1,
-                              borderBottomColor: "#e0e0e0",
-                            }}
-                          >
-                            <Ionicons
-                              name="create-outline"
-                              size={16}
-                              color={Colors.brown}
-                              style={{ marginRight: 10 }}
-                            />
-                            <Text style={{ fontSize: 16, color: Colors.brown }}>
-                              Editar
-                            </Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            onPress={() => {
-                              console.log(
-                                "Delete button pressed, piece ID:",
-                                p.id
-                              );
-                              handleDelete(p.id!);
-                            }}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: 12,
-                            }}
-                          >
-                            <Ionicons
-                              name="trash-outline"
-                              size={16}
-                              color={Colors.brown}
-                              style={{ marginRight: 10 }}
-                            />
-                            <Text style={{ fontSize: 16, color: Colors.brown }}>
-                              Eliminar
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  <Modal
-                    visible={menuVisible === String(p.id)}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setMenuVisible(null)}
-                  >
-                    <Pressable
-                      style={{
-                        flex: 1,
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                      onPress={() => setMenuVisible(null)}
-                    >
-                      <View
-                        style={{
-                          backgroundColor: "white",
-                          borderRadius: 16,
-                          minWidth: 200,
-                          borderWidth: 1,
-                          borderColor: "#E8E8E8",
-                          shadowColor: "#000",
-                          shadowOffset: {
-                            width: 0,
-                            height: 8,
-                          },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 12,
-                          elevation: 10,
-                        }}
-                      >
-                        <TouchableOpacity
-                          onPress={() => handleEdit(p.id!)}
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            padding: 16,
-                            borderBottomWidth: 1,
-                            borderBottomColor: Colors.lightbrown,
-                          }}
-                        >
-                          <Ionicons
-                            name="pencil"
-                            size={20}
-                            color={Colors.green}
-                          />
-                          <Text
-                            style={{
-                              marginLeft: 12,
-                              fontSize: 16,
-                              color: Colors.black,
-                            }}
-                          >
-                            Editar
-                          </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          onPress={() => {
-                            console.log(
-                              "Delete button pressed, piece ID:",
-                              p.id
-                            );
-                            handleDelete(p.id!);
-                          }}
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            padding: 16,
-                            backgroundColor: "#FFF5F5",
-                          }}
-                        >
-                          <Ionicons
-                            name="trash"
-                            size={20}
-                            color={Colors.brown}
-                          />
-                          <Text
-                            style={{
-                              marginLeft: 12,
-                              fontSize: 16,
-                              color: Colors.brown,
-                            }}
-                          >
-                            Eliminar
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </Pressable>
-                  </Modal>
-                </TouchableOpacity>
-              ))}
-            </Pressable>
-          </View>
-        </ScrollView>
+        renderWebView()
       )}
     </View>
   );

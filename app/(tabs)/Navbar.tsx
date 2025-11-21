@@ -16,15 +16,16 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
 
     const handleBackPress = () => {
         if (backToHome) {
-            // Para ir al home desde cualquier lugar, usar replace con animación hacia la derecha
             router.replace("/(tabs)/home");
-        } else if (redirectTo) {
-            // Si hay una ruta específica, usar back() para mantener la pila de navegación
-            router.back();
-        } else {
-            // Navegación normal hacia atrás - esto mostrará deslizamiento hacia la derecha
-            router.back();
+            return;
         }
+
+        if (redirectTo) {
+            router.push(redirectTo);
+            return;
+        }
+
+        router.back();
     };
 
     const handleLogoPress = () => {

@@ -8,7 +8,7 @@ import {
 import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["artefacts"];
-const SUMMARY_KEY = ["artefactSummaries"];
+const SUMMARY_KEY = ["artefact_summaries"];
 
 // Lista completa de artefactos (endpoint /artefacts)
 export const useArtefacts = (filters?: { shelfId?: number }) => {
@@ -33,7 +33,7 @@ export const useArtefact = (id?: number) => {
   });
 };
 
-// 🔹 NUEVO: lista resumida (endpoint /artefacts/summary)
+// 🔹 Lista resumida (endpoint /artefacts/summaries)
 export const useArtefactSummaries = (filters?: { shelfId?: number }) => {
   const { data: token } = useIsAuthenticated();
   const key = filters ? [...SUMMARY_KEY, JSON.stringify(filters)] : SUMMARY_KEY;
