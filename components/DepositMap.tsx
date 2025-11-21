@@ -3,6 +3,7 @@ import { useRouter } from "expo-router"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ViewStyle } from "react-native"
 import { Animated, Dimensions, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Colors from "../constants/Colors"
 import DepositoSvg from "../Distribucion Deposito.svg"
@@ -103,10 +104,8 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const [zoomLevel, setZoomLevel] = useState(1)
   const [showMobilePanel, setShowMobilePanel] = useState(false)
 
-  // Animaciones
-  const scaleAnim = useRef(new Animated.Value(1)).current
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const slideAnim = useRef(new Animated.Value(50)).current
+  // Para pinch-to-zoom
+  const savedScale = useRef(1)
 
   const isMobile = windowWidth < 768
   const isTablet = windowWidth >= 768 && windowWidth < 1024
@@ -140,19 +139,6 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 
   const onShelfPress = useCallback(
     (shelf: ShelfBox) => {
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start()
-
       if (shelf.label?.includes("Mesa MT-")) {
         const mtNumber = shelf.label.match(/MT-(\d+)/)?.[1]
         let associatedShelves: ShelfBox[] = []
@@ -174,7 +160,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
         }
       }
     },
-    [fetchItemsForShelf, isMobile, isTablet, scaleAnim],
+    [fetchItemsForShelf, isMobile, isTablet],
   )
 
   const details = useMemo(() => {
@@ -221,27 +207,18 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.2, 0.6))
   const handleZoomReset = () => setZoomLevel(1)
 
-  useEffect(() => {
-    const currentWidth = Dimensions.get("window").width
-    if (currentWidth !== windowWidth) {
-      setWindowWidth(currentWidth)
-    }
-
-    // Animación de entrada
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [fadeAnim, slideAnim, windowWidth])
+  // Gesto de pinch para zoom en móvil
+  const pinchGesture = Gesture.Pinch()
+    .enabled(isMobile)
+    .onStart(() => {
+      savedScale.current = zoomLevel
+    })
+    .onUpdate((e) => {
+      const newScale = savedScale.current * e.scale
+      const clampedScale = Math.min(Math.max(newScale, 0.6), 2)
+      setZoomLevel(clampedScale)
+    })
+    .runOnJS(true)
 
   useEffect(() => {
     const sub = Dimensions.addEventListener?.("change", ({ window }) => {
@@ -293,7 +270,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
     }
 
     return (
-      <Animated.View style={{ opacity: fadeAnim }}>
+      <>
         <View className="items-center mb-6">
           <View className="w-14 h-14 rounded-full bg-white border-3 border-[#D9C6A5] items-center justify-center mb-3">
             <Ionicons name="cube-outline" size={28} color={Colors.brown} />
@@ -379,6 +356,12 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                   const params: any = {}
                   if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId)
                   if (selected.label) params.shelfLabel = selected.label
+                  
+                  if (isMobile || isTablet) {
+                    setShowMobilePanel(false)
+                  }
+                  
+                  // Transición slide desde la derecha
                   router.push({
                     pathname: "/(tabs)/archaeological-Pieces/View_pieces",
                     params,
@@ -399,6 +382,12 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                   const params: any = {}
                   if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId)
                   if (selected.label) params.shelfLabel = selected.label
+                  
+                  if (isMobile || isTablet) {
+                    setShowMobilePanel(false)
+                  }
+                  
+                  // Transición slide desde abajo
                   router.push({
                     pathname: "/(tabs)/archaeological-Pieces/shelf-detail",
                     params,
@@ -411,22 +400,24 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
             </View>
           </>
         ) : null}
-      </Animated.View>
+      </>
     )
   }
 
   return (
-    <View className="flex-1 w-full bg-[#F3E9DD]" style={style}>
-      <View className="flex-1 flex-row">
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View className="flex-1 w-full bg-[#F3E9DD]" style={style}>
+        <View className="flex-1 flex-row">
         <View className="flex-1 relative bg-white" onLayout={(e) => setContainerLayout(e.nativeEvent.layout)}>
-          {/* Controles de zoom */}
-          <View
-            className="absolute z-[1000] bg-white rounded-2xl border-2 border-[#D9C6A5] shadow-xl overflow-hidden"
-            style={{
-              right: isMobile || isTablet ? 20 : 32,
-              bottom: Platform.select({ ios: insets.bottom , android: insets.bottom, default: 32 }),
-            }}
-          >
+          {/* Controles de zoom - Solo en tablet y desktop */}
+          {!isMobile && (
+            <View
+              className="absolute z-[1000] bg-white rounded-2xl border-2 border-[#D9C6A5] shadow-xl overflow-hidden"
+              style={{
+                right: isTablet ? 20 : 32,
+                bottom: Platform.select({ ios: insets.bottom , android: insets.bottom, default: 32 }),
+              }}
+            >
             <Pressable
               style={({ pressed }) => [
                 styles.zoomButton,
@@ -457,7 +448,8 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
             >
               <Text style={styles.zoomButtonText}>−</Text>
             </Pressable>
-          </View>
+            </View>
+          )}
 
           {/* MAPA + SVG */}
           <ScrollView
@@ -478,22 +470,24 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
               bounces={false}
               contentContainerStyle={{ alignItems: "center" }}
             >
-              <View style={{ width: svgWidth + offsetX * 2, minHeight: svgHeight + offsetY * 2 }}>
-                <View
-                  style={{
-                    position: "relative",
-                    width: svgWidth,
-                    height: svgHeight,
-                    marginTop: offsetY,
-                    marginHorizontal: offsetX,
-                  }}
-                >
-                <DepositoSvg
-                  width={svgWidth}
-                  height={svgHeight}
-                  viewBox={`0 0 ${VB_WIDTH} ${VB_HEIGHT}`}
-                  preserveAspectRatio="xMidYMid meet"
-                />
+              {isMobile ? (
+                <GestureDetector gesture={pinchGesture}>
+                  <Animated.View style={{ width: svgWidth + offsetX * 2, minHeight: svgHeight + offsetY * 2 }}>
+                    <View
+                      style={{
+                        position: "relative",
+                        width: svgWidth,
+                        height: svgHeight,
+                        marginTop: offsetY,
+                        marginHorizontal: offsetX,
+                      }}
+                    >
+                    <DepositoSvg
+                      width={svgWidth}
+                      height={svgHeight}
+                      viewBox={`0 0 ${VB_WIDTH} ${VB_HEIGHT}`}
+                      preserveAspectRatio="xMidYMid meet"
+                    />
 
                 {svgWidth > 0 &&
                   SHELVES.map((s) => {
@@ -542,8 +536,77 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                       </Pressable>
                     )
                   })}
-              </View>
-            </View>
+                    </View>
+                  </Animated.View>
+                </GestureDetector>
+              ) : (
+                <View style={{ width: svgWidth + offsetX * 2, minHeight: svgHeight + offsetY * 2 }}>
+                  <View
+                    style={{
+                      position: "relative",
+                      width: svgWidth,
+                      height: svgHeight,
+                      marginTop: offsetY,
+                      marginHorizontal: offsetX,
+                    }}
+                  >
+                  <DepositoSvg
+                    width={svgWidth}
+                    height={svgHeight}
+                    viewBox={`0 0 ${VB_WIDTH} ${VB_HEIGHT}`}
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+
+                {svgWidth > 0 &&
+                  SHELVES.map((s) => {
+                    const left = (s.x / VB_WIDTH) * svgWidth
+                    const top = (s.y / VB_HEIGHT) * svgHeight
+                    const width = (s.w / VB_WIDTH) * svgWidth
+                    const height = (s.h / VB_HEIGHT) * svgHeight
+                    const isSelected = selected?.id === s.id
+                    const isHovered = hoveredShelf === s.id
+
+                    const webTransition =
+                      Platform.OS === "web"
+                        ? {
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            transform: isSelected ? "scale(1.08)" : isHovered ? "scale(1.04)" : "scale(1)",
+                          }
+                        : {}
+
+                    return (
+                      <Pressable
+                        key={s.id}
+                        onPress={() => onShelfPress(s)}
+                        onHoverIn={Platform.OS === "web" ? () => setHoveredShelf(s.id) : undefined}
+                        onHoverOut={Platform.OS === "web" ? () => setHoveredShelf(null) : undefined}
+                        style={[
+                          { position: "absolute", overflow: "visible", borderRadius: 8, left, top, width, height },
+                          Platform.OS === "web" && ({ cursor: "pointer", ...webTransition } as any),
+                        ]}
+                        hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
+                        android_ripple={{ color: Colors.ripple }}
+                      >
+                        <View
+                          style={[
+                            styles.hotInner,
+                            isSelected && styles.selectedHot,
+                            isHovered && styles.hoveredHot,
+                          ]}
+                        />
+                        {isHovered && Platform.OS === "web" && (
+                          <View style={styles.tooltip}>
+                            <Text style={styles.tooltipText}>
+                              {s.label}
+                            </Text>
+                          </View>
+                        )}
+                      </Pressable>
+                    )
+                  })}
+                  </View>
+                </View>
+              )}
             </ScrollView>
           </ScrollView>
 
@@ -566,18 +629,16 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 
         {/* PANEL LATERAL DESKTOP */}
         {isDesktop && (
-          <Animated.View
+          <View
             className="bg-[#F3E9DD] border-l-2 border-[#D9C6A5] shadow-2xl"
             style={{
               width: sidePanelWidth,
-              transform: [{ translateX: slideAnim }],
-              opacity: fadeAnim,
             }}
           >
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 32 }} showsVerticalScrollIndicator={false}>
               <PanelContent />
             </ScrollView>
-          </Animated.View>
+          </View>
         )}
       </View>
 
@@ -586,7 +647,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
         <Modal
           visible={showMobilePanel}
           transparent
-          animationType="fade"
+          animationType="slide"
           statusBarTranslucent
           onRequestClose={() => setShowMobilePanel(false)}
         >
@@ -706,161 +767,12 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+      </View>
+    </GestureHandlerRootView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: "100%",
-    backgroundColor: Colors.cream,
-  },
-
-  mobileNotSupported: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 40,
-    backgroundColor: Colors.cream,
-  },
-  mobileIconWrapper: {
-    position: "relative",
-    marginBottom: 32,
-  },
-  mobileIconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.white,
-    borderWidth: 3,
-    borderColor: Colors.cremit,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  mobileIconCircleSmall: {
-    position: "absolute",
-    bottom: -10,
-    right: -10,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.lightgreen,
-    borderWidth: 3,
-    borderColor: Colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  mobileNotSupportedIcon: {
-    fontSize: 56,
-  },
-  mobileNotSupportedIconSmall: {
-    fontSize: 24,
-  },
-  mobileNotSupportedTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: Colors.darkText,
-    textAlign: "center",
-    marginBottom: 12,
-    letterSpacing: -0.5,
-  },
-  mobileNotSupportedText: {
-    fontSize: 16,
-    color: Colors.mediumText,
-    textAlign: "center",
-    lineHeight: 24,
-    maxWidth: 340,
-    marginBottom: 24,
-  },
-  mobileDivider: {
-    width: 60,
-    height: 4,
-    backgroundColor: Colors.cremit,
-    borderRadius: 2,
-    marginVertical: 20,
-  },
-  mobileNotSupportedSubtext: {
-    fontSize: 15,
-    color: Colors.lightText,
-    textAlign: "center",
-    marginBottom: 20,
-    fontWeight: "600",
-  },
-  mobileDeviceList: {
-    flexDirection: "row",
-    gap: 16,
-    marginTop: 8,
-  },
-  mobileDeviceItem: {
-    backgroundColor: Colors.white,
-    paddingVertical: 20,
-    paddingHorizontal: 28,
-    borderRadius: 16,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.cremit,
-    minWidth: 130,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  mobileDeviceIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  mobileDeviceText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: Colors.darkText,
-  },
-
-  contentWrapper: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  mapContainer: {
-    flex: 1,
-    position: "relative",
-    backgroundColor: Colors.white,
-  },
-  mapScrollView: {
-    flex: 1,
-  },
-  mapScrollContent: {
-    flexGrow: 1,
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-
-  zoomControls: {
-    position: "absolute",
-    bottom: Platform.select({ ios: 100, android: 100, default: 32 }),
-    right: Platform.select({ ios: 20, android: 20, default: 32 }),
-    zIndex: 1000,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Colors.cremit,
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
-    overflow: "hidden",
-  },
   zoomButton: {
     width: 52,
     height: 52,
@@ -890,346 +802,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  sidePanel: {
-    backgroundColor: Colors.cream,
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.cremit,
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: -4, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  sidePanelScroll: {
-    flex: 1,
-  },
-  sidePanelContent: {
-    padding: 32,
-  },
-
-  placeholder: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  placeholderIconContainer: {
-    position: "relative",
-    marginBottom: 36,
-  },
-  placeholderIconCircle: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: Colors.white,
-    borderWidth: 4,
-    borderColor: Colors.cremit,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  placeholderDecoration: {
-    position: "absolute",
-    bottom: -6,
-    left: -6,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.lightgreen,
-    borderWidth: 3,
-    borderColor: Colors.cream,
-  },
-  placeholderEmoji: {
-    fontSize: 60,
-  },
-  placeholderTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: Colors.darkText,
-    marginBottom: 10,
-    textAlign: "center",
-    letterSpacing: -0.8,
-  },
-  placeholderSubtitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: Colors.mediumText,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  placeholderText: {
-    fontSize: 15,
-    color: Colors.lightText,
-    textAlign: "center",
-    lineHeight: 24,
-    maxWidth: 320,
-  },
-  instructionsContainer: {
-    marginTop: 40,
-    gap: 16,
-    width: "100%",
-  },
-  instructionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    backgroundColor: Colors.white,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Colors.cremitLight,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  instructionIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.cremitLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  instructionIcon: {
-    fontSize: 24,
-  },
-  instructionTextContainer: {
-    flex: 1,
-  },
-  instructionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.darkText,
-    marginBottom: 2,
-  },
-  instructionText: {
-    fontSize: 13,
-    color: Colors.lightText,
-    lineHeight: 18,
-  },
-
-  panelHeader: {
-    alignItems: "center",
-    marginBottom: 28,
-  },
-  panelHeaderIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.white,
-    borderWidth: 3,
-    borderColor: Colors.cremit,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  panelHeaderEmoji: {
-    fontSize: 32,
-  },
-  panelTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: Colors.darkText,
-    textAlign: "center",
-    letterSpacing: -0.5,
-  },
-
-  loadingContainer: {
-    paddingVertical: 80,
-    alignItems: "center",
-  },
-  loadingSpinner: {
-    marginBottom: 24,
-  },
-  loadingEmoji: {
-    fontSize: 56,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: Colors.darkText,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  loadingSubtext: {
-    fontSize: 14,
-    color: Colors.lightText,
-  },
-
-  statsCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 36,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.cremitLight,
-    marginBottom: 28,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 5,
-    position: "relative",
-    overflow: "hidden",
-  },
-  statsIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.cremitLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  statsIcon: {
-    fontSize: 28,
-  },
-  statsNumber: {
-    fontSize: 64,
-    fontWeight: "900",
-    color: Colors.darkgreen,
-    marginBottom: 8,
-    letterSpacing: -2,
-  },
-  statsLabel: {
-    fontSize: 12,
-    color: Colors.mediumText,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-  },
-  statsBottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 6,
-    backgroundColor: Colors.lightgreen,
-  },
-
-  section: {
-    marginBottom: 28,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
-  },
-  sectionIcon: {
-    fontSize: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Colors.darkText,
-    letterSpacing: -0.3,
-  },
-  chipContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: Colors.lightgreen,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: Colors.mediumgreen,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  chipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.darkgreen,
-  },
-  chipText: {
-    fontSize: 14,
-    color: Colors.darkText,
-    fontWeight: "700",
-  },
-
-  buttonGroup: {
-    gap: 12,
-    marginTop: 20,
-  },
-  primaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    backgroundColor: Colors.darkgreen,
-    paddingVertical: 20,
-    borderRadius: 16,
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: Colors.green,
-  },
-  primaryButtonPressed: {
-    transform: [{ scale: 0.98 }],
-    shadowOpacity: 0.15,
-  },
-  primaryButtonIcon: {
-    fontSize: 20,
-  },
-  primaryButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  secondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    backgroundColor: Colors.white,
-    borderWidth: 2,
-    borderColor: Colors.cremit,
-    paddingVertical: 18,
-    borderRadius: 16,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  secondaryButtonPressed: {
-    transform: [{ scale: 0.98 }],
-    backgroundColor: Colors.cremitLight,
-  },
-  secondaryButtonIcon: {
-    fontSize: 18,
-  },
-  secondaryButtonText: {
-    color: Colors.darkgreen,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-
-  hotspot: {
-    position: "absolute",
-    overflow: "visible",
-    borderRadius: 8,
-  },
   hotInner: {
     flex: 1,
     backgroundColor: "transparent",
@@ -1299,117 +871,6 @@ const styles = StyleSheet.create({
     elevation: 16,
     borderWidth: 3,
     borderColor: Colors.cremit,
-  },
-  mtHeader: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  mtHeaderIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.white,
-    borderWidth: 3,
-    borderColor: Colors.cremit,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  mtHeaderIcon: {
-    fontSize: 36,
-  },
-  mtTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: Colors.darkText,
-    textAlign: "center",
-    letterSpacing: -0.5,
-  },
-  mtSubtitle: {
-    fontSize: 15,
-    color: Colors.lightText,
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-    paddingHorizontal: 8,
-  },
-  mtDivider: {
-    height: 2,
-    backgroundColor: Colors.cremitLight,
-    marginBottom: 24,
-    borderRadius: 1,
-  },
-  mtScrollContent: {
-    gap: 14,
-  },
-  mtSectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.mediumText,
-    marginBottom: 12,
-    textAlign: "center",
-    letterSpacing: 0.5,
-  },
-  mtOptionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    backgroundColor: Colors.darkgreen,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    shadowColor: Colors.darkgreen,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: Colors.green,
-  },
-  mtOptionButtonPressed: {
-    transform: [{ scale: 0.97 }],
-    shadowOpacity: 0.15,
-  },
-  mtShelfButton: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.brown,
-  },
-  mtShelfButtonPressed: {
-    transform: [{ scale: 0.97 }],
-  },
-  mtOptionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.whiteTranslucent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mtOptionIcon: {
-    fontSize: 20,
-  },
-  mtOptionText: {
-    flex: 1,
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  mtCancelButton: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: Colors.cremit,
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  mtCancelButtonPressed: {
-    backgroundColor: Colors.cremitLight,
-  },
-  mtCancelText: {
-    color: Colors.darkText,
-    fontSize: 16,
-    fontWeight: "800",
   },
 
   mobileInfoButton: {

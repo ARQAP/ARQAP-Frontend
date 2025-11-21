@@ -1,8 +1,8 @@
 "use client"
 
-import { View, Text, TouchableOpacity, Platform, Alert } from "react-native"
-import type { Archaeologist } from "../../../repositories/archaeologistRespository"
 import { useState } from "react"
+import { Alert, Platform, Text, TouchableOpacity, View } from "react-native"
+import type { Archaeologist } from "../../../repositories/archaeologistRespository"
 
 interface ArchaeologistCardProps {
   archaeologist: Archaeologist
@@ -206,3 +206,5 @@ export function ArchaeologistCard({ archaeologist, onEdit, onDelete }: Archaeolo
     </View>
   )
 }
+
+export default ArchaeologistCard
