@@ -1,4 +1,3 @@
-// app/(tabs)/inpl/New_internal_classifier.tsx
 import React, { useState } from "react";
 import {
   Alert,
@@ -13,7 +12,6 @@ import { useRouter } from "expo-router";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
-// ⬇️ Hooks que compartiste
 import { useCreateInternalClassifier } from "../../../hooks/useInternalClassifier";
 
 type CreatePayload = {
@@ -93,7 +91,6 @@ export default function New_internal_classifier() {
               alignSelf: "center",
             }}
           >
-            {/* Encabezado */}
             <View
               style={{
                 backgroundColor: "#FFFFFF",
@@ -129,7 +126,6 @@ export default function New_internal_classifier() {
               </Text>
             </View>
 
-            {/* Formulario */}
             <View
               style={{
                 backgroundColor: "#FFFFFF",
@@ -143,7 +139,6 @@ export default function New_internal_classifier() {
                 elevation: 3,
               }}
             >
-              {/* Campo Número */}
               <View style={{ marginBottom: 24 }}>
                 <Text
                   style={{
@@ -178,7 +173,6 @@ export default function New_internal_classifier() {
                 />
               </View>
 
-              {/* Campo Color */}
               <View style={{ marginBottom: 8 }}>
                 <Text
                   style={{
@@ -214,7 +208,6 @@ export default function New_internal_classifier() {
               </View>
             </View>
 
-            {/* Botones de Acción */}
             <View style={{ gap: 16 }}>
               <Button
                 title={isBusy ? "Creando Clasificador..." : "Crear Clasificador"}
