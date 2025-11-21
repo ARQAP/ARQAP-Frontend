@@ -1,6 +1,14 @@
 // app/(tabs)/shelf/New_shelf.tsx
 import React, { useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
@@ -25,7 +33,6 @@ export default function New_shelf() {
     }
 
     try {
-      // El modelo del backend espera: { code: number }
       await createShelf.mutateAsync({ code: codeNum } as any);
       Alert.alert("Éxito", "Estantería creada correctamente.");
       router.back();
@@ -39,58 +46,155 @@ export default function New_shelf() {
     router.back();
   };
 
+  const isButtonDisabled = isBusy || !shelfCode.trim();
+
   return (
-    <View className="flex-1 bg-[#F7F0E6] items-center px-0">
-      <View className="w-full">
-        <Navbar title="Alta de Estantería" showBackArrow />
-      </View>
-
-      <View className="w-full max-w-[500px] items-center self-center px-4">
-        <Text
-          className="text-center text-lg mt-3 mb-2 text-[#222]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+      <Navbar title="Nueva Estantería" showBackArrow />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
         >
-          Ingrese los datos de la nueva estantería
-        </Text>
-
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
+            }}
           >
-            Código
-          </Text>
-          <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full font-crimson placeholder:text-[#A68B5B]"
-            placeholder="Ingrese el código (p. ej. 07)"
-            value={shelfCode}
-            onChangeText={setShelfCode}
-            keyboardType="number-pad"
-          />
-        </View>
+            {/* Encabezado */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Nueva Estantería
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Ingrese los datos de la nueva estantería
+              </Text>
+            </View>
 
-        <Button
-          title={isBusy ? "Creando..." : "Crear Estantería"}
-          onPress={() => {
-            if (isBusy) return; // bloquea mientras muta
-            handleCrear();
-          }}
-          className={`w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center ${isBusy ? "opacity-60" : ""}`}
-          textClassName="text-base font-bold text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
+            {/* Formulario */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              {/* Campo Código */}
+              <View style={{ marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Código *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Ingrese el código (ej: 07)"
+                  value={shelfCode}
+                  onChangeText={setShelfCode}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  keyboardType="number-pad"
+                  editable={!isBusy}
+                />
+              </View>
+            </View>
 
-        <Button
-          title="Cancelar"
-          onPress={() => {
-            if (isBusy) return; // bloquea mientras muta
-            handleCancelar();
-          }}
-          className={`w-full self-center bg-[#D9C6A5] rounded-lg py-3 items-center ${isBusy ? "opacity-60" : ""}`}
-          textClassName="text-base text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-      </View>
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={isBusy ? "Creando Estantería..." : "Crear Estantería"}
+                onPress={() => {
+                  if (isBusy) return;
+                  handleCrear();
+                }}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+              
+              <Button
+                title="Cancelar"
+                onPress={() => {
+                  if (isBusy) return;
+                  handleCancelar();
+                }}
+                style={{
+                  backgroundColor: "#E5D4C1",
+                  opacity: isBusy ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
