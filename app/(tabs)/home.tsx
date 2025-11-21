@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
 import { useArchaeologists } from "@/hooks/useArchaeologist";
 import { useArtefacts } from "@/hooks/useArtefact";
@@ -8,201 +9,541 @@ import * as Font from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    BackHandler,
-    Platform,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
 } from "react-native";
-import ActionButton from "../../components/ui/ActionButton";
 import Colors from "../../constants/Colors";
-import Card from "./Card";
 import Navbar from "./Navbar";
 
-export default function HomeScreen() {
-    const [fontsLoaded, setFontsLoaded] = useState(false);
-    const router = useRouter();
+type ActionCardProps = {
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  count: number;
+  onPress: () => void;
+};
 
-    const logoutMutation = useLogoutMutation();
+const ActionCard = ({ title, description, icon, color, count, onPress }: ActionCardProps) => {
+  const { width } = useWindowDimensions();
+  const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isDesktop = width >= 1024;
 
-    const { data: artefacts = [] } = useArtefacts();
-    const { data: collections = [] } = useCollections();
-    const { data: sites = [] } = useAllArchaeologicalSites();
-    const { data: archaeologists = [] } = useArchaeologists();
-    const { data: loans = [] } = useLoans();
-
-    const activeLoans = loans.filter(
-        (loan) => !loan.returnDate || !loan.returnTime
-    );
-
-    // Interceptar el botón de atrás del hardware en Android
-    useEffect(() => {
-        if (Platform.OS === "android") {
-            const backHandler = BackHandler.addEventListener(
-                "hardwareBackPress",
-                () => {
-                    // Prevenir navegación hacia atrás desde home
-                    return true; // true = interceptar y no permitir
-                }
-            );
-
-            return () => backHandler.remove();
-        }
-    }, []);
-
-    const handleLogout = async () => {
-        try {
-            await logoutMutation.mutateAsync();
-            // ProtectedRoute se encargará de redirigir al login
-        } catch (error) {
-            console.error("Error al cerrar sesión:", error);
-        }
-    };
-
-    useEffect(() => {
-        async function loadFonts() {
-            await Font.loadAsync({
-                "MateSC-Regular": require("../../assets/fonts/MateSC-Regular.ttf"),
-                "CrimsonText-Regular": require("../../assets/fonts/CrimsonText-Regular.ttf"),
-                "SpaceMono-Regular": require("../../assets/fonts/SpaceMono-Regular.ttf"),
-            });
-            setFontsLoaded(true);
-        }
-        loadFonts();
-    }, []);
-
-    if (!fontsLoaded) {
-        return (
-            <View className="flex-1 justify-center items-center">
-                <ActivityIndicator size="large" color={Colors.brown} />
-            </View>
-        );
-    }
-
-    return (
-        <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
-            <Navbar title="Inicio" />
-            <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
-                <View className="items-center mt-8 mb-8">
-                    <Text
-                        className="text-[45px] font-bold text-center w-full"
-                        style={{
-                            fontFamily: "MateSC-Regular",
-                            color: Colors.brown,
-                        }}
-                    >
-                        ARQAP
-                    </Text>
-                </View>
-                <View className="items-center mb-8">
-                    <Text
-                        className="text-[30px] font-bold text-center w-full"
-                        style={{
-                            fontFamily: "MateSC-Regular",
-                            color: Colors.brown,
-                        }}
-                    >
-                        Museo De Ciencias Naturales
-                    </Text>
-                </View>
-                <Card
-                    title="Piezas Arqueológicas"
-                    subtitle="Registrar y Gestionar las piezas"
-                    icon="archive-outline"
-                    cubeCount={artefacts.length}
-                />
-                <Card
-                    title="Colecciones Arqueológicas"
-                    subtitle="Organizar por colecciones"
-                    icon="book-outline"
-                    cubeCount={collections.length}
-                />
-                <Card
-                    title="Sitios Arqueológicos"
-                    subtitle="Gestionar ubicaciones"
-                    icon="location-outline"
-                    cubeCount={sites.length}
-                />
-                <Card
-                    title="Arqueólogos"
-                    subtitle="Gestionar Especialistas"
-                    icon="person-outline"
-                    cubeCount={archaeologists.length}
-                />
-                <Card
-                    title="Préstamos"
-                    subtitle="Préstamos activos"
-                    icon="swap-horizontal-outline"
-                    cubeCount={activeLoans.length}
-                />
-                <View className="items-center mt-7 pb-8">
-                    <Text
-                        className="text-[28px] font-bold text-[#8B5E3C] mb-3"
-                        style={{ fontFamily: "MateSC-Regular" }}
-                    >
-                        Acciones rápidas
-                    </Text>
-                    <View className="flex-col md:flex-row justify-center items-center mt-4 gap-4 sm:gap-5 md:gap-4 lg:gap-6 xl:gap-8 w-full md:flex-nowrap md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-                        <ActionButton
-                            title="Nueva Pieza"
-                            onPress={() =>
-                                router.push(
-                                    "/(tabs)/archaeological-Pieces/New_piece"
-                                )
-                            }
-                        />
-                        <ActionButton
-                            title="Nuevo Arqueólogo"
-                            onPress={() =>
-                                router.push(
-                                    "/(tabs)/archaeologist/New_archaeologist"
-                                )
-                            }
-                        />
-                        <ActionButton
-                            title="Nueva Colección"
-                            onPress={() =>
-                                router.push("/(tabs)/collection/New_collection")
-                            }
-                        />
-                    </View>
-                </View>
-
-                <View className="items-center mt-8 pb-8">
-                    <TouchableOpacity
-                        onPress={handleLogout}
-                        disabled={logoutMutation.isPending}
-                        className={`rounded-lg px-8 py-3 ${
-                            logoutMutation.isPending
-                                ? "bg-gray-400"
-                                : "bg-[#A3473B]"
-                        }`}
-                    >
-                        {logoutMutation.isPending ? (
-                            <View className="flex-row items-center">
-                                <ActivityIndicator size="small" color="#fff" />
-                                <Text
-                                    className="text-white text-base ml-2"
-                                    style={{
-                                        fontFamily: "CrimsonText-Regular",
-                                    }}
-                                >
-                                    Cerrando sesión...
-                                </Text>
-                            </View>
-                        ) : (
-                            <Text
-                                className="text-white text-base font-medium"
-                                style={{ fontFamily: "CrimsonText-Regular" }}
-                            >
-                                Cerrar Sesión
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      onHoverIn={() => setIsHovered(true)}
+      onHoverOut={() => setIsHovered(false)}
+      className="bg-white rounded-2xl border"
+      style={[
+        styles.cardShadow,
+        {
+          borderColor: isHovered && isDesktop ? color : 'rgba(0,0,0,0.06)',
+          borderWidth: isHovered && isDesktop ? 2 : 1,
+          paddingHorizontal: isDesktop ? 32 : 16,
+          paddingVertical: isDesktop ? 24 : 16,
+          minHeight: isDesktop ? 150 : 110,
+          shadowOpacity: isHovered && isDesktop ? 0.15 : 0.08,
+        },
+        {
+          transform: [
+            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 }
+          ],
+        },
+        isHovered && isDesktop && { translateY: -2 },
+        Platform.select({ web: isDesktop ? { cursor: "pointer" } : {} }),
+      ]}
+    >
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center flex-1">
+          <View
+            className="rounded-xl items-center justify-center mr-5 shrink-0"
+            style={[
+              styles.iconShadow,
+              {
+                backgroundColor: color,
+                width: isDesktop ? 72 : 52,
+                height: isDesktop ? 72 : 52,
+                borderRadius: 18,
+                transform: [{ scale: isHovered && isDesktop ? 1.05 : 1 }],
+              },
+            ]}
+          >
+            <Ionicons name={icon} size={isDesktop ? 34 : 24} color="#fff" />
+          </View>
+          <View className="flex-1">
+            <Text
+              className="font-bold mb-1.5"
+              style={[
+                styles.titleText,
+                {
+                  color: isHovered && isDesktop ? color : Colors.black,
+                  fontSize: isDesktop ? 25 : 19,
+                  lineHeight: isDesktop ? 32 : 24,
+                },
+              ]}
+            >
+              {title}
+            </Text>
+            <Text
+              style={[
+                styles.descriptionText,
+                {
+                  color: Colors.black,
+                  opacity: 0.7,
+                  fontSize: isDesktop ? 22 : 15,
+                  lineHeight: isDesktop ? 28 : 20,
+                },
+              ]}
+              numberOfLines={2}
+            >
+              {description}
+            </Text>
+          </View>
         </View>
+        
+        <View
+          className="items-center justify-center rounded-full shrink-0 ml-4"
+          style={{
+            backgroundColor: color,
+            width: isDesktop ? 56 : 40,
+            height: isDesktop ? 56 : 40,
+            opacity: 0.15,
+          }}
+        >
+          <Text
+            style={{
+              color: color,
+              fontSize: isDesktop ? 18 : 14,
+              fontWeight: "bold",
+              fontFamily: "MateSC-Regular",
+            }}
+          >
+            {count}
+          </Text>
+        </View>
+      </View>
+
+      {isHovered && isDesktop && (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              borderRadius: 16,
+              backgroundColor: `${color}08`,
+            },
+          ]}
+        />
+      )}
+    </Pressable>
+  );
+};
+
+type QuickActionProps = {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+};
+
+const QuickAction = ({ title, icon, onPress }: QuickActionProps) => {
+  const { width } = useWindowDimensions();
+  const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isDesktop = width >= 1024;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      onHoverIn={() => setIsHovered(true)}
+      onHoverOut={() => setIsHovered(false)}
+      className="rounded-2xl items-center justify-center"
+      style={[
+        {
+          backgroundColor: isHovered && isDesktop ? "#c9b89a" : "#d4c4a8",
+          paddingVertical: isDesktop ? 50 : 35,
+          paddingHorizontal: isDesktop ? 30 : 20,
+          flex: 1,
+        },
+        {
+          transform: [
+            { scale: isPressed ? 0.96 : isHovered && isDesktop ? 1.04 : 1 }
+          ],
+        },
+        Platform.select({ web: isDesktop ? { cursor: "pointer" } : {} }),
+      ]}
+    >
+      <View
+        className="rounded-full items-center justify-center mb-3"
+        style={{
+          backgroundColor: Colors.brown,
+          width: isDesktop ? 70 : 55,
+          height: isDesktop ? 70 : 55,
+        }}
+      >
+        <Ionicons name={icon} size={isDesktop ? 32 : 24} color="#fff" />
+      </View>
+      <Text
+        style={[
+          styles.quickActionText,
+          {
+            fontSize: isDesktop ? 16 : 12,
+            color: Colors.black,
+            textAlign: "center",
+          },
+        ]}
+      >
+        {title}
+      </Text>
+    </Pressable>
+  );
+};
+
+export default function HomeScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const router = useRouter();
+  
+  const logoutMutation = useLogoutMutation();
+  const { data: artefacts = [] } = useArtefacts();
+  const { data: collections = [] } = useCollections();
+  const { data: sites = [] } = useAllArchaeologicalSites();
+  const { data: archaeologists = [] } = useArchaeologists();
+  const { data: loans = [] } = useLoans();
+
+  const activeLoans = loans.filter(
+    (loan) => !loan.returnDate || !loan.returnTime
+  );
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      router.replace('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
+  useEffect(() => {
+    async function loadFonts() {
+      await Font.loadAsync({
+        "MateSC-Regular": require("../../assets/fonts/MateSC-Regular.ttf"),
+        "CrimsonText-Regular": require("../../assets/fonts/CrimsonText-Regular.ttf"),
+        "SpaceMono-Regular": require("../../assets/fonts/SpaceMono-Regular.ttf"),
+      });
+      setFontsLoaded(true);
+    }
+    loadFonts();
+  }, []);
+
+  if (!fontsLoaded) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color={Colors.brown} />
+      </View>
     );
+  }
+
+  return (
+    <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
+      <Navbar title="Inicio" />
+      
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: isDesktop ? 48 : 32,
+        }}
+      >
+        <View
+          className="w-full mx-auto"
+          style={{
+            maxWidth: isDesktop ? 1360 : 720,
+            paddingHorizontal: isDesktop ? 35 : 16,
+            paddingTop: isDesktop ? 35 : 20,
+          }}
+        >
+          {/* Header */}
+          <View style={{ marginBottom: isDesktop ? 36 : 24 }} className="items-center">
+            <Text
+              style={[
+                styles.headerTitle,
+                {
+                  color: Colors.black,
+                  fontSize: isDesktop ? 60 : 32,
+                  lineHeight: isDesktop ? 75 : 40,
+                },
+              ]}
+            >
+              ARQAP
+            </Text>
+            <Text
+              style={[
+                styles.headerSubtitle,
+                {
+                  marginTop: 8,
+                  color: Colors.black,
+                  opacity: 0.65,
+                  fontSize: isDesktop ? 30 : 16,
+                  textAlign: "center",
+                },
+              ]}
+            >
+              Museo De Ciencias Naturales
+            </Text>
+          </View>
+
+          {/* Gestión Principal */}
+          {isDesktop && (
+            <Text
+              style={[
+                styles.sectionLabel,
+                {
+                  marginBottom: 16,
+                  color: Colors.black,
+                  opacity: 0.6,
+                },
+              ]}
+            >
+              Gestión Principal
+            </Text>
+          )}
+
+          <View style={{ rowGap: isDesktop ? 20 : 14, marginBottom: isDesktop ? 30 : 20 }}>
+            {/* Primera fila */}
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                columnGap: isDesktop ? 20 : 0,
+                rowGap: isDesktop ? 0 : 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <ActionCard
+                  title="Piezas Arqueológicas"
+                  description="Registrar y gestionar las piezas"
+                  icon="document-text-outline"
+                  color={Colors.lightgreen}
+                  count={artefacts.length}
+                  onPress={() =>
+                    router.push("/(tabs)/archaeological-Pieces")
+                  }
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ActionCard
+                  title="Colecciones Arqueológicas"
+                  description="Organizar por colecciones"
+                  icon="albums-outline"
+                  color={Colors.green}
+                  count={collections.length}
+                  onPress={() =>
+                    router.push("/(tabs)/collection/View_collection")
+                  }
+                />
+              </View>
+            </View>
+
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                columnGap: isDesktop ? 20 : 0,
+                rowGap: isDesktop ? 0 : 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <ActionCard
+                  title="Sitios Arqueológicos"
+                  description="Gestionar ubicaciones"
+                  icon="location-outline"
+                  color={Colors.lightgreen}
+                  count={sites.length}
+                  onPress={() =>
+                  router.push("/(tabs)/location/Location")
+                }
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ActionCard
+                  title="Arqueólogos"
+                  description="Gestionar especialistas"
+                  icon="person-outline"
+                  color={Colors.lightgreen}
+                  count={archaeologists.length}
+                  onPress={() =>
+                  router.push("/(tabs)/archaeologist/View_archaeologist")
+                }
+                />
+              </View>
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <ActionCard
+                title="Préstamos"
+                description="Gestionar préstamos activos"
+                icon="swap-horizontal-outline"
+                color={Colors.lightgreen}
+                count={activeLoans.length}
+                onPress={() =>
+                  router.push("/(tabs)/loan/View_loan")
+                }
+              />
+            </View>
+          </View>
+
+          <View style={{ marginTop: isDesktop ? 40 : 30, marginBottom: isDesktop ? 40 : 30 }}>
+            {isDesktop && (
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  {
+                    marginBottom: 16,
+                    color: Colors.black,
+                    opacity: 0.6,
+                  },
+                ]}
+              >
+                Acciones Rápidas
+              </Text>
+            )}
+            
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                columnGap: isDesktop ? 20 : 0,
+                rowGap: isDesktop ? 0 : 12,
+              }}
+            >
+              <QuickAction
+                title="Nueva Pieza"
+                icon="add-circle-outline"
+                onPress={() =>
+                  router.push("/(tabs)/archaeological-Pieces/New_piece")
+                }
+              />
+              <QuickAction
+                title="Nuevo Arqueólogo"
+                icon="person-add-outline"
+                onPress={() =>
+                  router.push("/(tabs)/archaeologist/New_archaeologist")
+                }
+              />
+              <QuickAction
+                title="Nueva Colección"
+                icon="add-circle-outline"
+                onPress={() => router.push("/(tabs)/collection/New_collection")}
+              />
+            </View>
+          </View>
+
+          {/* Botón de Cerrar Sesión */}
+          <View className="items-center mt-4 pb-8">
+            <Pressable
+              onPress={handleLogout}
+              disabled={logoutMutation.isPending}
+              className={`rounded-lg px-8 py-3 ${
+                logoutMutation.isPending ? "bg-gray-400" : "bg-[#A3473B]"
+              }`}
+              style={[
+                {
+                  paddingHorizontal: isDesktop ? 32 : 24,
+                  paddingVertical: isDesktop ? 12 : 10,
+                },
+                Platform.select({ web: { cursor: "pointer" } }),
+              ]}
+            >
+              {logoutMutation.isPending ? (
+                <View className="flex-row items-center">
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text
+                    className="text-white ml-2"
+                    style={[
+                      styles.buttonText,
+                      {
+                        fontSize: isDesktop ? 16 : 14,
+                      },
+                    ]}
+                  >
+                    Cerrando sesión...
+                  </Text>
+                </View>
+              ) : (
+                <Text
+                  className="text-white font-medium"
+                  style={[
+                    styles.buttonText,
+                    {
+                      fontSize: isDesktop ? 16 : 14,
+                    },
+                  ]}
+                >
+                  Cerrar Sesión
+                </Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  cardShadow: {
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  iconShadow: {
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  headerTitle: {
+    fontFamily: "MateSC-Regular",
+    letterSpacing: 0.6,
+    textAlign: "center",
+  },
+  headerSubtitle: {
+    fontFamily: "CrimsonText-Regular",
+  },
+  sectionLabel: {
+    fontFamily: "CrimsonText-Regular",
+    fontSize: 20,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+  },
+  titleText: {
+    fontFamily: "MateSC-Regular",
+    letterSpacing: 0.3,
+  },
+  descriptionText: {
+    fontFamily: "CrimsonText-Regular",
+  },
+  quickActionText: {
+    fontFamily: "MateSC-Regular",
+    fontWeight: "bold",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+  buttonText: {
+    fontFamily: "CrimsonText-Regular",
+  },
+});
