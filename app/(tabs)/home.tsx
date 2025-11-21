@@ -117,13 +117,13 @@ const ActionCard = ({ title, description, icon, color, count, onPress }: ActionC
             backgroundColor: color,
             width: isDesktop ? 56 : 40,
             height: isDesktop ? 56 : 40,
-            opacity: 0.15,
+            opacity: 1,
           }}
         >
           <Text
             style={{
-              color: color,
-              fontSize: isDesktop ? 18 : 14,
+              color: Colors.white,
+              fontSize: isDesktop ? 20 : 16,
               fontWeight: "bold",
               fontFamily: "MateSC-Regular",
             }}
@@ -335,7 +335,7 @@ export default function HomeScreen() {
                   title="Piezas Arqueológicas"
                   description="Registrar y gestionar las piezas"
                   icon="document-text-outline"
-                  color={Colors.lightgreen}
+                  color={Colors.green}
                   count={artefacts.length}
                   onPress={() =>
                     router.push("/(tabs)/archaeological-Pieces")
@@ -368,7 +368,7 @@ export default function HomeScreen() {
                   title="Sitios Arqueológicos"
                   description="Gestionar ubicaciones"
                   icon="location-outline"
-                  color={Colors.lightgreen}
+                  color={Colors.green}
                   count={sites.length}
                   onPress={() =>
                   router.push("/(tabs)/location/Location")
@@ -380,7 +380,7 @@ export default function HomeScreen() {
                   title="Arqueólogos"
                   description="Gestionar especialistas"
                   icon="person-outline"
-                  color={Colors.lightgreen}
+                  color={Colors.green}
                   count={archaeologists.length}
                   onPress={() =>
                   router.push("/(tabs)/archaeologist/View_archaeologist")
@@ -394,7 +394,7 @@ export default function HomeScreen() {
                 title="Préstamos"
                 description="Gestionar préstamos activos"
                 icon="swap-horizontal-outline"
-                color={Colors.lightgreen}
+                color={Colors.green}
                 count={activeLoans.length}
                 onPress={() =>
                   router.push("/(tabs)/loan/View_loan")
