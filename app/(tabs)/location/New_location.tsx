@@ -554,7 +554,6 @@ export default function New_location() {
               <Button
                 title={isCreating ? "Creando Sitio..." : "Crear Sitio Arqueológico"}
                 onPress={handleCrear}
-                disabled={isButtonDisabled}
                 style={{
                   opacity: isButtonDisabled ? 0.6 : 1,
                 }}
