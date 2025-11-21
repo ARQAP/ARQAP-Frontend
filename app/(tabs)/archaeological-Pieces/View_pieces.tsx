@@ -44,6 +44,9 @@ export default function ViewPieces() {
   // Convert shelfId from query params (string) to number before sending to the backend
   const shelfIdNum = shelfIdParam != null ? Number(shelfIdParam) : undefined;
 
+  // Si viene con shelfId, viene del DepositMap, sino de la lista normal de piezas
+  const backRoute = shelfIdNum !== undefined ? "/(tabs)/deposit" : "/(tabs)/archaeological-Pieces";
+
   const { data, isLoading, isError, refetch } = useArtefactSummaries(
     typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum)
       ? { shelfId: shelfIdNum }
@@ -1029,6 +1032,7 @@ export default function ViewPieces() {
       <Navbar
         title="Piezas arqueologicas"
         showBackArrow
+        redirectTo={backRoute}
       />
 
       {isLoading ? (
