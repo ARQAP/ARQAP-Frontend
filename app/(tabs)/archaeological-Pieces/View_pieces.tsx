@@ -20,30 +20,36 @@ import InfoRow from "../../../components/ui/InfoRow";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 
-import type { Artefact } from "@/repositories/artefactRepository";
-import { useArtefacts, useDeleteArtefact } from "../../../hooks/useArtefact";
+import type { ArtefactSummary } from "@/repositories/artefactRepository";
+import {
+  useArtefactSummaries,
+  useDeleteArtefact,
+} from "../../../hooks/useArtefact";
 
 // Tipo extendido para incluir campos adicionales que se usan en la UI
-type Piece = Artefact & {
+type Piece = ArtefactSummary & {
   site?: string;
   archaeologist?: string;
   collection?: string;
   shelf?: string;
-  level?: string;
-  column?: string;
+  levelLabel?: string;
+  columnLabel?: string;
 };
 
 export default function ViewPieces() {
   const router = useRouter();
   const params = useLocalSearchParams() as any;
+
   const shelfIdParam = params?.shelfId ?? params?.shelfid ?? params?.shelfID;
   // Convert shelfId from query params (string) to number before sending to the backend
   const shelfIdNum = shelfIdParam != null ? Number(shelfIdParam) : undefined;
-  const { data, isLoading, isError, refetch } = useArtefacts(
+
+  const { data, isLoading, isError, refetch } = useArtefactSummaries(
     typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum)
       ? { shelfId: shelfIdNum }
       : undefined
   );
+
   const deleteMutation = useDeleteArtefact();
 
   const [query, setQuery] = useState("");
@@ -58,6 +64,33 @@ export default function ViewPieces() {
 
   // Estado para el menú desplegable
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
+
+  const pieces: Piece[] = useMemo(() => {
+    const list = (data ?? []) as ArtefactSummary[];
+
+    return list.map((a) => {
+      const site = a.archaeologicalSiteName ?? undefined;
+      const archaeologist = a.archaeologistName ?? undefined;
+      const collection = a.collectionName ?? undefined;
+
+      const shelf =
+        a.shelfCode == null ? undefined : `Estantería ${String(a.shelfCode)}`;
+      const levelLabel =
+        a.level == null ? undefined : `Nivel ${String(a.level)}`;
+      const columnLabel =
+        a.column == null ? undefined : `Columna ${String(a.column)}`;
+
+      return {
+        ...a,
+        site,
+        archaeologist,
+        collection,
+        shelf,
+        levelLabel,
+        columnLabel,
+      };
+    });
+  }, [data]);
 
   const handleEdit = (id: number) => {
     setMenuVisible(null);
@@ -99,52 +132,6 @@ export default function ViewPieces() {
     );
   };
 
-  const pieces: Piece[] = useMemo(() => {
-    const list = (data ?? []) as Artefact[];
-
-    return list.map((a) => {
-      const siteName = (a as any)?.archaeologicalSite?.Name ?? undefined;
-
-      const arch = (a as any)?.archaeologist;
-      const archaeologistName =
-        arch?.name ??
-        ([arch?.firstname, arch?.lastname].filter(Boolean).join(" ") ||
-          undefined);
-
-      const collectionName = (a as any)?.collection?.name ?? undefined;
-
-      const shelfRaw = (a as any)?.physicalLocation?.shelf.code ?? undefined;
-      const levelRaw = (a as any)?.physicalLocation?.level ?? undefined;
-      const columnRaw = (a as any)?.physicalLocation?.column ?? undefined;
-
-      const shelf =
-        shelfRaw == null
-          ? undefined
-          : typeof shelfRaw === "object"
-            ? shelfRaw.code != null
-              ? `Estantería ${String(shelfRaw.code)}`
-              : undefined
-            : `Estantería ${String(shelfRaw)}`;
-
-      const level = levelRaw == null ? undefined : `Nivel ${String(levelRaw)}`;
-      const column =
-        columnRaw == null ? undefined : `Columna ${String(columnRaw)}`;
-
-      return {
-        ...a,
-        id: Number(a.id!),
-        name: a.name,
-        material: a.material,
-        site: siteName,
-        archaeologist: archaeologistName,
-        collection: collectionName,
-        shelf,
-        level,
-        column,
-      };
-    });
-  }, [data]);
-
   const filtered = useMemo(() => {
     return pieces.filter((p) => {
       // Nombre
@@ -184,7 +171,7 @@ export default function ViewPieces() {
 
       // ====== NIVEL (solo número) ======
       if (filterShelfLevel.trim() !== "") {
-        const levelText = p.level || "";
+        const levelText = p.levelLabel || "";
         const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
 
         if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
@@ -193,7 +180,7 @@ export default function ViewPieces() {
       // ====== COLUMNA (letra A-D) ======
       if (filterShelfColumn.trim() !== "") {
         const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
-        const colPieza = (p.column || "")
+        const colPieza = (p.columnLabel || "")
           .toUpperCase()
           .replace(/COLUMNA/i, "")
           .trim(); // A/B/C/D
@@ -661,12 +648,12 @@ export default function ViewPieces() {
                           textColor={Colors.cremit}
                         />
                         <Badge
-                          text={p.level || ""}
+                          text={p.levelLabel || ""}
                           background={Colors.brown}
                           textColor={Colors.cremit}
                         />
                         <Badge
-                          text={p.column || ""}
+                          text={p.columnLabel || ""}
                           background={Colors.black}
                           textColor={Colors.cremit}
                         />

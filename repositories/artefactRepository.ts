@@ -48,6 +48,18 @@ export type Artefact = {
   physicalLocation?: unknown | null;
 };
 
+export type ArtefactSummary = {
+  id: number;
+  name: string;
+  material: string;
+  archaeologicalSiteName?: string | null;
+  archaeologistName?: string | null;
+  collectionName?: string | null;
+  shelfCode?: number | null;
+  column?: string | null;
+  level?: number | null;
+};
+
 export type CreateArtefactWithMentionsPayload = {
   artefact: Artefact;
   mentions: Array<{
@@ -70,6 +82,13 @@ export const ArtefactRepository = {
   getAll: async (filters?: { shelfId?: number }) => {
     const { data } = await apiClient.get("/artefacts", { params: filters });
     return data as Artefact[];
+  },
+
+  getSummaries: async (filters?: { shelfId?: number }) => {
+    const { data } = await apiClient.get("/artefacts/summary", {
+      params: filters,
+    });
+    return data as ArtefactSummary[];
   },
 
   create: async (payload: Artefact) => {
