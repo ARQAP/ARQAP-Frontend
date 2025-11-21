@@ -7,7 +7,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-g
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Colors from "../constants/Colors"
 import DepositoSvg from "../Distribucion Deposito.svg"
-import { apiClient } from "../lib/api"
+import { useArtefacts } from "../hooks/useArtefact"
 
 type ShelfBox = { id: string; x: number; y: number; w: number; h: number; label?: string }
 
@@ -17,14 +17,14 @@ const VB_HEIGHT = 678
 
 const SHELVES: ShelfBox[] = [
   // Estantes izquierda (A y B)
-  { id: "s_120_246", x: 120, y: 246, w: 41, h: 75, label: "Estante A1" },
-  { id: "s_120_322", x: 120, y: 322, w: 41, h: 75, label: "Estante A2" },
-  { id: "s_120_398", x: 120, y: 398, w: 41, h: 75, label: "Estante A3" },
   { id: "s_120_190", x: 120, y: 171, w: 41, h: 75, label: "Estante A4" },
-  { id: "s_162_246", x: 162, y: 246, w: 41, h: 75, label: "Estante B1" },
-  { id: "s_162_322", x: 162, y: 322, w: 41, h: 75, label: "Estante B2" },
-  { id: "s_162_398", x: 162, y: 398, w: 41, h: 75, label: "Estante B3" },
-  { id: "s_162_190", x: 162, y: 171, w: 41, h: 75, label: "Estante B4" },
+  { id: "s_120_246", x: 120, y: 246, w: 41, h: 75, label: "Estante A3" },
+  { id: "s_120_322", x: 120, y: 322, w: 41, h: 75, label: "Estante A2" },
+  { id: "s_120_398", x: 120, y: 398, w: 41, h: 75, label: "Estante A1" },
+  { id: "s_162_190", x: 162, y: 171, w: 41, h: 75, label: "Estante B1" },
+  { id: "s_162_246", x: 162, y: 246, w: 41, h: 75, label: "Estante B2" },
+  { id: "s_162_322", x: 162, y: 322, w: 41, h: 75, label: "Estante B3" },
+  { id: "s_162_398", x: 162, y: 398, w: 41, h: 75, label: "Estante B4" },
 
   // Estantes centro (C y D)
   { id: "s_259_454", x: 259, y: 454, w: 41, h: 75, label: "Estante C1" },
@@ -58,13 +58,13 @@ const SHELVES: ShelfBox[] = [
 ]
 
 const SHELF_ID_MAP: Record<string, number> = {
-  s_120_246: 1,
+  s_120_398: 1,
   s_120_322: 2,
-  s_120_398: 3,
+  s_120_246: 3,
   s_120_190: 4,
-  s_162_246: 5,
+  s_162_398: 5,
   s_162_322: 6,
-  s_162_398: 7,
+  s_162_246: 7,
   s_162_190: 8,
   s_259_454: 9,
   s_259_378: 10,
@@ -74,13 +74,13 @@ const SHELF_ID_MAP: Record<string, number> = {
   s_301_378: 14,
   s_301_302: 15,
   s_301_226: 16,
-  s_399_315: 17,
+  s_399_467: 17,
   s_399_391: 18,
-  s_399_467: 19,
+  s_399_315: 19,
   s_399_240: 20,
-  s_441_315: 21,
+  s_441_467: 21,
   s_441_391: 22,
-  s_441_467: 23,
+  s_441_315: 23,
   s_441_240: 24,
   s_121_92: 25,
   s_259_92: 26,
@@ -95,14 +95,18 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const insets = useSafeAreaInsets()
 
   const [selected, setSelected] = useState<ShelfBox | null>(null)
-  const [items, setItems] = useState<any[] | null>(null)
-  const [loading, setLoading] = useState(false)
   const [hoveredShelf, setHoveredShelf] = useState<string | null>(null)
   const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 })
   const [windowWidth, setWindowWidth] = useState(Dimensions.get("window").width)
   const [mtSelection, setMtSelection] = useState<{ mesa: ShelfBox; shelves: ShelfBox[] } | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
   const [showMobilePanel, setShowMobilePanel] = useState(false)
+
+  // Tanstack Query para obtener artefactos del estante seleccionado
+  const selectedShelfId = selected ? SHELF_ID_MAP[selected.id] : undefined
+  const { data: items, isLoading: loading, refetch } = useArtefacts(
+    selectedShelfId ? { shelfId: selectedShelfId } : undefined
+  )
 
   // Para pinch-to-zoom
   const savedScale = useRef(1)
@@ -113,29 +117,6 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
   const isLargeDesktop = windowWidth >= 1440
 
   const sidePanelWidth = isLargeDesktop ? 360 : isDesktop ? 380 : 420
-
-  const fetchItemsForShelf = useCallback(async (shelf: ShelfBox) => {
-    try {
-      setLoading(true)
-      const shelfId = SHELF_ID_MAP[shelf.id]
-
-      if (!shelfId) {
-        console.warn(`No shelf ID mapping found for ${shelf.id}. Please update SHELF_ID_MAP.`)
-        setItems([])
-        return
-      }
-
-      const res = await apiClient.get(`/artefacts?shelfId=${shelfId}`)
-      const artefacts: any[] = res.data || []
-
-      setItems(artefacts)
-    } catch (err) {
-      console.warn("Error fetching artefacts", err)
-      setItems([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   const onShelfPress = useCallback(
     (shelf: ShelfBox) => {
@@ -154,17 +135,16 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
         setMtSelection({ mesa: shelf, shelves: associatedShelves })
       } else {
         setSelected(shelf)
-        fetchItemsForShelf(shelf)
         if (isMobile || isTablet) {
           setShowMobilePanel(true)
         }
       }
     },
-    [fetchItemsForShelf, isMobile, isTablet],
+    [isMobile, isTablet],
   )
 
   const details = useMemo(() => {
-    if (!items) return null
+    if (!items || !Array.isArray(items)) return null
     const count = items.length
     const collections = Array.from(
       new Set(items.map((i: any) => (i.collection && (i.collection.name || i.collection)) || null).filter(Boolean)),
@@ -374,29 +354,31 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                 </Text>
               </Pressable>
 
-              <Pressable
-                className="flex-row items-center justify-center gap-2 bg-white border-2 border-[#D9C6A5] py-3.5 rounded-xl shadow-md active:scale-[0.98] active:bg-[#E2D1B2]"
-                onPress={() => {
-                  if (!selected) return
-                  const shelfId = SHELF_ID_MAP[selected.id]
-                  const params: any = {}
-                  if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId)
-                  if (selected.label) params.shelfLabel = selected.label
-                  
-                  if (isMobile || isTablet) {
-                    setShowMobilePanel(false)
-                  }
-                  
-                  // Transición slide desde abajo
-                  router.push({
-                    pathname: "/(tabs)/archaeological-Pieces/shelf-detail",
-                    params,
-                  })
-                }}
-              >
-                <Ionicons name="document-text-outline" size={18} color={Colors.darkgreen} />
-                <Text className="text-[#4A5D23] text-sm font-extrabold">Detalle de estantería</Text>
-              </Pressable>
+              {!selected.label?.includes("Mesa MT-") && (
+                <Pressable
+                  className="flex-row items-center justify-center gap-2 bg-white border-2 border-[#D9C6A5] py-3.5 rounded-xl shadow-md active:scale-[0.98] active:bg-[#E2D1B2]"
+                  onPress={() => {
+                    if (!selected) return
+                    const shelfId = SHELF_ID_MAP[selected.id]
+                    const params: any = {}
+                    if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId)
+                    if (selected.label) params.shelfLabel = selected.label
+                    
+                    if (isMobile || isTablet) {
+                      setShowMobilePanel(false)
+                    }
+                    
+                    // Transición slide desde abajo
+                    router.push({
+                      pathname: "/(tabs)/archaeological-Pieces/shelf-detail",
+                      params,
+                    })
+                  }}
+                >
+                  <Ionicons name="document-text-outline" size={18} color={Colors.darkgreen} />
+                  <Text className="text-[#4A5D23] text-sm font-extrabold">Detalle de estantería</Text>
+                </Pressable>
+              )}
             </View>
           </>
         ) : null}
@@ -722,7 +704,6 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                   onPress={() => {
                     if (mtSelection?.mesa) {
                       setSelected(mtSelection.mesa)
-                      fetchItemsForShelf(mtSelection.mesa)
                       setMtSelection(null)
                       if (isMobile || isTablet) {
                         setShowMobilePanel(true)
@@ -742,7 +723,6 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                     className="flex-row items-center gap-3.5 bg-[#A68B5B] py-5 px-5 rounded-2xl border-2 border-[#8B5E3C] shadow-lg active:scale-[0.97]"
                     onPress={() => {
                       setSelected(shelf)
-                      fetchItemsForShelf(shelf)
                       setMtSelection(null)
                       if (isMobile || isTablet) {
                         setShowMobilePanel(true)

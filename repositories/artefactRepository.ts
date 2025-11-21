@@ -85,7 +85,7 @@ export const ArtefactRepository = {
   },
 
   getSummaries: async (filters?: { shelfId?: number }) => {
-    const { data } = await apiClient.get("/artefacts/summaries", {
+    const { data } = await apiClient.get("/artefacts/summary", {
       params: filters,
     });
     return data as ArtefactSummary[];

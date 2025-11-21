@@ -32,8 +32,8 @@ type Piece = ArtefactSummary & {
   archaeologist?: string;
   collection?: string;
   shelf?: string;
-  level?: string;
-  column?: string;
+  levelLabel?: string;
+  columnLabel?: string;
 };
 
 export default function ViewPieces() {
@@ -84,8 +84,8 @@ export default function ViewPieces() {
 
       const shelf =
         a.shelfCode == null ? undefined : `Estantería ${String(a.shelfCode)}`;
-      const level = a.level == null ? undefined : `Nivel ${String(a.level)}`;
-      const column = a.column == null ? undefined : `Columna ${String(a.column)}`;
+      const levelLabel = a.level == null ? undefined : `Nivel ${String(a.level)}`;
+      const columnLabel = a.column == null ? undefined : `Columna ${String(a.column)}`;
 
       return {
         ...a,
@@ -93,8 +93,8 @@ export default function ViewPieces() {
         archaeologist,
         collection,
         shelf,
-        level,
-        column,
+        levelLabel,
+        columnLabel,
       };
     });
   }, [data]);
@@ -178,7 +178,7 @@ export default function ViewPieces() {
 
       // ====== NIVEL (solo número) ======
       if (filterShelfLevel.trim() !== "") {
-        const levelText = p.level || "";
+        const levelText = p.levelLabel || "";
         const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
 
         if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
@@ -187,7 +187,7 @@ export default function ViewPieces() {
       // ====== COLUMNA (letra A-D) ======
       if (filterShelfColumn.trim() !== "") {
         const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
-        const colPieza = (p.column || "")
+        const colPieza = (p.columnLabel || "")
           .toUpperCase()
           .replace(/COLUMNA/i, "")
           .trim(); // A/B/C/D
@@ -488,12 +488,12 @@ export default function ViewPieces() {
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.level || ""}
+                    text={p.levelLabel || ""}
                     background={Colors.brown}
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.column || ""}
+                    text={p.columnLabel || ""}
                     background={Colors.black}
                     textColor={Colors.cremit}
                   />
@@ -865,12 +865,12 @@ export default function ViewPieces() {
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.level || ""}
+                    text={p.levelLabel || ""}
                     background={Colors.brown}
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.column || ""}
+                    text={p.columnLabel || ""}
                     background={Colors.black}
                     textColor={Colors.cremit}
                   />
@@ -1029,7 +1029,6 @@ export default function ViewPieces() {
       <Navbar
         title="Piezas arqueologicas"
         showBackArrow
-        redirectTo="/(tabs)/home"
       />
 
       {isLoading ? (
