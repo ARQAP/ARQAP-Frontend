@@ -9,8 +9,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    useWindowDimensions,
     View,
+    KeyboardAvoidingView,
 } from "react-native";
 import Button from "../../../components/ui/Button";
 import SimplePickerModal from '../../../components/ui/SimpleModal';
@@ -24,26 +24,15 @@ import { ArchaeologicalSite } from "../../../repositories/archaeologicalsiteRepo
 import { Country } from "../../../repositories/countryRepository";
 import { Region } from "../../../repositories/regionRepository";
 
-// Define un tipo para las posiciones de los inputs (se mantiene igual)
-interface InputPosition {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-
 export default function New_location() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { width } = useWindowDimensions();
 
   // --- 2. ESTADO DE LOS DATOS A CREAR ---
   const [nombre, setNombre] = useState("");
   const [ubicacion, setUbicacion] = useState("");
   const [descripcion, setDescripcion] = useState("");
   
-  // Guardamos el nombre y el ID seleccionado para la mutación
   const [regionSearch, setRegionSearch] = useState("");
   const [selectedRegionId, setSelectedRegionId] = useState<number | undefined>(undefined);
   const [paisSearch, setPaisSearch] = useState("");
@@ -52,7 +41,6 @@ export default function New_location() {
   // Estados de UI
   const [showRegionSuggestions, setShowRegionSuggestions] = useState(false);
   const [showPaisSuggestions, setShowPaisSuggestions] = useState(false);
-  // not needed with modal picker
   
   // --- 3. CONEXIÓN CON LOS HOOKS DE LECTURA (Regiones y Países) ---
   const { data: allRegions = [], isLoading: regionsLoading } = useAllRegions();
@@ -61,14 +49,11 @@ export default function New_location() {
   // HOOK DE MUTACIÓN (Sitio Arqueológico)
   const { mutate, isPending: isCreating } = useCreateArchaeologicalSite();
 
-
   // --- 4. LÓGICA DE SELECCIÓN Y BÚSQUEDA ---
 
-  // Si venimos de crear/editar país/región, recuperar los valores previos pasados por params
   useEffect(() => {
     if (!params) return;
     const p: any = params;
-    // Los params pueden venir como array o string
     const getVal = (key: string) => {
       const v = p[key];
       if (Array.isArray(v)) return v[0];
@@ -91,23 +76,14 @@ export default function New_location() {
     if (paisSearchParam) setPaisSearch(String(paisSearchParam));
     if (selectedCountryIdParam) setSelectedCountryId(Number(selectedCountryIdParam));
   }, [params]);
-  const handleRegionSearchChange = (text: string) => {
-    setRegionSearch(text);
-    // Limpiamos el ID seleccionado si el usuario empieza a escribir
-    setSelectedRegionId(undefined); 
-    setShowRegionSuggestions(text.length > 0);
-  };
 
   const handleRegionSuggestionSelect = (region: Region) => {
-    // Si ya hay un país seleccionado, verificar que coincidan
     const regionCountryId = (region as any).countryId ?? (region as any).country?.id;
     if (selectedCountryId && regionCountryId && Number(selectedCountryId) !== Number(regionCountryId)) {
-      const message = `La región '${region.name}' pertenece a otro país. Desea cambiar el país seleccionado a la región seleccionada?`;
-      // web confirm
+      const message = `La región '${region.name}' pertenece a otro país. ¿Desea cambiar el país seleccionado?`;
       if (Platform.OS === 'web') {
         const ok = window.confirm(message);
         if (!ok) return;
-        // cambiar el país automáticamente
         const countryFromRegion = (region as any).country;
         if (countryFromRegion) {
           setPaisSearch(countryFromRegion.name);
@@ -120,7 +96,6 @@ export default function New_location() {
           }
         }
       } else {
-        // native alert with options
         Alert.alert(
           'País diferente',
           message,
@@ -141,15 +116,12 @@ export default function New_location() {
             }}
           ]
         );
-        // If user cancels, don't select region now
-        // We'll return here and wait for user's choice. The Alert callback handles change.
         return;
       }
     }
 
-    // Finalmente, seleccionar la región
     setRegionSearch(region.name);
-    setSelectedRegionId(region.id); // Guardamos el ID real para la mutación
+    setSelectedRegionId(region.id);
     setShowRegionSuggestions(false);
   };
 
@@ -163,14 +135,13 @@ export default function New_location() {
     setPaisSearch(text);
     setSelectedCountryId(undefined);
     setShowPaisSuggestions(text.length > 0);
-    // Si el usuario modifica manualmente el país, limpiar la región seleccionada (posible inconsistencia)
     setSelectedRegionId(undefined);
     setRegionSearch('');
   };
 
   const handlePaisSuggestionSelect = (country: Country) => {
     setPaisSearch(country.name);
-    setSelectedCountryId(country.id); // Guardamos el ID real
+    setSelectedCountryId(country.id);
     setShowPaisSuggestions(false);
   };
 
@@ -180,26 +151,6 @@ export default function New_location() {
     setShowPaisSuggestions(false);
   };
 
-  // Filtramos la data real de la API
-  const regionSuggestions =
-    regionSearch.length > 0
-      ? allRegions
-          .filter((region: Region) =>
-            region.name.toLowerCase().includes(regionSearch.toLowerCase())
-          )
-          .slice(0, 5)
-      : [];
-
-  const paisSuggestions =
-    paisSearch.length > 0
-      ? allCountries
-          .filter((country: Country) =>
-            country.name.toLowerCase().includes(paisSearch.toLowerCase())
-          )
-          .slice(0, 5)
-      : [];
-
-  // Items para el modal de regiones — si hay un país seleccionado, filtrar por countryId
   const regionItems = (selectedCountryId
     ? allRegions.filter(r => ((r as any).countryId ?? (r as any).country?.id) === Number(selectedCountryId))
     : allRegions
@@ -213,26 +164,19 @@ export default function New_location() {
     if (!selectedRegionId) {
         return Alert.alert("Error", "Debe seleccionar o buscar una Región válida.");
     }
-    // NOTA: Tu modelo de ArchaeologicalSite no tiene countryId, solo regionId. 
-    // Si tu modelo real lo necesita, el tipo SiteType debe actualizarse en el repositorio.
-    // Usaremos solo regionId por ahora, asumiendo que el campo 'País' en la UI es informativo o debe ser un input extra en el modelo.
     
-    // El payload debe coincidir con el tipo ArchaeologicalSite para la mutación
     const newSite: ArchaeologicalSite = {
       Name: nombre.trim(),
       Description: descripcion.trim(),
       Location: ubicacion.trim(),
       regionId: selectedRegionId,
-      // La mutación NO debe enviar el objeto 'region' completo, solo la clave foránea.
-      // Aquí estamos forzando el tipo para que TypeScript no se queje, pero en producción,
-      // el tipo ArchaeologicalSite solo debería tener regionId para la mutación.
       region: {} as Region, 
     };
 
     mutate(newSite, {
       onSuccess: () => {
         Alert.alert("Éxito", "Sitio Arqueológico creado correctamente.");
-        router.push("/(tabs)/location/Location"); // Navegar de vuelta a la lista
+        router.push("/(tabs)/location/Location");
       },
       onError: (e) => {
         Alert.alert("Error", `Fallo al crear el sitio: ${e.message}`);
@@ -244,182 +188,401 @@ export default function New_location() {
     router.push("/(tabs)/location/Location");
   };
 
+  const isButtonDisabled = isCreating || !nombre.trim() || !ubicacion.trim() || !descripcion.trim() || !selectedRegionId;
+
   return (
-    <ScrollView
-      className="flex-1 bg-[#F3E9DD]"
-      contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
-    >
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
       <Navbar
         title="Nuevo Sitio Arqueológico"
         showBackArrow
         backToHome={false}
         redirectTo="/(tabs)/location/Location"
       />
-      <View className="w-[90%] max-w-[500px] items-center self-center">
-        {/* ... (Nombre, Ubicación, Descripción inputs, JSX sin cambios) ... */}
-        <Text
-          className="text-center text-[18px] mt-3 mb-2 text-[#222]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
         >
-          Ingrese los datos del nuevo sitio arqueológico
-        </Text>
-        <View className="flex-row w-[98%] gap-2 mb-2">
-          <View className="flex-1">
-            <Text
-              className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-              style={{ fontFamily: "MateSC-Regular" }}
-            >
-              Nombre
-            </Text>
-            <TextInput
-              className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
-              style={{ fontFamily: "MateSC-Regular" }}
-              placeholder="Nombre"
-              value={nombre}
-              onChangeText={setNombre}
-              placeholderTextColor="#A68B5B"
-              selectionColor="#8B5E3C"
-            />
-            <Text
-              className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-              style={{ fontFamily: "MateSC-Regular" }}
-            >
-              Ubicación
-            </Text>
-            <TextInput
-              className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
-              style={{ fontFamily: "MateSC-Regular" }}
-              placeholder="Ubicación"
-              value={ubicacion}
-              onChangeText={setUbicacion}
-              placeholderTextColor="#A68B5B"
-              selectionColor="#8B5E3C"
-            />
-          </View>
-        </View>
-        <View className="mb-2 w-[98%] self-center">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
+            }}
           >
-            Descripción
-          </Text>
-          <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
-            style={{ fontFamily: "MateSC-Regular", textAlignVertical: "top" }}
-            placeholder="Descripción detallada del sitio"
-            value={descripcion}
-            onChangeText={setDescripcion}
-            placeholderTextColor="#A68B5B"
-            selectionColor="#8B5E3C"
-            multiline
-            numberOfLines={4}
-          />
-        </View>
-
-        {/* --- INPUT DE PAÍS (Con indicador de carga) --- */}
-        <View className="mb-2 w-[98%] self-center relative">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            Asociar Pieza a un País {countriesLoading && <ActivityIndicator size="small" color="#A68B5B" />}
-          </Text>
-          <View>
-            <TouchableOpacity
-              onPress={() => setShowPaisSuggestions(true)}
-              style={{ borderWidth: 2, borderColor: '#A67C52', borderRadius: 8, padding: 12, backgroundColor: '#F7F5F2' }}
-            >
-              <Text style={{ fontFamily: 'MateSC-Regular', color: '#3d2c13' }}>{paisSearch || 'Buscar o seleccionar país'}</Text>
-            </TouchableOpacity>
-            {paisSearch.length > 0 && (
-              <TouchableOpacity
-                className="absolute right-3 top-2 p-1"
-                onPress={handleClearPaisSearch}
-              >
-                <Ionicons name="close-outline" size={20} color="#A68B5B" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <TouchableOpacity
-            className="p-2 flex-row items-center justify-end"
-            onPress={() => router.push({ pathname: "/(tabs)/location/New_Country", params: { nombre, ubicacion, descripcion, regionSearch, selectedRegionId: selectedRegionId ? String(selectedRegionId) : undefined, paisSearch, selectedCountryId: selectedCountryId ? String(selectedCountryId) : undefined } })}
-          >
-            <Text
-              className="text-[#A68B5B] mr-1"
-              style={{ fontFamily: "MateSC-Regular" }}
-            >
-              Crear nuevo País
-            </Text>
-            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
-          </TouchableOpacity>
-        </View>
-
-        {/* --- INPUT DE REGIÓN (Con indicador de carga) --- */}
-        <View className="mb-2 w-[98%] self-center relative">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            Asociar Pieza a una región {regionsLoading && <ActivityIndicator size="small" color="#A68B5B" />}
-          </Text>
-          <View>
-            {/* Si no hay país seleccionado, impedir abrir el selector y mostrar ayuda */}
-            <TouchableOpacity
-              onPress={() => {
-                if (!selectedCountryId) {
-                  Alert.alert('Seleccione un país', 'Primero seleccione un país para ver sus regiones.');
-                  return;
-                }
-                setShowRegionSuggestions(true);
+            {/* Encabezado */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
               }}
-              style={{ borderWidth: 2, borderColor: '#A67C52', borderRadius: 8, padding: 12, backgroundColor: '#F7F5F2', opacity: selectedCountryId ? 1 : 0.7 }}
             >
-              <Text style={{ fontFamily: 'MateSC-Regular', color: '#3d2c13' }}>{regionSearch || (selectedCountryId ? 'Buscar o seleccionar región' : 'Seleccione un país primero')}</Text>
-            </TouchableOpacity>
-            {regionSearch.length > 0 && (
-              <TouchableOpacity
-                className="absolute right-3 top-2 p-1"
-                onPress={handleClearRegionSearch}
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
               >
-                <Ionicons name="close-outline" size={20} color="#A68B5B" />
-              </TouchableOpacity>
-            )}
-          </View>
+                Nuevo Sitio Arqueológico
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Ingrese los datos del nuevo sitio arqueológico
+              </Text>
+            </View>
 
-          <TouchableOpacity
-            className="p-2 flex-row items-center justify-end"
-            onPress={() => router.push({ pathname: "/(tabs)/location/New_Region", params: { nombre, ubicacion, descripcion, regionSearch, selectedRegionId: selectedRegionId ? String(selectedRegionId) : undefined, paisSearch, selectedCountryId: selectedCountryId ? String(selectedCountryId) : undefined } })}
-          >
-            <Text
-              className="text-[#A68B5B] mr-1"
-              style={{ fontFamily: "MateSC-Regular" }}
+            {/* Formulario */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
             >
-              Crear nueva Región
-            </Text>
-            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
-          </TouchableOpacity>
-        </View>
+              {/* Campo Nombre */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Nombre *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Nombre del sitio"
+                  value={nombre}
+                  onChangeText={setNombre}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                />
+              </View>
 
-        {/* --- BOTONES DE ACCIÓN (Con estado de carga de mutación) --- */}
-        <Button
-          title={isCreating ? "Creando Sitio..." : "Crear Sitio Arqueológico"}
-          onPress={handleCrear}
-          className="w-[98%] self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
-          textClassName="text-[16px] font-bold text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-        <Button
-          title="Cancelar"
-          onPress={handleCancelar}
-          className="w-[98%] self-center bg-[#D9C6A5] rounded-lg py-3 items-center"
-          textClassName="text-[16px] text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-      </View>
+              {/* Campo Ubicación */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Ubicación *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Ubicación geográfica"
+                  value={ubicacion}
+                  onChangeText={setUbicacion}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                />
+              </View>
 
-      {/* --- Modal pickers para Región y País (reemplazan overlays) --- */}
+              {/* Campo Descripción */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Descripción *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                    minHeight: 120,
+                    textAlignVertical: "top",
+                  }}
+                  placeholder="Descripción detallada del sitio"
+                  value={descripcion}
+                  onChangeText={setDescripcion}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              {/* Campo País */}
+              <View style={{ marginBottom: 24 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Text
+                    style={{
+                      fontFamily: "MateSC-Regular",
+                      fontSize: 15,
+                      color: "#8B5E3C",
+                      fontWeight: "600",
+                      flex: 1,
+                    }}
+                  >
+                    País *
+                  </Text>
+                  {countriesLoading && <ActivityIndicator size="small" color="#8B5E3C" />}
+                </View>
+                
+                <TouchableOpacity
+                  onPress={() => setShowPaisSuggestions(true)}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 16,
+                      color: paisSearch ? "#4A3725" : "#B8967D",
+                      flex: 1,
+                    }}
+                  >
+                    {paisSearch || 'Seleccionar país'}
+                  </Text>
+                  {paisSearch && (
+                    <TouchableOpacity
+                      onPress={handleClearPaisSearch}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="close-outline" size={20} color="#8B5E3C" />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    marginTop: 8,
+                  }}
+                  onPress={() => router.push({ 
+                    pathname: "/(tabs)/location/New_Country", 
+                    params: { 
+                      nombre, 
+                      ubicacion, 
+                      descripcion, 
+                      regionSearch, 
+                      selectedRegionId: selectedRegionId ? String(selectedRegionId) : undefined, 
+                      paisSearch, 
+                      selectedCountryId: selectedCountryId ? String(selectedCountryId) : undefined 
+                    } 
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 14,
+                      color: "#8B5E3C",
+                      marginRight: 4,
+                    }}
+                  >
+                    Crear nuevo País
+                  </Text>
+                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Campo Región */}
+              <View style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Text
+                    style={{
+                      fontFamily: "MateSC-Regular",
+                      fontSize: 15,
+                      color: "#8B5E3C",
+                      fontWeight: "600",
+                      flex: 1,
+                    }}
+                  >
+                    Región *
+                  </Text>
+                  {regionsLoading && <ActivityIndicator size="small" color="#8B5E3C" />}
+                </View>
+                
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!selectedCountryId) {
+                      Alert.alert('Seleccione un país', 'Primero seleccione un país para ver sus regiones.');
+                      return;
+                    }
+                    setShowRegionSuggestions(true);
+                  }}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    opacity: selectedCountryId ? 1 : 0.6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 16,
+                      color: regionSearch ? "#4A3725" : "#B8967D",
+                      flex: 1,
+                    }}
+                  >
+                    {regionSearch || (selectedCountryId ? 'Seleccionar región' : 'Seleccione un país primero')}
+                  </Text>
+                  {regionSearch && (
+                    <TouchableOpacity
+                      onPress={handleClearRegionSearch}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="close-outline" size={20} color="#8B5E3C" />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    marginTop: 8,
+                  }}
+                  onPress={() => router.push({ 
+                    pathname: "/(tabs)/location/New_Region", 
+                    params: { 
+                      nombre, 
+                      ubicacion, 
+                      descripcion, 
+                      regionSearch, 
+                      selectedRegionId: selectedRegionId ? String(selectedRegionId) : undefined, 
+                      paisSearch, 
+                      selectedCountryId: selectedCountryId ? String(selectedCountryId) : undefined 
+                    } 
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 14,
+                      color: "#8B5E3C",
+                      marginRight: 4,
+                    }}
+                  >
+                    Crear nueva Región
+                  </Text>
+                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={isCreating ? "Creando Sitio..." : "Crear Sitio Arqueológico"}
+                onPress={handleCrear}
+                disabled={isButtonDisabled}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+              
+              <Button
+                title="Cancelar"
+                onPress={handleCancelar}
+                style={{
+                  backgroundColor: "#E5D4C1",
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Modal pickers */}
       <SimplePickerModal
         visible={showRegionSuggestions}
         title="Seleccionar Región"
@@ -445,6 +608,6 @@ export default function New_location() {
         }}
         onClose={() => setShowPaisSuggestions(false)}
       />
-    </ScrollView>
+    </View>
   );
 }
