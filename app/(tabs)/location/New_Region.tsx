@@ -1,6 +1,17 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
@@ -8,12 +19,26 @@ import Navbar from "../Navbar";
 import SimplePickerModal, { SimplePickerItem } from '../../../components/ui/SimpleModal';
 import { useAllCountries } from "../../../hooks/useCountry";
 import { useCreateRegion } from "../../../hooks/useRegion";
-import { Country } from "../../../repositories/countryRepository"; // Para tipar los países
+import { Country } from "../../../repositories/countryRepository";
 import { CreateRegionPayload } from "../../../repositories/regionRepository";
 
 export default function New_Region() {
   const router = useRouter();
   const params = useLocalSearchParams();
+
+  // ESTADO DE LA REGIÓN
+  const [regionName, setRegionName] = useState("");
+  
+  // ESTADO DEL PAÍS ASOCIADO
+  const [countrySearch, setCountrySearch] = useState("");
+  const [selectedCountryId, setSelectedCountryId] = useState<number | undefined>(undefined);
+  const [selectedCountryName, setSelectedCountryName] = useState<string>("");
+  const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+  
+  // --- Conexión con Hooks ---
+  const { mutate, isPending: isCreating } = useCreateRegion();
+  const { data: allCountries = [], isLoading: isCountriesLoading } = useAllCountries();
 
   // Si venimos desde New_location con un país seleccionado, pre-seleccionarlo
   useEffect(() => {
@@ -37,25 +62,10 @@ export default function New_Region() {
       setCountrySearch(String(paisSearchParam));
     }
   }, [params]);
-  
-  // ESTADO DE LA REGIÓN
-  const [regionName, setRegionName] = useState("");
-  
-  // ESTADO DEL PAÍS ASOCIADO
-  const [countrySearch, setCountrySearch] = useState("");
-  const [selectedCountryId, setSelectedCountryId] = useState<number | undefined>(undefined);
-  const [selectedCountryName, setSelectedCountryName] = useState<string>("");
-  const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
-  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
-  
-  // --- Conexión con Hooks ---
-  const { mutate, isPending: isCreating } = useCreateRegion();
-  const { data: allCountries = [], isLoading: isCountriesLoading } = useAllCountries();
 
   // --- Lógica de Búsqueda de País ---
   const handleCountrySearchChange = (text: string) => {
     setCountrySearch(text);
-    // Limpiamos la selección si el usuario empieza a escribir de nuevo
     setSelectedCountryId(undefined);
     setSelectedCountryName("");
     setShowCountrySuggestions(text.length > 0);
@@ -65,6 +75,13 @@ export default function New_Region() {
     setSelectedCountryId(country.id);
     setSelectedCountryName(country.name);
     setCountrySearch(country.name);
+    setShowCountrySuggestions(false);
+  };
+
+  const handleClearCountrySearch = () => {
+    setCountrySearch("");
+    setSelectedCountryId(undefined);
+    setSelectedCountryName("");
     setShowCountrySuggestions(false);
   };
 
@@ -92,13 +109,11 @@ export default function New_Region() {
       return Alert.alert("Error", "Debe seleccionar un País para asociar la región.");
     }
 
-    // --- 2. Crear la Carga Útil (Payload) ---
     const newRegionPayload: CreateRegionPayload = {
       name: trimmedName,
-      countryId: selectedCountryId, // ¡Ahora enviamos el ID!
+      countryId: selectedCountryId,
     };
 
-    // --- 3. Ejecutar la Mutación ---
     mutate(newRegionPayload, {
       onSuccess: (createdRegion: any) => {
         const createdId = createdRegion?.id;
@@ -126,98 +141,223 @@ export default function New_Region() {
 
   const handleCancelar = () => {
     const p: any = params ?? {};
-    router.push({ pathname: "/(tabs)/location/New_location", params: {
-      nombre: p.nombre,
-      ubicacion: p.ubicacion,
-      descripcion: p.descripcion,
-      regionSearch: p.regionSearch,
-      selectedRegionId: p.selectedRegionId,
-      paisSearch: p.paisSearch,
-      selectedCountryId: p.selectedCountryId,
-    }});
+    router.push({ 
+      pathname: "/(tabs)/location/New_location", 
+      params: {
+        nombre: p.nombre,
+        ubicacion: p.ubicacion,
+        descripcion: p.descripcion,
+        regionSearch: p.regionSearch,
+        selectedRegionId: p.selectedRegionId,
+        paisSearch: p.paisSearch,
+        selectedCountryId: p.selectedCountryId,
+      }
+    });
   };
 
+  const isButtonDisabled = isCreating || !regionName.trim() || !selectedCountryId;
+
   return (
-    <View className="flex-1 bg-[#F7F0E6] items-center px-0">
-      <View className="w-full">
-        <Navbar
-          title="Alta de Región"
-          showBackArrow
-          backToHome={false}
-          redirectTo="/(tabs)/location/New_location"
-        />
-      </View>
-      <View className="w-full max-w-[500px] items-center self-center px-4">
-        {/* ... (Título del formulario) ... */}
-        <Text
-          className="text-center text-lg mt-3 mb-2 text-[#222]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
-        >
-          Ingrese los datos de la nueva región
-        </Text>
-        
-        {/* --- INPUT NOMBRE DE LA REGIÓN --- */}
-        <View className="mb-4 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            Nombre de la Región
-          </Text>
-          <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base w-full placeholder:text-[#A68B5B]"
-            placeholder="Ingrese el nombre"
-            value={regionName}
-            onChangeText={setRegionName}
-            style={{ fontFamily: "CrimsonText-Regular" }}
-            editable={!isCreating}
-          />
-        </View>
-
-        {/* --- INPUT Y BÚSQUEDA DE PAÍS (Implementando useAllCountries) --- */}
-        <View className="mb-6 w-full relative">
-            <Text
-                className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-                style={{ fontFamily: "MateSC-Regular" }}
-            >
-                Asociar a País {isCountriesLoading && <ActivityIndicator size="small" color="#A68B5B" />}
-            </Text>
-      {/* Reemplazamos el TextInput + sugerencias por un selector modal */}
-      <TouchableOpacity
-        onPress={() => setCountryPickerOpen(true)}
-        style={{ borderWidth: 2, borderColor: '#A67C52', borderRadius: 8, padding: 12, backgroundColor: '#F7F5F2' }}
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+      <Navbar
+        title="Nueva Región"
+        showBackArrow
+        backToHome={false}
+        redirectTo="/(tabs)/location/New_location"
+      />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <Text style={{ fontFamily: 'CrimsonText-Regular' }}>
-          {selectedCountryId ? `País: ${selectedCountryName}` : 'Buscar o seleccionar un País'}
-        </Text>
-      </TouchableOpacity>
-      {selectedCountryId !== undefined && (
-        <Text className="text-[14px] text-[#3d2c13] mt-2" style={{ fontFamily: "CrimsonText-Regular" }}>
-          País Seleccionado: <Text className="font-bold">{selectedCountryName}</Text>
-        </Text>
-      )}
-        </View>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
+            }}
+          >
+            {/* Encabezado */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Nueva Región
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Ingrese los datos de la nueva región
+              </Text>
+            </View>
 
-        {/* --- Botones --- */}
-        <Button
-          title={isCreating ? "Creando..." : "Crear Región"}
-          onPress={handleCrear}
-          className="w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
-          textClassName="text-base font-bold text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-        <Button
-          title="Cancelar"
-          onPress={handleCancelar}
-          className="w-full self-center bg-[#D9C6A5] rounded-lg py-3 items-center"
-          textClassName="text-base text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-      </View>
+            {/* Formulario */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              {/* Campo Nombre de la Región */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Nombre de la Región *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Nombre de la región"
+                  value={regionName}
+                  onChangeText={setRegionName}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  editable={!isCreating}
+                />
+              </View>
+
+              {/* Campo País Asociado */}
+              <View style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Text
+                    style={{
+                      fontFamily: "MateSC-Regular",
+                      fontSize: 15,
+                      color: "#8B5E3C",
+                      fontWeight: "600",
+                      flex: 1,
+                    }}
+                  >
+                    Asociar a País *
+                  </Text>
+                  {isCountriesLoading && <ActivityIndicator size="small" color="#8B5E3C" />}
+                </View>
+                
+                <TouchableOpacity
+                  onPress={() => setCountryPickerOpen(true)}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 16,
+                      color: selectedCountryName ? "#4A3725" : "#B8967D",
+                      flex: 1,
+                    }}
+                  >
+                    {selectedCountryName || 'Seleccionar país'}
+                  </Text>
+                  {selectedCountryName && (
+                    <TouchableOpacity
+                      onPress={handleClearCountrySearch}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="close-outline" size={20} color="#8B5E3C" />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={isCreating ? "Creando Región..." : "Crear Región"}
+                onPress={handleCrear}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+              
+              <Button
+                title="Cancelar"
+                onPress={handleCancelar}
+                style={{
+                  backgroundColor: "#E5D4C1",
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
       {/* Modal de selección de País */}
       <SimplePickerModal
         visible={countryPickerOpen}
-        title="Seleccionar país"
+        title="Seleccionar País"
         items={countryItems}
         selectedValue={selectedCountryId ?? null}
         onSelect={(value) => {
