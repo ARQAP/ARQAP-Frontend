@@ -41,11 +41,26 @@ export default function ViewPieces() {
   const params = useLocalSearchParams() as any;
 
   const shelfIdParam = params?.shelfId ?? params?.shelfid ?? params?.shelfID;
-  // Convert shelfId from query params (string) to number before sending to the backend
   const shelfIdNum = shelfIdParam != null ? Number(shelfIdParam) : undefined;
 
-  // Si viene con shelfId, viene del DepositMap, sino de la lista normal de piezas
-  const backRoute = shelfIdNum !== undefined ? "/(tabs)/archaeological-Pieces/deposit-map" : "/(tabs)/archaeological-Pieces";
+  const hasShelfId = typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum);
+  const hasLevel = params?.level != null;
+  const hasColumn = params?.column != null;
+
+  // opcional: si te pasan el label desde la screen anterior
+  const rawShelfLabel =
+    (params?.shelfLabel as string | undefined) ??
+    (hasShelfId ? `Estante ${shelfIdNum}` : undefined);
+
+  // 👇 NUEVO: solo usamos backRoute cuando NO venimos con level+column
+  const shouldUseExplicitBackRoute = !(hasShelfId && hasLevel && hasColumn);
+
+  const backRoute = !shouldUseExplicitBackRoute
+    ? undefined // ← en este caso el Navbar hará router.back()
+    : hasShelfId
+      ? "/(tabs)/archaeological-Pieces/deposit-map"
+      : "/(tabs)/archaeological-Pieces";
+
 
   const { data, isLoading, isError, refetch } = useArtefactSummaries(
     typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum)

@@ -117,7 +117,7 @@ export default function ShelfDetailScreen() {
     const columnLetter = numberToColumn(Number(columnNum));
 
     // 🔁 CLAVE: reemplazamos el modal por la vista de piezas
-    router.replace({
+    router.push({
       pathname: '/(tabs)/archaeological-Pieces/View_pieces',
       params: {
         shelfId: String(shelfIdNumber),

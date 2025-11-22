@@ -368,9 +368,10 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                   width={gridWidth}
                   height={gridHeight}
                   rx={12}
-                  fill="transparent"
+                  fill="none"
                   stroke={Colors.cremit}
                   strokeWidth={1.2}
+                  pointerEvents="none"
                 />
               </Svg>
 

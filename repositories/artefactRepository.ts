@@ -99,7 +99,7 @@ export const ArtefactRepository = {
       cleanFilters.shelfId = filters.shelfId;
     }
     
-    const { data } = await apiClient.get("/artefacts/summary", {
+    const { data } = await apiClient.get("/artefacts/summaries", {
       params: Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined,
     });
     return data as ArtefactSummary[];
