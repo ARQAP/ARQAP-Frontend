@@ -13,6 +13,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     Text,
     TouchableOpacity,
@@ -52,8 +54,8 @@ export default function NewLoan() {
   const hours = String(now.getHours()).padStart(2, "0");
   const minutes = String(now.getMinutes()).padStart(2, "0");
 
-  const [loanDate] = useState(`${year}-${month}-${day}`); // Fecha local en formato YYYY-MM-DD
-  const [loanTime] = useState(`${hours}:${minutes}`); // Hora local en formato HH:MM
+  const [loanDate] = useState(`${year}-${month}-${day}`);
+  const [loanTime] = useState(`${hours}:${minutes}`);
 
   // Estados para modales
   const [artefactModalVisible, setArtefactModalVisible] = useState(false);
@@ -116,9 +118,8 @@ export default function NewLoan() {
       return;
     }
 
-    // Crear datetime con zona horaria local
     const now = new Date();
-    const timezoneOffset = -now.getTimezoneOffset(); // Offset en minutos
+    const timezoneOffset = -now.getTimezoneOffset();
     const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
     const offsetMinutes = Math.abs(timezoneOffset) % 60;
     const offsetSign = timezoneOffset >= 0 ? "+" : "-";
@@ -127,28 +128,23 @@ export default function NewLoan() {
     const loanDateTime = `${loanDate}T${loanTime}:00${timezoneString}`;
 
     const loanData = {
-      loanDate: loanDateTime, // Datetime completo con zona horaria
-      loanTime: loanDateTime, // Datetime completo con zona horaria
+      loanDate: loanDateTime,
+      loanTime: loanDateTime,
       artefactId: selectedArtefactId!,
       requesterId: selectedRequesterId!,
     };
 
     console.log("Datos a enviar:", loanData);
-    console.log("selectedArtefactId:", selectedArtefactId);
-    console.log("selectedRequesterId:", selectedRequesterId);
-    console.log("loanDate original:", loanDate);
-    console.log("loanTime original:", loanTime);
 
     try {
       await createLoanMutation.mutateAsync(loanData);
-
       router.push("/(tabs)/loan/View_loan");
     } catch (error) {
       console.error("Error completo:", error);
-      const errorMessage =
-        (error as Error).message || "Error al crear el préstamo";
     }
   };
+
+  const isButtonDisabled = createLoanMutation.isPending || !selectedArtefactId || !selectedRequesterId;
 
   if (loadingArtefacts || loadingRequesters) {
     return (
@@ -160,215 +156,298 @@ export default function NewLoan() {
           backgroundColor: "#F3E9DD",
         }}
       >
-        <ActivityIndicator size="large" color={Colors.brown} />
-        <Text style={{ marginTop: 10, color: Colors.brown }}>
+        <ActivityIndicator size="large" color="#8B5E3C" />
+        <Text style={{ marginTop: 10, color: "#8B5E3C", fontFamily: "CrimsonText-Regular" }}>
           Cargando datos...
         </Text>
       </View>
     );
   }
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
       <Navbar
         title="Nuevo Préstamo"
         showBackArrow
         redirectTo="/(tabs)/loan/View_loan"
       />
-
-      <View style={{ padding: 20 }}>
-        {/* Selección de Pieza Arqueológica */}
-        <View style={{ marginBottom: 20 }}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "bold",
-              color: Colors.brown,
-              marginBottom: 10,
-            }}
-          >
-            Seleccionar Pieza Arqueológica
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => setArtefactModalVisible(true)}
-            style={{
-              backgroundColor: "#F7F5F2",
-              borderRadius: 8,
-              padding: 15,
-              borderWidth: errors.artefact ? 2 : 1,
-              borderColor: errors.artefact ? "#DC2626" : "#e0e0e0",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: selectedArtefactName ? Colors.brown : "#999",
-                flex: 1,
-              }}
-            >
-              {selectedArtefactName || "Seleccionar pieza arqueológica..."}
-            </Text>
-            <Ionicons name="chevron-down-outline" size={14} color="#999" />
-          </TouchableOpacity>
-
-          {errors.artefact && (
-            <Text style={{ color: "#DC2626", marginTop: 5 }}>
-              {errors.artefact}
-            </Text>
-          )}
-        </View>
-
-        {/* Selección de Solicitante */}
-        <View style={{ marginBottom: 20 }}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "bold",
-              color: Colors.brown,
-              marginBottom: 10,
-            }}
-          >
-            Seleccionar Solicitante
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => setRequesterModalVisible(true)}
-            style={{
-              backgroundColor: "#F7F5F2",
-              borderRadius: 8,
-              padding: 15,
-              borderWidth: errors.requester ? 2 : 1,
-              borderColor: errors.requester ? "#DC2626" : "#e0e0e0",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: selectedRequesterName ? Colors.brown : "#999",
-                flex: 1,
-              }}
-            >
-              {selectedRequesterName || "Seleccionar solicitante..."}
-            </Text>
-            <Ionicons name="chevron-down-outline" size={14} color="#999" />
-          </TouchableOpacity>
-
-          {errors.requester && (
-            <Text style={{ color: "#DC2626", marginTop: 5 }}>
-              {errors.requester}
-            </Text>
-          )}
-
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/loan/New_requester")}
-            style={{
-              paddingVertical: 8,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "flex-end",
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Crear nuevo Solicitante"
-          >
-            <Text
-              style={{
-                color: "#A68B5B",
-                marginRight: 6,
-                fontFamily: "MateSC-Regular",
-              }}
-            >
-              Crear nuevo Solicitante
-            </Text>
-            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Fechas y Horarios */}
-        <View style={{ marginBottom: 20 }}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "bold",
-              color: Colors.brown,
-              marginBottom: 15,
-            }}
-          >
-            Fecha y Hora del Préstamo
-          </Text>
-
-          {/* Mostrar fecha y hora actual (solo lectura) */}
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
+        >
           <View
             style={{
-              backgroundColor: "#F7F5F2",
-              borderRadius: 12,
-              padding: 15,
-              borderWidth: 1,
-              borderColor: "#e0e0e0",
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
             }}
           >
+            {/* Encabezado */}
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
               }}
             >
-              <Ionicons name="calendar-outline" size={16} color={Colors.brown} />
               <Text
                 style={{
-                  marginLeft: 10,
-                  fontSize: 16,
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
                   fontWeight: "600",
-                  color: Colors.brown,
                 }}
               >
-                Fecha: {new Date(loanDate).toLocaleDateString("es-ES")}
+                Nuevo Préstamo
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Registre un nuevo préstamo de pieza arqueológica
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="time-outline" size={16} color={Colors.brown} />
-              <Text
-                style={{
-                  marginLeft: 10,
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: Colors.brown,
-                }}
-              >
-                Hora: {loanTime}
-              </Text>
-            </View>
-
-            <Text
+            {/* Formulario */}
+            <View
               style={{
-                marginTop: 8,
-                fontSize: 12,
-                color: "#666",
-                fontStyle: "italic",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
               }}
             >
-              * La fecha y hora se establecen automáticamente al momento actual
-            </Text>
-          </View>
-        </View>
+              {/* Selección de Pieza Arqueológica */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Pieza Arqueológica *
+                </Text>
 
-        {/* Botón de envío */}
-        <Button
-          title={createLoanMutation.isPending ? "Creando..." : "Crear Préstamo"}
-          onPress={createLoanMutation.isPending ? () => {} : handleSubmit}
-          style={{
-            marginTop: 20,
-            backgroundColor: createLoanMutation.isPending
-              ? "#ccc"
-              : Colors.brown,
-          }}
-        />
-      </View>
+                <TouchableOpacity
+                  onPress={() => setArtefactModalVisible(true)}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.artefact ? "#DC2626" : "#E5D4C1",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 16,
+                      color: selectedArtefactName ? "#4A3725" : "#B8967D",
+                      flex: 1,
+                    }}
+                  >
+                    {selectedArtefactName || "Seleccionar pieza arqueológica"}
+                  </Text>
+                  <Ionicons name="chevron-down-outline" size={20} color="#8B5E3C" />
+                </TouchableOpacity>
+
+                {errors.artefact && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.artefact}
+                  </Text>
+                )}
+              </View>
+
+              {/* Selección de Solicitante */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Solicitante *
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setRequesterModalVisible(true)}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.requester ? "#DC2626" : "#E5D4C1",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 16,
+                      color: selectedRequesterName ? "#4A3725" : "#B8967D",
+                      flex: 1,
+                    }}
+                  >
+                    {selectedRequesterName || "Seleccionar solicitante"}
+                  </Text>
+                  <Ionicons name="chevron-down-outline" size={20} color="#8B5E3C" />
+                </TouchableOpacity>
+
+                {errors.requester && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.requester}
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  onPress={() => router.push("/(tabs)/loan/New_requester")}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    marginTop: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 14,
+                      color: "#8B5E3C",
+                      marginRight: 4,
+                    }}
+                  >
+                    Crear nuevo Solicitante
+                  </Text>
+                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Fecha y Hora del Préstamo */}
+              <View style={{ marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Fecha y Hora del Préstamo
+                </Text>
+
+                <View
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Ionicons name="calendar-outline" size={18} color="#8B5E3C" />
+                    <Text
+                      style={{
+                        marginLeft: 10,
+                        fontSize: 16,
+                        fontFamily: "CrimsonText-Regular",
+                        color: "#4A3725",
+                      }}
+                    >
+                      Fecha: {new Date(loanDate).toLocaleDateString("es-ES")}
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                    <Ionicons name="time-outline" size={18} color="#8B5E3C" />
+                    <Text
+                      style={{
+                        marginLeft: 10,
+                        fontSize: 16,
+                        fontFamily: "CrimsonText-Regular",
+                        color: "#4A3725",
+                      }}
+                    >
+                      Hora: {loanTime}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: "#A0785D",
+                      fontStyle: "italic",
+                      fontFamily: "CrimsonText-Regular",
+                    }}
+                  >
+                    * La fecha y hora se establecen automáticamente
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={createLoanMutation.isPending ? "Creando Préstamo..." : "Crear Préstamo"}
+                onPress={createLoanMutation.isPending ? () => {} : handleSubmit}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Modal de selección de artefactos */}
       <SimplePickerModal
@@ -395,6 +474,6 @@ export default function NewLoan() {
         }}
         onClose={() => setRequesterModalVisible(false)}
       />
-    </ScrollView>
+    </View>
   );
 }

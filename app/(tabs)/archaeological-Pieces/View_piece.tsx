@@ -459,29 +459,29 @@ export default function ViewPiece() {
               FICHA TÉCNICA
             </Text>
 
-            <InfoRow icon="cube" label="MATERIAL" value={piece.material} />
+            <InfoRow icon="cube-outline" label="MATERIAL" value={piece.material} />
             <InfoRow
-              icon="map-marker"
+              icon="location-outline"
               label="SITIO ARQUEOLÓGICO"
               value={piece.site}
             />
             <InfoRow
-              icon="user"
+              icon="person-outline"
               label="ARQUEÓLOGO"
               value={piece.archaeologist}
             />
             <InfoRow
-              icon="archive"
+              icon="archive-outline"
               label="COLECCIÓN"
               value={piece.collection}
             />
             <InfoRow
-              icon="tag"
+              icon="pricetags-outline"
               label="CLASIFICADOR INTERNO"
               value={piece.internalClassifier}
             />
             <InfoRow
-              icon={piece.available ? "check-circle" : "minus-square"}
+              icon={piece.available ? "checkmark-circle-outline" : "close-circle-outline"}
               label="DISPONIBLE"
               value={piece.available ? "Sí" : "No"}
             />

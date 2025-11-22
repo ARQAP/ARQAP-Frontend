@@ -1,7 +1,15 @@
 // New_Country.tsx
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 
@@ -69,54 +77,152 @@ export default function New_Country() {
     }});
   };
 
+  const isButtonDisabled = isCreating || !countryName.trim();
+
   return (
-    <View className="flex-1 bg-[#F7F0E6] items-center px-0">
-      <View className="w-full">
-        <Navbar
-          title="Alta de País"
-          showBackArrow
-          backToHome={false}
-          redirectTo="/(tabs)/location/New_location"
-        />
-      </View>
-      <View className="w-full max-w-[500px] items-center self-center px-4">
-        <Text
-          className="text-center text-lg mt-3 mb-2 text-[#222]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+      <Navbar
+        title="Nuevo País"
+        showBackArrow
+        backToHome={false}
+        redirectTo="/(tabs)/location/New_location"
+      />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
         >
-          Ingrese los datos del nuevo país
-        </Text>
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
+            }}
           >
-            Nombre
-          </Text>
-          <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full font-crimson placeholder:text-[#A68B5B]"
-            placeholder="Ingrese el nombre"
-            value={countryName}
-            onChangeText={setCountryName}
-            editable={!isCreating}
-            style={{ fontFamily: "CrimsonText-Regular" }}
-          />
-        </View>
-        <Button
-          title={isCreating ? "Creando..." : "Crear País"}
-          onPress={handleCrear}
-          className="w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
-          textClassName="text-base font-bold text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-        <Button
-          title="Cancelar"
-          onPress={handleCancelar}
-          className="w-full self-center bg-[#D9C6A5] rounded-lg py-3 items-center"
-          textClassName="text-base text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-      </View>
+            {/* Encabezado */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Nuevo País
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Ingrese los datos del nuevo país
+              </Text>
+            </View>
+
+            {/* Formulario */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              {/* Campo Nombre */}
+              <View style={{ marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Nombre *
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Nombre del país"
+                  value={countryName}
+                  onChangeText={setCountryName}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  editable={!isCreating}
+                />
+              </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={isCreating ? "Creando País..." : "Crear País"}
+                onPress={handleCrear}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+              
+              <Button
+                title="Cancelar"
+                onPress={handleCancelar}
+                style={{
+                  backgroundColor: "#E5D4C1",
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

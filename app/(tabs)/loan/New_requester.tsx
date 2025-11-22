@@ -15,7 +15,9 @@ import React, { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
     Platform,
+    ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
@@ -106,7 +108,6 @@ export default function NewRequester() {
 
     try {
       await createRequesterMutation.mutateAsync(requesterData);
-
       router.push("/(tabs)/loan/New_loan");
     } catch (error) {
       const errorMessage =
@@ -120,198 +121,365 @@ export default function NewRequester() {
     }
   };
 
+  const isButtonDisabled = createRequesterMutation.isPending;
+
   return (
-    <View className="flex-1 bg-[#F7F0E6] items-center px-0">
-      <View className="w-full">
-        <Navbar
-          title="Nuevo Solicitante"
-          showBackArrow
-          backToHome={false}
-          redirectTo="/(tabs)/loan/New_loan"
-        />
-      </View>
-
-      <View className="w-full max-w-[500px] items-center self-center px-4">
-        <Text
-          className="text-center text-lg mt-3 mb-2 text-[#222]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+      <Navbar
+        title="Nuevo Solicitante"
+        showBackArrow
+        redirectTo="/(tabs)/loan/New_loan"
+      />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
         >
-          Ingrese los datos del nuevo solicitante
-        </Text>
-
-        {/* Tipo de solicitante */}
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
+            }}
           >
-            Tipo de Solicitante *
-          </Text>
-          <TouchableOpacity
-            onPress={() => setTypeModalVisible(true)}
-            className="border-2 border-[#A67C52] rounded-lg p-3 bg-[#F7F5F2] text-base mb-2 w-full flex-row justify-between items-center"
-          >
-            <Text style={{ color: type ? "#3d2c13" : "#A68B5B" }}>
-              {type || "Seleccionar tipo"}
-            </Text>
-            <Ionicons name="chevron-down-outline" size={12} color="#A68B5B" />
-          </TouchableOpacity>
-          {errors.type && (
-            <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-              {errors.type}
-            </Text>
-          )}
-        </View>
+            {/* Encabezado */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Nuevo Solicitante
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Ingrese los datos del nuevo solicitante
+              </Text>
+            </View>
 
-        {/* Campos de representante/persona (siempre requeridos) */}
-        {/* Nombre */}
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            {type === "Investigador" ? "Nombre" : "Nombre del representante"} *
-          </Text>
-          <TextInput
-            value={firstname}
-            onChangeText={setFirstname}
-            placeholder={
-              type === "Investigador"
-                ? "Ingrese el nombre"
-                : "Ingrese el nombre del representante"
-            }
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full placeholder:text-[#A68B5B]"
-          />
-          {errors.firstname && (
-            <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-              {errors.firstname}
-            </Text>
-          )}
-        </View>
+            {/* Formulario */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              {/* Tipo de solicitante */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Tipo de Solicitante *
+                </Text>
 
-        {/* Apellido */}
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            {type === "Investigador"
-              ? "Apellido"
-              : "Apellido del representante"}{" "}
-            *
-          </Text>
-          <TextInput
-            value={lastname}
-            onChangeText={setLastname}
-            placeholder={
-              type === "Investigador"
-                ? "Ingrese el apellido"
-                : "Ingrese el apellido del representante"
-            }
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full placeholder:text-[#A68B5B]"
-          />
-          {errors.lastname && (
-            <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-              {errors.lastname}
-            </Text>
-          )}
-        </View>
+                <TouchableOpacity
+                  onPress={() => setTypeModalVisible(true)}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.type ? "#DC2626" : "#E5D4C1",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 16,
+                      color: type ? "#4A3725" : "#B8967D",
+                      flex: 1,
+                    }}
+                  >
+                    {type || "Seleccionar tipo"}
+                  </Text>
+                  <Ionicons name="chevron-down-outline" size={20} color="#8B5E3C" />
+                </TouchableOpacity>
 
-        {/* DNI */}
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            {type === "Investigador" ? "DNI" : "DNI del representante"} *
-          </Text>
-          <TextInput
-            value={dni}
-            onChangeText={setDni}
-            placeholder="Ingrese el DNI (sin puntos)"
-            keyboardType="numeric"
-            maxLength={8}
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full placeholder:text-[#A68B5B]"
-          />
-          {errors.dni && (
-            <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-              {errors.dni}
-            </Text>
-          )}
-        </View>
+                {errors.type && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.type}
+                  </Text>
+                )}
+              </View>
 
-        {/* Email (opcional) */}
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            {type === "Investigador"
-              ? "Email (opcional)"
-              : "Email del representante (opcional)"}
-          </Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="ejemplo@email.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full placeholder:text-[#A68B5B]"
-          />
-          {errors.email && (
-            <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-              {errors.email}
-            </Text>
-          )}
-        </View>
+              {/* Nombre */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  {type === "Investigador" ? "Nombre" : "Nombre del representante"} *
+                </Text>
 
-        {/* Teléfono (opcional) */}
-        <View className="mb-2 w-full">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            {type === "Investigador"
-              ? "Teléfono (opcional)"
-              : "Teléfono del representante (opcional)"}
-          </Text>
-          <TextInput
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            placeholder="+54 11 1234-5678"
-            keyboardType="phone-pad"
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-base mb-2 w-full placeholder:text-[#A68B5B]"
-          />
-          {errors.phoneNumber && (
-            <Text style={{ color: "#DC2626", fontSize: 12, marginTop: 2 }}>
-              {errors.phoneNumber}
-            </Text>
-          )}
-        </View>
+                <TextInput
+                  value={firstname}
+                  onChangeText={setFirstname}
+                  placeholder={
+                    type === "Investigador"
+                      ? "Ingrese el nombre"
+                      : "Ingrese el nombre del representante"
+                  }
+                  placeholderTextColor="#B8967D"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.firstname ? "#DC2626" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
 
-        {/* Botón de envío */}
-        <Button
-          title={
-            createRequesterMutation.isPending
-              ? "Creando..."
-              : "Crear Solicitante"
-          }
-          onPress={createRequesterMutation.isPending ? () => {} : handleSubmit}
-          className={`w-full self-center mb-4 bg-[#6B705C] rounded-lg py-3 items-center ${createRequesterMutation.isPending ? "opacity-60" : ""}`}
-          textClassName="text-base font-bold text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
+                {errors.firstname && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.firstname}
+                  </Text>
+                )}
+              </View>
 
-        {createRequesterMutation.isPending && (
-          <ActivityIndicator
-            size="large"
-            color={Colors.brown}
-            style={{ marginTop: 20 }}
-          />
-        )}
-      </View>
+              {/* Apellido */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  {type === "Investigador" ? "Apellido" : "Apellido del representante"} *
+                </Text>
 
-      {/* Modal de selección de tipo */}
+                <TextInput
+                  value={lastname}
+                  onChangeText={setLastname}
+                  placeholder={
+                    type === "Investigador"
+                      ? "Ingrese el apellido"
+                      : "Ingrese el apellido del representante"
+                  }
+                  placeholderTextColor="#B8967D"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.lastname ? "#DC2626" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+
+                {errors.lastname && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.lastname}
+                  </Text>
+                )}
+              </View>
+
+              {/* DNI */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  {type === "Investigador" ? "DNI" : "DNI del representante"} *
+                </Text>
+
+                <TextInput
+                  value={dni}
+                  onChangeText={setDni}
+                  placeholder="Ingrese el DNI (sin puntos)"
+                  placeholderTextColor="#B8967D"
+                  keyboardType="numeric"
+                  maxLength={8}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.dni ? "#DC2626" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+
+                {errors.dni && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.dni}
+                  </Text>
+                )}
+              </View>
+
+              {/* Email (opcional) */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  {type === "Investigador"
+                    ? "Email (opcional)"
+                    : "Email del representante (opcional)"}
+                </Text>
+
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="ejemplo@email.com"
+                  placeholderTextColor="#B8967D"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.email ? "#DC2626" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+
+                {errors.email && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.email}
+                  </Text>
+                )}
+              </View>
+
+              {/* Teléfono (opcional) */}
+              <View style={{ marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  {type === "Investigador"
+                    ? "Teléfono (opcional)"
+                    : "Teléfono del representante (opcional)"}
+                </Text>
+
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="+54 11 1234-5678"
+                  placeholderTextColor="#B8967D"
+                  keyboardType="phone-pad"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: errors.phoneNumber ? "#DC2626" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+
+                {errors.phoneNumber && (
+                  <Text style={{ color: "#DC2626", marginTop: 5, fontFamily: "CrimsonText-Regular", fontSize: 14 }}>
+                    {errors.phoneNumber}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={createRequesterMutation.isPending ? "Creando..." : "Crear Solicitante"}
+                onPress={createRequesterMutation.isPending ? () => {} : handleSubmit}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
       <SimplePickerModal
         visible={typeModalVisible}
         title="Seleccionar Tipo"

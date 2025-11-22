@@ -1,30 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Platform,
     ScrollView,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 import { ArchaeologicalSiteCard, GenericList } from "../../../components/ui";
 import Button from "../../../components/ui/Button";
+import SimplePickerModal, {
+  type SimplePickerItem,
+} from "../../../components/ui/SimpleModal";
 import Navbar from "../Navbar";
-// Importar el hook de lectura de la API y el tipo
 import { useAllArchaeologicalSites, useDeleteArchaeologicalSite } from "../../../hooks/useArchaeologicalsite";
 import { ArchaeologicalSite as SiteType } from "../../../repositories/archaeologicalsiteRepository";
 
 
 export default function Location() {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSiteId, setSelectedSiteId] = useState<number | string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
 
-  // --- 1. CONEXIÓN CON EL HOOK DE LA API ---
   const { 
     data: allSites = [], 
     isLoading, 
@@ -36,40 +37,31 @@ export default function Location() {
 
   const deleteMutation = useDeleteArchaeologicalSite();
 
-  // Mantenemos la lógica de búsqueda y filtros con los datos de la API
-  const handleSearchChange = (text: string) => {
-    setSearchTerm(text);
-    setShowSuggestions(text.length > 0);
-  };
+  const siteItems = useMemo<SimplePickerItem<SiteType>[]>(() => {
+    return allSites.map((site) => ({
+      value: site.id || `${site.Name}`,
+      label: `${site.Name} - ${site.Location}`,
+      raw: site,
+    }));
+  }, [allSites]);
 
-  const handleSuggestionSelect = (siteName: string) => {
-    setSearchTerm(siteName);
-    setShowSuggestions(false);
-  };
+  const filteredSites = useMemo(() => {
+    if (selectedSiteId) {
+      return allSites.filter(
+        (site) =>
+          site.id === selectedSiteId ||
+          `${site.Name}` === selectedSiteId
+      );
+    }
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase();
+      return allSites.filter((site) =>
+        site.Name.toLowerCase().includes(searchLower)
+      );
+    }
+    return allSites;
+  }, [allSites, selectedSiteId, searchText]);
 
-  const handleClearSearch = () => {
-    setSearchTerm("");
-    setShowSuggestions(false);
-  };
-
-  // La lógica de filtro usa el campo 'Name' del tipo SiteType
-  const suggestions =
-    searchTerm.length > 0
-      ? allSites
-          .filter((site: SiteType) =>
-            site.Name.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          .slice(0, 5)
-      : [];
-
-  const filteredSites =
-    searchTerm.length > 0
-      ? allSites.filter((site: SiteType) =>
-          site.Name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : allSites;
-
-  // Handlers para las acciones de las tarjetas
   const handleEdit = (site: SiteType) => {
     router.push({
       pathname: "/(tabs)/location/Edit_site" as any,
@@ -101,6 +93,21 @@ export default function Location() {
     });
   };
 
+  const clearSearch = () => {
+    setSelectedSiteId(null);
+    setSearchText("");
+  };
+
+  const searchDisplayText = useMemo(() => {
+    if (selectedSiteId) {
+      return siteItems.find((i) => i.value === selectedSiteId)?.label;
+    }
+    if (searchText) {
+      return `Buscando: "${searchText}"`;
+    }
+    return null;
+  }, [selectedSiteId, searchText, siteItems]);
+
   const renderSiteCard = (site: SiteType) => (
     <ArchaeologicalSiteCard
       site={site}
@@ -109,13 +116,21 @@ export default function Location() {
       onViewDetails={handleViewDetails}
     />
   );
-  
-  // --- 2. MANEJO DE ESTADOS DE CARGA Y ERROR ---
+
   if (isLoading) {
     return (
-      <View className="flex-1 bg-[#F3E9DD] items-center justify-center">
-        <ActivityIndicator size="large" color="#6B705C" />
-        <Text style={{ fontFamily: "CrimsonText-Regular", marginTop: 10 }}>Cargando sitios arqueológicos...</Text>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F3E9DD",
+        }}
+      >
+        <ActivityIndicator size="large" color="#8B5E3C" />
+        <Text style={{ marginTop: 10, color: "#8B5E3C", fontFamily: "CrimsonText-Regular" }}>
+          Cargando sitios arqueológicos...
+        </Text>
       </View>
     );
   }
@@ -131,216 +146,247 @@ export default function Location() {
   }
 
   return (
-    <View className="flex-1 bg-[#F3E9DD]">
+    <View className="flex-1 bg-[#F3E9DD] p-0">
       <Navbar title="Sitios Arqueológicos" showBackArrow backToHome />
-      
-      {/* Contenedor responsive - diferentes layouts para web y móvil */}
-      {Platform.OS === 'web' ? (
-        // Layout para web
-        <View style={{ 
-          flex: 1,
-          paddingHorizontal: 20,
-        }}>
-          <View style={{ 
-            width: '100%', 
-            maxWidth: 900,
-            alignSelf: 'center',
-          }}>
-            <View className="pt-5">
-              <Button
-                title="Registrar nuevo sitio arqueológico"
-                onPress={() => router.push("/(tabs)/location/New_location")}
-                className="mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
-                textClassName="text-[16px] font-bold text-white"
-                textStyle={{ fontFamily: "MateSC-Regular" }}
-              />
 
-              {/* Búsqueda mejorada */}
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontFamily: 'MateSC-Regular', fontWeight: '700', marginBottom: 8, color: '#3d2c13' }}>
-                  Buscar sitio arqueológico
-                </Text>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F5F2', borderRadius: 12, borderWidth: 1, borderColor: '#E6DAC4', paddingHorizontal: 12, paddingVertical: 8 }}>
-                  <Ionicons name="search-outline" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
-                  <TextInput
-                    placeholder="Buscar por nombre..."
-                    value={searchTerm}
-                    onChangeText={handleSearchChange}
-                    onFocus={() => setShowSuggestions(searchTerm.length > 0)}
-                    placeholderTextColor="#A68B5B"
-                    selectionColor="#8B5E3C"
-                    style={{ flex: 1, fontFamily: 'CrimsonText-Regular', fontSize: 16 }}
-                  />
-                  {searchTerm.length > 0 && (
-                    <TouchableOpacity onPress={handleClearSearch} style={{ padding: 6 }} accessibilityLabel="Limpiar búsqueda">
-                      <Ionicons name="close-outline" size={18} color="#A68B5B" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* sugerencias inline */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <View style={{ marginTop: 8 }}>
-                    <View style={{ backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#E6DAC4', maxHeight: 240, overflow: 'hidden', elevation: 6 }}>
-                      <ScrollView nestedScrollEnabled>
-                        {suggestions.map((site: SiteType, index: number) => (
-                          <TouchableOpacity key={site.id || index} onPress={() => handleSuggestionSelect(site.Name)} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1E8DA' }}>
-                            <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13', fontSize: 16 }}>{site.Name}</Text>
-                            <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#A68B5B', marginTop: 6 }}>{site.Location} • {site.region?.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              <Text
-                className="text-[#8B5E3C] text-base mb-2"
-                style={{ fontFamily: "MateSC-Regular" }}
-              >
-                {filteredSites.length} Sitios arqueológicos encontrados
-              </Text>
-            </View>
-
-            {/* Lista de sitios usando el componente estandarizado */}
-            <View className="flex-1">
-              <GenericList
-                data={filteredSites}
-                renderItem={renderSiteCard}
-                keyExtractor={(item) => item.id?.toString() || ''}
-                isLoading={false} // Ya manejamos loading arriba
-                isRefreshing={isFetching}
-                onRefresh={refetch}
-                emptyStateMessage="No hay sitios arqueológicos registrados"
-                error={null} // Ya manejamos errores arriba
-                customStyles={{
-                  container: { backgroundColor: 'transparent', paddingTop: 0 }
-                }}
-              />
-            </View>
-          </View>
-        </View>
-      ) : (
-        // Layout para móvil - estructura simple
-        <View style={{ flex: 1, padding: 20 }}>
-          <View style={{ marginTop: 20 }}>
-            <Button
-              title="Registrar nuevo sitio arqueológico"
-              onPress={() => router.push("/(tabs)/location/New_location")}
-              className="mb-4 bg-[#6B705C] rounded-lg py-3 items-center"
-              textClassName="text-[16px] font-bold text-white"
-              textStyle={{ fontFamily: "MateSC-Regular" }}
-            />
-
-            {/* Búsqueda mejorada */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontFamily: 'MateSC-Regular', fontWeight: '700', marginBottom: 8, color: '#3d2c13' }}>
-                Buscar sitio arqueológico
-              </Text>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F5F2', borderRadius: 12, borderWidth: 1, borderColor: '#E6DAC4', paddingHorizontal: 12, paddingVertical: 8 }}>
-                <Ionicons name="search-outline" size={18} color="#A68B5B" style={{ marginRight: 10 }} />
-                <TextInput
-                  placeholder="Buscar por nombre..."
-                  value={searchTerm}
-                  onChangeText={handleSearchChange}
-                  onFocus={() => setShowSuggestions(searchTerm.length > 0)}
-                  placeholderTextColor="#A68B5B"
-                  selectionColor="#8B5E3C"
-                  style={{ flex: 1, fontFamily: 'CrimsonText-Regular', fontSize: 16 }}
-                />
-                {searchTerm.length > 0 && (
-                  <TouchableOpacity onPress={handleClearSearch} style={{ padding: 6 }} accessibilityLabel="Limpiar búsqueda">
-                    <Ionicons name="close-outline" size={18} color="#A68B5B" />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* sugerencias inline */}
-              {showSuggestions && suggestions.length > 0 && (
-                <View style={{ marginTop: 8 }}>
-                  <View style={{ backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#E6DAC4', maxHeight: 240, overflow: 'hidden', elevation: 6 }}>
-                    <ScrollView nestedScrollEnabled>
-                      {suggestions.map((site: SiteType, index: number) => (
-                        <TouchableOpacity key={site.id || index} onPress={() => handleSuggestionSelect(site.Name)} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1E8DA' }}>
-                          <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#3d2c13', fontSize: 16 }}>{site.Name}</Text>
-                          <Text style={{ fontFamily: 'CrimsonText-Regular', color: '#A68B5B', marginTop: 6 }}>{site.Location} • {site.region?.name}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                </View>
-              )}
-            </View>
-
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+          paddingTop: Platform.OS === "web" ? 40 : 20,
+          paddingBottom: Platform.OS === "web" ? 32 : 20,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 1100,
+            alignSelf: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 28,
+              marginBottom: 32,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
             <Text
-              className="text-[#8B5E3C] text-base mb-2"
-              style={{ fontFamily: "MateSC-Regular" }}
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontSize: 28,
+                color: "#8B5E3C",
+                marginBottom: 8,
+                fontWeight: "600",
+              }}
             >
-              {filteredSites.length} Sitios arqueológicos encontrados
+              Gestión de Sitios Arqueológicos
             </Text>
-          </View>
+            <Text
+              style={{
+                fontFamily: "CrimsonText-Regular",
+                fontSize: 16,
+                color: "#A0785D",
+                marginBottom: 24,
+              }}
+            >
+              Administra y consulta el registro de sitios arqueológicos del sistema
+            </Text>
 
-          {/* Lista de sitios usando el componente estandarizado */}
-          <View style={{ flex: 1 }}>
-            <GenericList
-              data={filteredSites}
-              renderItem={renderSiteCard}
-              keyExtractor={(item) => item.id?.toString() || ''}
-              isLoading={false} // Ya manejamos loading arriba
-              isRefreshing={isFetching}
-              onRefresh={refetch}
-              emptyStateMessage="No hay sitios arqueológicos registrados"
-              error={null} // Ya manejamos errores arriba
-              customStyles={{
-                container: { backgroundColor: 'transparent', paddingTop: 0 }
+            <Button
+              title="+ Registrar nuevo sitio arqueológico"
+              onPress={() => router.push("/(tabs)/location/New_location")}
+              textStyle={{
+                fontFamily: "MateSC-Regular",
+                fontWeight: "bold",
+                fontSize: 15,
               }}
             />
           </View>
-        </View>
-      )}
 
-      {/* --- Bloque de Sugerencias flotantes --- */}
-      {showSuggestions && suggestions.length > 0 && (
-        <View
-          className="absolute bg-white border-2 border-[#A67C52] rounded-lg shadow-lg max-h-[200px]"
-          style={{
-            top: 245,
-            left: 20,
-            right: 20,
-            zIndex: 99999,
-            elevation: 50,
-            position: "absolute",
-            boxShadow: "0px 2px 3.84px rgba(0, 0, 0, 0.25)",
-          }}
-        >
-          <ScrollView nestedScrollEnabled>
-            {suggestions.map((site: SiteType, index: number) => (
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontSize: 18,
+                color: "#8B5E3C",
+                marginBottom: 16,
+                fontWeight: "600",
+              }}
+            >
+              Búsqueda
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => setShowPicker(true)}
+              style={{
+                backgroundColor: "#F7F5F2",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderWidth: 1,
+                borderColor: "#E5D4C1",
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="search"
+                size={18}
+                color="#8B5E3C"
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: searchDisplayText ? "#8B5E3C" : "#B8967D",
+                  flex: 1,
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {searchDisplayText || "Buscar sitio arqueológico..."}
+              </Text>
+            </TouchableOpacity>
+
+            {(selectedSiteId || searchText) && (
               <TouchableOpacity
-                key={site.id || index}
-                className="p-3 border-b border-[#E2D1B2]"
-                onPress={() => handleSuggestionSelect(site.Name)}
+                onPress={clearSearch}
+                style={{
+                  marginTop: 12,
+                  alignSelf: "flex-start",
+                  backgroundColor: "#E5D4C1",
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                }}
               >
                 <Text
-                  className="text-[16px] text-[#3d2c13]"
-                  style={{ fontFamily: "CrimsonText-Regular" }}
+                  style={{
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                    color: "#8B5E3C",
+                    fontWeight: "600",
+                  }}
                 >
-                  {site.Name}
-                </Text>
-                <Text
-                  className="text-[12px] text-[#A68B5B] mt-1"
-                  style={{ fontFamily: "CrimsonText-Regular" }}
-                >
-                  {/* Muestra la ubicación y el nombre de la región */}
-                  {site.Location}, {site.region.name}
+                  ✕ Limpiar búsqueda
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            )}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 16,
+                paddingTop: 16,
+                borderTopWidth: 1,
+                borderTopColor: "#E5D4C1",
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#8B5E3C",
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  marginRight: 10,
+                }}
+              />
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 17,
+                  color: "#8B5E3C",
+                  fontWeight: "600",
+                }}
+              >
+                {filteredSites.length}{" "}
+                {filteredSites.length === 1
+                  ? "Sitio arqueológico encontrado"
+                  : "Sitios arqueológicos encontrados"}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
+            {filteredSites.length === 0 ? (
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                }}
+              >
+                No hay sitios arqueológicos registrados.
+              </Text>
+            ) : (
+              <View style={{ flex: 1 }}>
+                <GenericList
+                  data={filteredSites}
+                  renderItem={renderSiteCard}
+                  keyExtractor={(item) => item.id?.toString() || ''}
+                  isLoading={false}
+                  isRefreshing={isFetching}
+                  onRefresh={refetch}
+                  emptyStateMessage="No hay sitios arqueológicos registrados"
+                  error={null}
+                  customStyles={{
+                    container: { backgroundColor: 'transparent', paddingTop: 0 }
+                  }}
+                />
+              </View>
+            )}
+          </View>
         </View>
-      )}
+      </ScrollView>
+
+      <SimplePickerModal
+        visible={showPicker}
+        title="Seleccionar Sitio Arqueológico"
+        items={siteItems}
+        selectedValue={selectedSiteId}
+        onSelect={(value) => {
+          setSelectedSiteId(value);
+          setSearchText("");
+          setShowPicker(false);
+        }}
+        onClose={() => setShowPicker(false)}
+        onSearchTextChange={(text) => {
+          setSearchText(text);
+          setSelectedSiteId(null);
+        }}
+      />
     </View>
   );
 }

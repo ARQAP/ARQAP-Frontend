@@ -31,9 +31,9 @@ type Piece = ArtefactSummary & {
   site?: string;
   archaeologist?: string;
   collection?: string;
-  shelf?: string;
-  levelLabel?: string;
-  columnLabel?: string;
+  shelfText?: string;
+  levelText?: string;
+  columnText?: string;
 };
 
 export default function ViewPieces() {
@@ -82,6 +82,10 @@ export default function ViewPieces() {
     }
   }, [params?.level, params?.column, shelfIdParam]);
 
+  const isWeb = Platform.OS === "web";
+  const isMobile = Platform.OS === "android" || Platform.OS === "ios";
+
+  // Debounce para el filtro de nombre
   useEffect(() => {
     const handle = setTimeout(() => {
       setQuery(rawQuery);
@@ -89,6 +93,24 @@ export default function ViewPieces() {
 
     return () => clearTimeout(handle);
   }, [rawQuery]);
+
+  // Cerrar menú al hacer click fuera en web
+  useEffect(() => {
+    if (!isWeb || !menuVisible) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Verificar si el click fue fuera del menú
+      if (!target.closest("[data-menu-container]")) {
+        setMenuVisible(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuVisible, isWeb]);
 
   const pieces: Piece[] = useMemo(() => {
     const list = (data ?? []) as ArtefactSummary[];
@@ -98,19 +120,21 @@ export default function ViewPieces() {
       const archaeologist = a.archaeologistName ?? undefined;
       const collection = a.collectionName ?? undefined;
 
-      const shelf =
+      const shelfText =
         a.shelfCode == null ? undefined : `Estantería ${String(a.shelfCode)}`;
-      const levelLabel = a.level == null ? undefined : `Nivel ${String(a.level)}`;
-      const columnLabel = a.column == null ? undefined : `Columna ${String(a.column)}`;
+      const levelText =
+        a.level == null ? undefined : `Nivel ${String(a.level)}`;
+      const columnText =
+        a.column == null ? undefined : `Columna ${String(a.column)}`;
 
       return {
         ...a,
         site,
         archaeologist,
         collection,
-        shelf,
-        levelLabel,
-        columnLabel,
+        shelfText,
+        levelText,
+        columnText,
       };
     });
   }, [data]);
@@ -186,7 +210,7 @@ export default function ViewPieces() {
 
       // ====== ESTANTERÍA (solo número) ======
       if (filterShelf.trim() !== "") {
-        const shelfText = p.shelf || "";
+        const shelfText = p.shelfText || "";
         const pieceNum = shelfText.match(/\d+/)?.[0]; // número en "Estantería 1"
 
         if (!pieceNum || pieceNum !== filterShelf.trim()) return false;
@@ -194,7 +218,7 @@ export default function ViewPieces() {
 
       // ====== NIVEL (solo número) ======
       if (filterShelfLevel.trim() !== "") {
-        const levelText = p.levelLabel || "";
+        const levelText = p.levelText || "";
         const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
 
         if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
@@ -203,7 +227,7 @@ export default function ViewPieces() {
       // ====== COLUMNA (letra A-D) ======
       if (filterShelfColumn.trim() !== "") {
         const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
-        const colPieza = (p.columnLabel || "")
+        const colPieza = (p.columnText || "")
           .toUpperCase()
           .replace(/COLUMNA/i, "")
           .trim(); // A/B/C/D
@@ -224,8 +248,6 @@ export default function ViewPieces() {
     filterShelfColumn,
   ]);
 
-  const isWeb = Platform.OS === "web";
-  const isMobile = Platform.OS === "android" || Platform.OS === "ios";
   const MAX_CONTENT_WIDTH = 1400;
 
   // ==================== VISTA WEB ====================
@@ -439,7 +461,9 @@ export default function ViewPieces() {
         <View style={{ flex: 1, minWidth: 0, marginBottom: 24 }}>
           <TouchableOpacity
             onPress={() =>
-              router.push(`/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`)
+              router.push(
+                `/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`
+              )
             }
             activeOpacity={0.9}
             style={{
@@ -499,17 +523,17 @@ export default function ViewPieces() {
                   }}
                 >
                   <Badge
-                    text={p.shelf || ""}
+                    text={p.shelfText || ""}
                     background={Colors.green}
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.levelLabel || ""}
+                    text={p.levelText || ""}
                     background={Colors.brown}
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.columnLabel || ""}
+                    text={p.columnText || ""}
                     background={Colors.black}
                     textColor={Colors.cremit}
                   />
@@ -545,6 +569,8 @@ export default function ViewPieces() {
                   alignItems: "center",
                   position: "relative",
                 }}
+                // @ts-ignore - Web-only attribute
+                data-menu-container={isWeb ? true : undefined}
               >
                 <TouchableOpacity
                   onPress={(e) => {
@@ -566,7 +592,11 @@ export default function ViewPieces() {
                   activeOpacity={0.7}
                   accessibilityLabel={`Opciones para pieza ${p.name}`}
                 >
-                  <Ionicons name="ellipsis-vertical" size={18} color={Colors.black} />
+                  <Ionicons
+                    name="ellipsis-vertical"
+                    size={18}
+                    color={Colors.black}
+                  />
                 </TouchableOpacity>
 
                 {menuVisible === String(p.id) && (
@@ -669,7 +699,9 @@ export default function ViewPieces() {
           title="REGISTRAR PIEZA ARQUEOLÓGICA"
           className="bg-[#6B705C] rounded-lg py-3 items-center mb-6"
           textClassName="text-white"
-          onPress={() => router.push("/(tabs)/archaeological-Pieces/New_piece")}
+          onPress={() =>
+            router.push("/(tabs)/archaeological-Pieces/New_piece")
+          }
         />
 
         <View
@@ -752,7 +784,9 @@ export default function ViewPieces() {
             <TextInput
               placeholder="Filtrar por numero de estante"
               value={filterShelf}
-              onChangeText={(text) => setFilterShelf(text.replace(/[^0-9]/g, ""))}
+              onChangeText={(text) =>
+                setFilterShelf(text.replace(/[^0-9]/g, ""))
+              }
               keyboardType="numeric"
               style={{
                 backgroundColor: "#F7F5F2",
@@ -831,7 +865,9 @@ export default function ViewPieces() {
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
           <TouchableOpacity
             onPress={() =>
-              router.push(`/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`)
+              router.push(
+                `/(tabs)/archaeological-Pieces/View_piece?id=${p.id}`
+              )
             }
             activeOpacity={0.9}
             style={{
@@ -876,17 +912,17 @@ export default function ViewPieces() {
                   }}
                 >
                   <Badge
-                    text={p.shelf || ""}
+                    text={p.shelfText || ""}
                     background={Colors.green}
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.levelLabel || ""}
+                    text={p.levelText || ""}
                     background={Colors.brown}
                     textColor={Colors.cremit}
                   />
                   <Badge
-                    text={p.columnLabel || ""}
+                    text={p.columnText || ""}
                     background={Colors.black}
                     textColor={Colors.cremit}
                   />
@@ -939,7 +975,11 @@ export default function ViewPieces() {
                 }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="ellipsis-vertical" size={20} color={Colors.black} />
+                <Ionicons
+                  name="ellipsis-vertical"
+                  size={20}
+                  color={Colors.black}
+                />
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -959,63 +999,68 @@ export default function ViewPieces() {
               }}
               onPress={() => setMenuVisible(null)}
             >
-              <View
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: 16,
-                  minWidth: 200,
-                  borderWidth: 1,
-                  borderColor: "#E8E8E8",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 12,
-                  elevation: 10,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => handleEdit(p.id!)}
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 16,
-                    borderBottomWidth: 1,
-                    borderBottomColor: Colors.lightbrown,
+                    backgroundColor: "white",
+                    borderRadius: 16,
+                    minWidth: 200,
+                    borderWidth: 1,
+                    borderColor: "#E8E8E8",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 12,
+                    elevation: 10,
+                    overflow: "hidden",
                   }}
                 >
-                  <Ionicons name="pencil" size={20} color={Colors.green} />
-                  <Text
+                  <TouchableOpacity
+                    onPress={() => handleEdit(p.id!)}
                     style={{
-                      marginLeft: 12,
-                      fontSize: 16,
-                      color: Colors.black,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: 16,
+                      borderBottomWidth: 1,
+                      borderBottomColor: Colors.lightbrown,
                     }}
                   >
-                    Editar
-                  </Text>
-                </TouchableOpacity>
+                    <Ionicons name="pencil" size={20} color={Colors.green} />
+                    <Text
+                      style={{
+                        marginLeft: 12,
+                        fontSize: 16,
+                        color: Colors.black,
+                      }}
+                    >
+                      Editar
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => handleDelete(p.id!)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 16,
-                    backgroundColor: "#FFF5F5",
-                  }}
-                >
-                  <Ionicons name="trash" size={20} color={Colors.brown} />
-                  <Text
+                  <TouchableOpacity
+                    onPress={() => handleDelete(p.id!)}
                     style={{
-                      marginLeft: 12,
-                      fontSize: 16,
-                      color: Colors.brown,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: 16,
+                      backgroundColor: "#FFF5F5",
+                      borderBottomLeftRadius: 16,
+                      borderBottomRightRadius: 16,
                     }}
                   >
-                    Eliminar
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <Ionicons name="trash" size={20} color={Colors.brown} />
+                    <Text
+                      style={{
+                        marginLeft: 12,
+                        fontSize: 16,
+                        color: Colors.brown,
+                      }}
+                    >
+                      Eliminar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </Pressable>
             </Pressable>
           </Modal>
         </View>

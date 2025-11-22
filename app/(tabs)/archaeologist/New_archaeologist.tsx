@@ -1,6 +1,14 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native"; // 💡 Importar Alert
+import { 
+  Alert, 
+  Text, 
+  TextInput, 
+  View, 
+  ScrollView, 
+  Platform,
+  KeyboardAvoidingView 
+} from "react-native";
 import Button from "../../../components/ui/Button";
 import { useCreateArchaeologist } from "../../../hooks/useArchaeologist";
 import { Archaeologist } from "../../../repositories/archaeologistRespository";
@@ -14,7 +22,6 @@ export default function New_archaeologist() {
   const createMutation = useCreateArchaeologist();
 
   const isButtonDisabled = createMutation.isPending || !nombre.trim() || !apellido.trim();
-
 
   const handleCrear = () => {
     if (isButtonDisabled && !createMutation.isPending) return;
@@ -41,70 +48,176 @@ export default function New_archaeologist() {
   };
 
   return (
-    <View className="flex-1 bg-[#F7F0E6] items-center">
+    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
       <Navbar title="Nuevo Arqueólogo" showBackArrow />
-      <View className="w-full items-center">
-        <Text
-          className="text-center text-[18px] mt-3 mb-2 text-[#222]"
-          style={{ fontFamily: "CrimsonText-Regular" }}
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+            paddingTop: Platform.OS === "web" ? 40 : 20,
+            paddingBottom: Platform.OS === "web" ? 32 : 20,
+          }}
         >
-          Ingrese los datos del nuevo arqueólogo
-        </Text>
-        <View className="mb-2 w-[98%] self-center">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
-          >
-            NOMBRE
-          </Text>
-          <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
+          <View
             style={{
-              fontFamily: "MateSC-Regular",
-              backgroundColor: "#F7F5F2",
+              width: "100%",
+              maxWidth: 800,
+              alignSelf: "center",
             }}
-            placeholder="Nombre"
-            value={nombre}
-            onChangeText={setNombre}
-            placeholderTextColor="#A68B5B"
-            selectionColor="#8B5E3C"
-          />
-        </View>
-        <View className="mb-2 w-[98%] self-center">
-          <Text
-            className="text-[16px] font-bold mb-2 text-[#3d2c13]"
-            style={{ fontFamily: "MateSC-Regular" }}
           >
-            APELLIDO
-          </Text>
-          <TextInput
-            className="border-2 border-[#A67C52] rounded-lg p-2 bg-[#F7F5F2] text-[16px] mb-2 w-full"
-            style={{
-              fontFamily: "MateSC-Regular",
-              backgroundColor: "#F7F5F2",
-            }}
-            placeholder="Apellido"
-            value={apellido}
-            onChangeText={setApellido}
-            placeholderTextColor="#A68B5B"
-            selectionColor="#8B5E3C"
-          />
-        </View>
-        <Button
-          title={createMutation.isPending ? "Creando..." : "Crear Arqueólogo"}
-          onPress={handleCrear}
-          className={`w-[98%] self-center mb-4 rounded-lg py-3 items-center ${isButtonDisabled ? 'bg-gray-400' : 'bg-[#6B705C]'}`}
-          textClassName="text-[16px] font-bold text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-        <Button
-          title="Cancelar"
-          onPress={handleCancelar}
-          className="w-[98%] self-center bg-[#D9C6A5] rounded-lg py-3 items-center"
-          textClassName="text-[16px] text-white"
-          textStyle={{ fontFamily: "MateSC-Regular" }}
-        />
-      </View>
+            {/* Encabezado */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 28,
+                marginBottom: 32,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 28,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Registro de Arqueólogo
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#A0785D",
+                }}
+              >
+                Ingrese los datos del nuevo arqueólogo en el sistema
+              </Text>
+            </View>
+
+            {/* Formulario */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#8B5E3C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              {/* Campo Nombre */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Nombre
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Ingrese el nombre"
+                  value={nombre}
+                  onChangeText={setNombre}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                />
+              </View>
+
+              {/* Campo Apellido */}
+              <View style={{ marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Apellido
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                  placeholder="Ingrese el apellido"
+                  value={apellido}
+                  onChangeText={setApellido}
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                />
+              </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={{ gap: 16 }}>
+              <Button
+                title={createMutation.isPending ? "Creando..." : "Crear Arqueólogo"}
+                onPress={handleCrear}
+                style={{
+                  opacity: isButtonDisabled ? 0.6 : 1,
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              />
+              
+              <Button
+                title="Cancelar"
+                onPress={handleCancelar}
+                style={{
+                  backgroundColor: "#E5D4C1",
+                }}
+                textStyle={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                }}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
