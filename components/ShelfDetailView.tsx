@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { ClipPath, Defs, G, Rect, Text as SvgText, } from 'react-native-svg';
 import Colors from '../constants/Colors';
 
 type SlotId = string;
@@ -97,6 +97,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
     return { level: Number(level), column: Number(column) };
   }, [selectedSlot]);
 
+  const outerStroke = 1.2;
+
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.cream }}>
       {/* Header */}
@@ -113,9 +115,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
       {onClose && (
         <Pressable
           onPress={onClose}
-          className={`absolute right-7 w-11 h-11 rounded-full items-center justify-center z-10 border-[1.5px] bg-white shadow-lg active:scale-95 ${
-            Platform.OS === 'android' ? 'top-16' : 'top-4'
-          }`}
+          className={`absolute right-7 w-11 h-11 rounded-full items-center justify-center z-10 border-[1.5px] bg-white shadow-lg active:scale-95 ${Platform.OS === 'android' ? 'top-16' : 'top-4'
+            }`}
           style={({ pressed }) => ({
             borderColor: Colors.cremit,
             backgroundColor: pressed ? Colors.cremitLight : '#ffffff',
@@ -133,9 +134,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View
-          className={`w-full max-w-[1180px] flex-col gap-5 ${
-            isDesktop ? 'md:flex-row md:gap-6 md:items-stretch' : 'items-center'
-          }`}
+          className={`w-full max-w-[1180px] flex-col gap-5 ${isDesktop ? 'md:flex-row md:gap-6 md:items-stretch' : 'items-center'
+            }`}
         >
           {/* SVG */}
           <View
@@ -165,15 +165,31 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                 preserveAspectRatio="xMidYMid meet"
               >
+                {/* Clip redondeado EXACTO de la grilla */}
+                <Defs>
+                  <ClipPath id="gridRoundedClip">
+                    <Rect
+                      x={gridOriginX}
+                      y={gridOriginY}
+                      width={gridWidth}
+                      height={gridHeight}
+                      rx={12}
+                    />
+                  </ClipPath>
+                </Defs>
+
                 {/* Fondo general */}
                 <Rect
-                  x={0}
-                  y={0}
-                  width={svgWidth}
-                  height={svgHeight}
+                  x={outerStroke / 2}
+                  y={outerStroke / 2}
+                  width={svgWidth - outerStroke}
+                  height={svgHeight - outerStroke}
                   fill={Colors.cream}
                   rx={24}
+                  stroke={Colors.cremit}
+                  strokeWidth={outerStroke}
                 />
+
 
                 {/* Contenedor principal */}
                 <Rect
@@ -241,110 +257,123 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                   );
                 })}
 
-                {/* Fondo suave de grilla */}
-                <Rect
-                  x={gridOriginX - 2}
-                  y={gridOriginY - 2}
-                  width={gridWidth + 4}
-                  height={gridHeight + 4}
-                  fill={Colors.cream}
-                  opacity={0.65}
-                  rx={12}
-                />
+                {/* Todo lo de la matriz va “recortado” */}
+                <G clipPath="url(#gridRoundedClip)">
+                  {/* Fondo suave de grilla */}
+                  <Rect
+                    x={gridOriginX}
+                    y={gridOriginY}
+                    width={gridWidth}
+                    height={gridHeight}
+                    fill={Colors.cream}
+                    opacity={0.65}
+                  />
 
-                {/* Celdas con borde (toda la matriz) */}
-                {Array.from({ length: levels }).map((_, levelIndex) =>
-                  Array.from({ length: columns }).map((_, colIndex) => {
-                    const cellX = gridOriginX + colIndex * slotWidth;
-                    const cellY = gridOriginY + levelIndex * levelHeight;
-                    const cellW = slotWidth;
-                    const cellH = levelHeight;
+                  {/* Celdas con borde (toda la matriz) */}
+                  {Array.from({ length: levels }).map((_, levelIndex) =>
+                    Array.from({ length: columns }).map((_, colIndex) => {
+                      const cellX = gridOriginX + colIndex * slotWidth;
+                      const cellY = gridOriginY + levelIndex * levelHeight;
+                      const cellW = slotWidth;
+                      const cellH = levelHeight;
+
+                      return (
+                        <Rect
+                          key={`cell-${levelIndex}-${colIndex}`}
+                          x={cellX}
+                          y={cellY}
+                          width={cellW}
+                          height={cellH}
+                          fill="transparent"
+                          stroke={Colors.cremit}
+                          strokeWidth={0.9}
+                        />
+                      );
+                    }),
+                  )}
+
+                  {/* Slots (igual que los tenías) */}
+                  {slots.map(({ id, uiLevel, uiCol, x, y }) => {
+                    const selected = selectedSlot === id;
+
+                    const fill = selected ? Colors.darkgreen : '#ffffff';
+                    const stroke = selected ? Colors.green : Colors.cremit;
+                    const labelColor = selected ? '#ffffff' : Colors.brown;
+
+                    const gapX = slotWidth * 0.12;
+                    const gapY = levelHeight * 0.18;
+
+                    const slotX = x + gapX;
+                    const slotY = y + gapY;
+                    const slotW = slotWidth - gapX * 2;
+                    const slotH = levelHeight - gapY * 2;
+
+                    const slotLabelFontSize = selected
+                      ? isDesktop ? 13 : 14
+                      : isDesktop ? 11.5 : 12.5;
+
+                    const textX = isMobile ? slotX + slotW / 2.5 : slotX + slotW / 2;
+                    const textOffsetY =
+                      Platform.OS === 'ios'
+                        ? 5
+                        : (isMobile ? 3.5 : slotLabelFontSize * 0.35);
+                    const textY = slotY + slotH / 2 + textOffsetY;
 
                     return (
-                      <Rect
-                        key={`cell-${levelIndex}-${colIndex}`}
-                        x={cellX}
-                        y={cellY}
-                        width={cellW}
-                        height={cellH}
-                        fill="transparent"
-                        stroke={Colors.cremit}
-                        strokeWidth={0.9}
-                      />
-                    );
-                  }),
-                )}
-
-                {/* Slots */}
-                {slots.map(({ id, uiLevel, uiCol, x, y }) => {
-                  const selected = selectedSlot === id;
-
-                  const fill = selected ? Colors.darkgreen : '#ffffff';
-                  const stroke = selected ? Colors.green : Colors.cremit;
-                  const labelColor = selected ? '#ffffff' : Colors.brown;
-
-                  const gapX = slotWidth * 0.12;
-                  const gapY = levelHeight * 0.18;
-
-                  const slotX = x + gapX;
-                  const slotY = y + gapY;
-                  const slotW = slotWidth - gapX * 2;
-                  const slotH = levelHeight - gapY * 2;
-
-                  const slotLabelFontSize = selected
-                    ? isDesktop ? 13 : 14
-                    : isDesktop ? 11.5 : 12.5;
-
-                  // Centro del rectángulo
-                  const textX = slotX + slotW / 2.5;
-                  // iOS necesita offset mayor para bajar el texto
-                  const textOffsetY = Platform.OS === 'ios' ? 5 : (isMobile ? 3.5 : slotLabelFontSize * 0.35);
-                  const textY = slotY + slotH / 2 + textOffsetY;
-
-                  return (
-                    <G
-                      key={id}
-                      onPress={() => handleSlotClick(id)}
-                      style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : undefined}
-                    >
-                      {/* Sombra */}
-                      <Rect
-                        x={slotX + 1.2}
-                        y={slotY + 1.6}
-                        width={slotW}
-                        height={slotH}
-                        fill="#000"
-                        opacity={0.05}
-                        rx={10}
-                      />
-
-                      {/* Slot principal */}
-                      <Rect
-                        x={slotX}
-                        y={slotY}
-                        width={slotW}
-                        height={slotH}
-                        fill={fill}
-                        stroke={stroke}
-                        strokeWidth={selected ? 2 : 1.4}
-                        rx={10}
-                      />
-
-                      {/* Texto centrado */}
-                      <SvgText
-                        x={textX}
-                        y={textY}
-                        textAnchor="middle"
-                        fontSize={slotLabelFontSize}
-                        fontWeight={selected ? '700' : '600'}
-                        fill={labelColor}
+                      <G
+                        key={id}
+                        onPress={() => handleSlotClick(id)}
+                        style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : undefined}
                       >
-                        {uiLevel}-{uiCol}
-                      </SvgText>
-                    </G>
-                  );
-                })}
+                        <Rect
+                          x={slotX + 1.2}
+                          y={slotY + 1.6}
+                          width={slotW}
+                          height={slotH}
+                          fill="#000"
+                          opacity={0.05}
+                          rx={10}
+                        />
+
+                        <Rect
+                          x={slotX}
+                          y={slotY}
+                          width={slotW}
+                          height={slotH}
+                          fill={fill}
+                          stroke={stroke}
+                          strokeWidth={selected ? 2 : 1.4}
+                          rx={10}
+                        />
+
+                        <SvgText
+                          x={textX}
+                          y={textY}
+                          textAnchor="middle"
+                          fontSize={slotLabelFontSize}
+                          fontWeight={selected ? '700' : '600'}
+                          fill={labelColor}
+                        >
+                          {uiLevel}-{uiCol}
+                        </SvgText>
+                      </G>
+                    );
+                  })}
+                </G>
+
+                {/* Borde externo encima, para rematar y tapar cualquier micro-gap */}
+                <Rect
+                  x={gridOriginX}
+                  y={gridOriginY}
+                  width={gridWidth}
+                  height={gridHeight}
+                  rx={12}
+                  fill="transparent"
+                  stroke={Colors.cremit}
+                  strokeWidth={1.2}
+                />
               </Svg>
+
             </View>
           </View>
 
