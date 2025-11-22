@@ -57,6 +57,13 @@ export default function NewLoan() {
   const [loanDate] = useState(`${year}-${month}-${day}`);
   const [loanTime] = useState(`${hours}:${minutes}`);
 
+  // Función para formatear la fecha correctamente para mostrar
+  const formatDisplayDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString("es-ES");
+  };
+
   // Estados para modales
   const [artefactModalVisible, setArtefactModalVisible] = useState(false);
   const [requesterModalVisible, setRequesterModalVisible] = useState(false);
@@ -398,7 +405,7 @@ export default function NewLoan() {
                         color: "#4A3725",
                       }}
                     >
-                      Fecha: {new Date(loanDate).toLocaleDateString("es-ES")}
+                      Fecha: {formatDisplayDate(loanDate)}
                     </Text>
                   </View>
 

@@ -79,8 +79,72 @@ export default function ViewLoan() {
   };
 
   // Separar préstamos según tengan returnTime o no
-  const activeLoans = loans.filter((loan) => !loan.returnTime);
-  const finishedLoans = loans.filter((loan) => loan.returnTime);
+  const activeLoans = loans
+    .filter((loan) => !loan.returnTime)
+    .sort((a, b) => {
+      console.log('Loan A:', {
+        id: a.id,
+        loanDate: a.loanDate,
+        loanTime: a.loanTime,
+        combined: `${a.loanDate}T${a.loanTime || '00:00:00'}`
+      });
+      console.log('Loan B:', {
+        id: b.id,
+        loanDate: b.loanDate,
+        loanTime: b.loanTime,
+        combined: `${b.loanDate}T${b.loanTime || '00:00:00'}`
+      });
+
+      let dateTimeA, dateTimeB;
+
+      try {
+        if (a.loanTime && a.loanTime.includes('T')) {
+          dateTimeA = new Date(a.loanTime).getTime();
+        } else {
+          dateTimeA = new Date(`${a.loanDate}T${a.loanTime || '00:00:00'}`).getTime();
+        }
+
+        if (b.loanTime && b.loanTime.includes('T')) {
+          dateTimeB = new Date(b.loanTime).getTime();
+        } else {
+          dateTimeB = new Date(`${b.loanDate}T${b.loanTime || '00:00:00'}`).getTime();
+        }
+      } catch (error) {
+        console.error('Error parsing dates:', error);
+        dateTimeA = new Date(a.loanDate).getTime();
+        dateTimeB = new Date(b.loanDate).getTime();
+      }
+
+      const result = dateTimeB - dateTimeA;
+      console.log('Comparison result:', result);
+      return result;
+    });
+
+  const finishedLoans = loans
+    .filter((loan) => loan.returnTime)
+    .sort((a, b) => {
+      let dateTimeA, dateTimeB;
+
+      try {
+        if (a.loanTime && a.loanTime.includes('T')) {
+          dateTimeA = new Date(a.loanTime).getTime();
+        } else {
+          dateTimeA = new Date(`${a.loanDate}T${a.loanTime || '00:00:00'}`).getTime();
+        }
+
+        if (b.loanTime && b.loanTime.includes('T')) {
+          dateTimeB = new Date(b.loanTime).getTime();
+        } else {
+          dateTimeB = new Date(`${b.loanDate}T${b.loanTime || '00:00:00'}`).getTime();
+        }
+      } catch (error) {
+        console.error('Error parsing dates:', error);
+        dateTimeA = new Date(a.loanDate).getTime();
+        dateTimeB = new Date(b.loanDate).getTime();
+      }
+
+      return dateTimeB - dateTimeA;
+    });
 
   const renderLoanCard = (loan: Loan) => (
     <LoanCard
