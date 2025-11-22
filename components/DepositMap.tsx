@@ -21,10 +21,10 @@ const SHELVES: ShelfBox[] = [
   { id: "s_120_246", x: 120, y: 246, w: 41, h: 75, label: "Estante A3" },
   { id: "s_120_322", x: 120, y: 322, w: 41, h: 75, label: "Estante A2" },
   { id: "s_120_398", x: 120, y: 398, w: 41, h: 75, label: "Estante A1" },
-  { id: "s_162_190", x: 162, y: 171, w: 41, h: 75, label: "Estante B1" },
-  { id: "s_162_246", x: 162, y: 246, w: 41, h: 75, label: "Estante B2" },
-  { id: "s_162_322", x: 162, y: 322, w: 41, h: 75, label: "Estante B3" },
-  { id: "s_162_398", x: 162, y: 398, w: 41, h: 75, label: "Estante B4" },
+  { id: "s_162_190", x: 162, y: 171, w: 41, h: 75, label: "Estante B4" },
+  { id: "s_162_246", x: 162, y: 246, w: 41, h: 75, label: "Estante B3" },
+  { id: "s_162_322", x: 162, y: 322, w: 41, h: 75, label: "Estante B2" },
+  { id: "s_162_398", x: 162, y: 398, w: 41, h: 75, label: "Estante B1" },
 
   // Estantes centro (C y D)
   { id: "s_259_454", x: 259, y: 454, w: 41, h: 75, label: "Estante C1" },
@@ -58,14 +58,14 @@ const SHELVES: ShelfBox[] = [
 ]
 
 const SHELF_ID_MAP: Record<string, number> = {
-  s_120_398: 1,
-  s_120_322: 2,
-  s_120_246: 3,
-  s_120_190: 4,
-  s_162_398: 5,
-  s_162_322: 6,
-  s_162_246: 7,
-  s_162_190: 8,
+  s_120_398: 1,  
+  s_120_322: 2,  
+  s_120_246: 3,  
+  s_120_190: 4,  
+  s_162_398: 5,  
+  s_162_322: 6,  
+  s_162_246: 7,  
+  s_162_190: 8, 
   s_259_454: 9,
   s_259_378: 10,
   s_259_302: 11,

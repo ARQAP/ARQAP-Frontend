@@ -1,6 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Dimensions,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
 import Colors from '../constants/Colors';
 
@@ -11,7 +19,7 @@ type ShelfDetailViewProps = {
   shelfId: number;
   levels: number;
   columns: number;
-  occupiedSlots?: SlotId[];
+  occupiedSlots?: SlotId[]; // se usa sólo para el contador, no para la visual
   onSlotClick?: (slotId: SlotId) => void;
   onClose?: () => void;
 };
@@ -27,36 +35,58 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
   const windowWidth = Dimensions.get('window').width;
   const isDesktop = windowWidth >= 768;
+  const isMobile = !isDesktop;
 
-  // Proporciones del SVG (más apaisado)
-  const svgWidth = 320;
-  const svgHeight = 220;
-  const padding = 22;
+  // Proporciones del SVG (sistema de coordenadas interno)
+  const svgWidth = 360;
+  const svgHeight = 230;
+  const padding = 20;
+
   const usableWidth = svgWidth - padding * 2;
   const usableHeight = svgHeight - padding * 2;
-  const levelHeight = usableHeight / Math.max(levels, 1);
-  const slotWidth = usableWidth / Math.max(columns, 1);
 
-  const isOccupied = (slotId: SlotId) => occupiedSlots.includes(slotId);
+  // Zonas para labels y grilla
+  const headerHeight = 24; // fila de columnas
+  const sideLabelWidth = 26; // columna de niveles
 
+  const gridWidth = usableWidth - sideLabelWidth - 8;
+  const gridHeight = usableHeight - headerHeight - 8;
+
+  const safeLevels = Math.max(levels, 1);
+  const safeColumns = Math.max(columns, 1);
+
+  const levelHeight = gridHeight / safeLevels;
+  const slotWidth = gridWidth / safeColumns;
+
+  const gridOriginX = padding + sideLabelWidth + 4;
+  const gridOriginY = padding + headerHeight + 4;
+
+  // Tamaños de fuente adaptados
+  const colLabelFontSize = isDesktop ? 11 : 12;
+  const rowLabelFontSize = isDesktop ? 11 : 12;
+  const headerTagFontSize = isDesktop ? 9 : 10;
+
+  // 1-1 ES ARRIBA A LA IZQUIERDA
   const slots = useMemo(
     () =>
       Array.from({ length: levels }).flatMap((_, levelIndex) =>
         Array.from({ length: columns }).map((_, colIndex) => {
-          const uiLevel = levels - levelIndex;
-          const uiCol = colIndex + 1;
+          const uiLevel = levelIndex + 1; // fila superior = 1
+          const uiCol = colIndex + 1; // columna izquierda = 1
           const id = `L${uiLevel}-C${uiCol}`;
-          const x = padding + colIndex * slotWidth;
-          const y = padding + levelIndex * levelHeight;
+
+          const x = gridOriginX + colIndex * slotWidth;
+          const y = gridOriginY + levelIndex * levelHeight;
+
           return { id, uiLevel, uiCol, x, y };
         }),
       ),
-    [levels, columns, slotWidth, levelHeight],
+    [levels, columns, slotWidth, levelHeight, gridOriginX, gridOriginY],
   );
 
   const handleSlotClick = (slotId: SlotId) => {
     setSelectedSlot(slotId);
-    // onSlotClick se dispara desde el botón "Ver piezas"
+    // el callback real se ejecuta desde el botón "Ver piezas"
   };
 
   const selectedSlotInfo = useMemo(() => {
@@ -68,28 +98,13 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   }, [selectedSlot]);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.cream }}>
       {/* Header */}
-      <View 
-        className="px-6 pt-5 pb-4 border-b" 
-        style={{ 
-          backgroundColor: '#ffffff',
-          borderBottomColor: Colors.cremit 
-        }}
-      >
-        <Text 
-          className="text-[11px] font-semibold uppercase mb-1" 
-          style={{ 
-            color: Colors.brown,
-            letterSpacing: 1.5 
-          }}
-        >
+      <View className="px-6 pt-5 pb-4 border-b bg-white" style={{ borderBottomColor: Colors.cremit }}>
+        <Text className="text-[11px] font-semibold uppercase mb-1 tracking-widest" style={{ color: Colors.brown }}>
           Vista Detallada
         </Text>
-        <Text 
-          className="text-2xl font-bold" 
-          style={{ color: Colors.black }}
-        >
+        <Text className="text-2xl font-bold" style={{ color: Colors.black }}>
           {shelfName}
         </Text>
       </View>
@@ -98,17 +113,12 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
       {onClose && (
         <Pressable
           onPress={onClose}
-          className="absolute top-4 right-4 w-11 h-11 rounded-full items-center justify-center z-10"
+          className={`absolute right-7 w-11 h-11 rounded-full items-center justify-center z-10 border-[1.5px] bg-white shadow-lg active:scale-95 ${
+            Platform.OS === 'android' ? 'top-16' : 'top-4'
+          }`}
           style={({ pressed }) => ({
-            backgroundColor: pressed ? Colors.cremitLight : '#ffffff',
-            borderWidth: 1.5,
             borderColor: Colors.cremit,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.18,
-            shadowRadius: 8,
-            elevation: 5,
-            transform: [{ scale: pressed ? 0.94 : 1 }],
+            backgroundColor: pressed ? Colors.cremitLight : '#ffffff',
           })}
         >
           <Text className="text-[22px] font-bold" style={{ color: Colors.black }}>
@@ -124,174 +134,218 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
       >
         <View
           className={`w-full max-w-[1180px] flex-col gap-5 ${
-            isDesktop ? 'md:flex-row md:gap-6 md:items-stretch' : ''
+            isDesktop ? 'md:flex-row md:gap-6 md:items-stretch' : 'items-center'
           }`}
         >
           {/* SVG */}
           <View
-            className="bg-white rounded-2xl items-center justify-center p-[18px]"
+            className="bg-white rounded-2xl p-[18px]"
             style={{
               borderWidth: 1,
               borderColor: Colors.cremit,
-              minHeight: 260,
-              maxHeight: 400,
-              aspectRatio: 16 / 9,
+              // 🔍 En mobile le damos más altura real y dejamos que el SVG se expanda
+              minHeight: isDesktop ? 260 : 320,
+              maxHeight: isDesktop ? 420 : undefined,
+              height: isDesktop ? 420 : 320,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 10,
+              shadowOpacity: 0.05,
+              shadowRadius: 9,
               elevation: 3,
               width: isDesktop ? '65%' : '100%',
             }}
           >
-            <Svg
-              width="100%"
-              height="100%"
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {/* Fondo general */}
-              <Rect
-                x={0}
-                y={0}
-                width={svgWidth}
-                height={svgHeight}
-                fill={Colors.cream}
-                rx={28}
-              />
+            <Text className="text-xs font-semibold uppercase text-center mb-3 tracking-wide" style={{ color: Colors.brown }}>
+              Mapa de estantería
+            </Text>
+            <View className="flex-1 items-center justify-center">
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                preserveAspectRatio="xMidYMid meet"
+              >
+                {/* Fondo general */}
+                <Rect
+                  x={0}
+                  y={0}
+                  width={svgWidth}
+                  height={svgHeight}
+                  fill={Colors.cream}
+                  rx={24}
+                />
 
-              {/* Marco exterior grande */}
-              <Rect
-                x={padding - 14}
-                y={padding - 4}
-                width={usableWidth + 28}
-                height={usableHeight + 8}
-                fill={Colors.black}
-                rx={22}
-              />
+                {/* Contenedor principal */}
+                <Rect
+                  x={padding - 6}
+                  y={padding - 4}
+                  width={usableWidth + 12}
+                  height={usableHeight + 8}
+                  fill="#ffffff"
+                  rx={18}
+                  stroke={Colors.cremit}
+                  strokeWidth={1}
+                />
 
-              {/* Marco interior */}
-              <Rect
-                x={padding - 4}
-                y={padding + 4}
-                width={usableWidth + 8}
-                height={usableHeight - 8}
-                fill={Colors.cremit}
-                rx={16}
-              />
+                {/* Cabecera de columnas (1..M) */}
+                {Array.from({ length: columns }).map((_, colIndex) => {
+                  const colNumber = colIndex + 1;
+                  const colCenterX =
+                    gridOriginX + colIndex * slotWidth + slotWidth / 2;
 
-              {/* Laterales oscuros */}
-              <Rect
-                x={padding - 4}
-                y={padding + 4}
-                width={12}
-                height={usableHeight - 8}
-                fill={Colors.black}
-                opacity={0.92}
-              />
-              <Rect
-                x={padding + usableWidth}
-                y={padding + 4}
-                width={12}
-                height={usableHeight - 8}
-                fill={Colors.black}
-                opacity={0.92}
-              />
-
-              {/* Planchas horizontales */}
-              {Array.from({ length: levels }).map((_, levelIndex) => {
-                const plankY =
-                  padding +
-                  (levelIndex + 1) * levelHeight -
-                  levelHeight * 0.3;
-                return (
-                  <Rect
-                    key={`plank-${levelIndex}`}
-                    x={padding}
-                    y={plankY}
-                    width={usableWidth}
-                    height={levelHeight * 0.18}
-                    fill={Colors.lightbrown}
-                    rx={26}
-                  />
-                );
-              })}
-
-              {/* Slots */}
-              {slots.map(({ id, uiLevel, uiCol, x, y }) => {
-                const occupied = isOccupied(id);
-                const selected = selectedSlot === id;
-
-                let fill, stroke, labelColor;
-
-                if (selected) {
-                  fill = Colors.darkgreen;
-                  stroke = Colors.green;
-                  labelColor = '#ffffff';
-                } else if (occupied) {
-                  fill = Colors.lightgreen;
-                  stroke = Colors.mediumgreen;
-                  labelColor = Colors.black;
-                } else {
-                  fill = '#FFFFFF';
-                  stroke = Colors.cremit;
-                  labelColor = Colors.brown;
-                }
-
-                const slotX = x + slotWidth * 0.08;
-                const slotY = y + levelHeight * 0.18;
-                const slotW = slotWidth * 0.84;
-                const slotH = levelHeight * 0.48;
-
-                return (
-                  <G key={id} onPress={() => handleSlotClick(id)}>
-                    {/* Sombra */}
-                    <Rect
-                      x={slotX + 2}
-                      y={slotY + 3}
-                      width={slotW}
-                      height={slotH}
-                      fill="#000"
-                      opacity={0.08}
-                      rx={14}
-                    />
-                    {/* Slot principal */}
-                    <Rect
-                      x={slotX}
-                      y={slotY}
-                      width={slotW}
-                      height={slotH}
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={selected ? 2.8 : 1.6}
-                      rx={14}
-                    />
-                    {/* Indicador superior si está ocupado */}
-                    {occupied && (
-                      <Rect
-                        x={slotX + slotW * 0.08}
-                        y={slotY + 4}
-                        width={slotW * 0.84}
-                        height={4}
-                        fill={Colors.mediumgreen}
-                        rx={2}
-                      />
-                    )}
-                    {/* Label */}
+                  return (
                     <SvgText
-                      x={slotX + slotW / 2}
-                      y={slotY + slotH * 0.55}
+                      key={`col-label-${colNumber}`}
+                      x={colCenterX}
+                      y={padding + headerHeight - 6}
                       textAnchor="middle"
-                      fontSize={selected ? 14 : 12}
-                      fontWeight={selected ? '700' : '600'}
-                      fill={labelColor}
+                      fontSize={colLabelFontSize}
+                      fontWeight="600"
+                      fill={Colors.brown}
                     >
-                      {uiLevel}-{uiCol}
+                      {colNumber}
                     </SvgText>
-                  </G>
-                );
-              })}
-            </Svg>
+                  );
+                })}
+
+                {/* Etiqueta "N" a la izquierda */}
+                <SvgText
+                  x={padding + sideLabelWidth / 2}
+                  y={padding + headerHeight - 6}
+                  textAnchor="middle"
+                  fontSize={headerTagFontSize}
+                  fontWeight="600"
+                  fill={Colors.brown}
+                >
+                  N
+                </SvgText>
+
+                {/* Labels de niveles (1..N) – 1 ARRIBA */}
+                {Array.from({ length: levels }).map((_, levelIndex) => {
+                  const levelNumber = levelIndex + 1;
+                  const rowCenterY =
+                    gridOriginY + levelIndex * levelHeight + levelHeight / 2;
+
+                  return (
+                    <SvgText
+                      key={`row-label-${levelNumber}`}
+                      x={padding + sideLabelWidth / 2}
+                      y={rowCenterY + 3}
+                      textAnchor="middle"
+                      fontSize={rowLabelFontSize}
+                      fontWeight="600"
+                      fill={Colors.brown}
+                    >
+                      {levelNumber}
+                    </SvgText>
+                  );
+                })}
+
+                {/* Fondo suave de grilla */}
+                <Rect
+                  x={gridOriginX - 2}
+                  y={gridOriginY - 2}
+                  width={gridWidth + 4}
+                  height={gridHeight + 4}
+                  fill={Colors.cream}
+                  opacity={0.65}
+                  rx={12}
+                />
+
+                {/* Celdas con borde (toda la matriz) */}
+                {Array.from({ length: levels }).map((_, levelIndex) =>
+                  Array.from({ length: columns }).map((_, colIndex) => {
+                    const cellX = gridOriginX + colIndex * slotWidth;
+                    const cellY = gridOriginY + levelIndex * levelHeight;
+                    const cellW = slotWidth;
+                    const cellH = levelHeight;
+
+                    return (
+                      <Rect
+                        key={`cell-${levelIndex}-${colIndex}`}
+                        x={cellX}
+                        y={cellY}
+                        width={cellW}
+                        height={cellH}
+                        fill="transparent"
+                        stroke={Colors.cremit}
+                        strokeWidth={0.9}
+                      />
+                    );
+                  }),
+                )}
+
+                {/* Slots */}
+                {slots.map(({ id, uiLevel, uiCol, x, y }) => {
+                  const selected = selectedSlot === id;
+
+                  const fill = selected ? Colors.darkgreen : '#ffffff';
+                  const stroke = selected ? Colors.green : Colors.cremit;
+                  const labelColor = selected ? '#ffffff' : Colors.brown;
+
+                  const gapX = slotWidth * 0.12;
+                  const gapY = levelHeight * 0.18;
+
+                  const slotX = x + gapX;
+                  const slotY = y + gapY;
+                  const slotW = slotWidth - gapX * 2;
+                  const slotH = levelHeight - gapY * 2;
+
+                  const slotLabelFontSize = selected
+                    ? isDesktop ? 13 : 14
+                    : isDesktop ? 11.5 : 12.5;
+
+                  // Centro del rectángulo
+                  const textX = slotX + slotW / 2.5;
+                  // iOS necesita offset mayor para bajar el texto
+                  const textOffsetY = Platform.OS === 'ios' ? 5 : (isMobile ? 3.5 : slotLabelFontSize * 0.35);
+                  const textY = slotY + slotH / 2 + textOffsetY;
+
+                  return (
+                    <G
+                      key={id}
+                      onPress={() => handleSlotClick(id)}
+                      style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : undefined}
+                    >
+                      {/* Sombra */}
+                      <Rect
+                        x={slotX + 1.2}
+                        y={slotY + 1.6}
+                        width={slotW}
+                        height={slotH}
+                        fill="#000"
+                        opacity={0.05}
+                        rx={10}
+                      />
+
+                      {/* Slot principal */}
+                      <Rect
+                        x={slotX}
+                        y={slotY}
+                        width={slotW}
+                        height={slotH}
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth={selected ? 2 : 1.4}
+                        rx={10}
+                      />
+
+                      {/* Texto centrado */}
+                      <SvgText
+                        x={textX}
+                        y={textY}
+                        textAnchor="middle"
+                        fontSize={slotLabelFontSize}
+                        fontWeight={selected ? '700' : '600'}
+                        fill={labelColor}
+                      >
+                        {uiLevel}-{uiCol}
+                      </SvgText>
+                    </G>
+                  );
+                })}
+              </Svg>
+            </View>
           </View>
 
           {/* Panel derecho */}
@@ -303,151 +357,37 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
             }}
           >
             {/* Resumen estantería */}
-            <View 
-              className="bg-white rounded-2xl p-[18px]"
-              style={{
-                borderWidth: 1,
-                borderColor: Colors.cremit,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-            >
-              <View className="flex-row items-center gap-2 mb-[10px]">
-                <Ionicons name="cube-outline" size={20} color={Colors.green} />
-                <Text 
-                  className="text-[11px] font-bold uppercase" 
-                  style={{ color: Colors.green, letterSpacing: 1.2 }}
-                >
-                  Vista Detallada
+            <View className="bg-white rounded-2xl p-[18px] border shadow-sm" style={{ borderColor: Colors.cremit }}>
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center gap-2">
+                  <View className="w-8 h-8 rounded-lg items-center justify-center" style={{ backgroundColor: Colors.cream }}>
+                    <Ionicons name="cube" size={18} color={Colors.darkgreen} />
+                  </View>
+                  <Text className="text-[10px] font-bold uppercase tracking-wide" style={{ color: Colors.brown }}>
+                    Vista detallada
+                  </Text>
+                </View>
+                <Text className="text-xl font-extrabold" style={{ color: Colors.darkgreen }}>
+                  {shelfName}
                 </Text>
               </View>
-              <Text 
-                className="text-xl font-bold mb-[14px]" 
-                style={{ color: Colors.black }}
-              >
-                {shelfName}
-              </Text>
 
-              <View 
-                className="flex-row items-center rounded-xl py-[14px] px-[10px] mt-1"
-                style={{ backgroundColor: Colors.cream }}
-              >
+              <View className="flex-row items-center rounded-xl py-[14px] px-[10px]" style={{ backgroundColor: Colors.cream }}>
                 <View className="flex-1 items-center">
-                  <Text 
-                    className="text-2xl font-extrabold mb-0.5" 
-                    style={{ color: Colors.darkgreen }}
-                  >
+                  <Text className="text-2xl font-extrabold mb-0.5" style={{ color: Colors.darkgreen }}>
                     {levels}
                   </Text>
-                  <Text 
-                    className="text-[11px] font-semibold uppercase" 
-                    style={{ color: Colors.green, letterSpacing: 0.4 }}
-                  >
+                  <Text className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: Colors.green }}>
                     Niveles
                   </Text>
                 </View>
-                <View 
-                  className="w-px h-9" 
-                  style={{ backgroundColor: Colors.cremit }}
-                />
+                <View className="w-px h-9" style={{ backgroundColor: Colors.cremit }} />
                 <View className="flex-1 items-center">
-                  <Text 
-                    className="text-2xl font-extrabold mb-0.5" 
-                    style={{ color: Colors.darkgreen }}
-                  >
+                  <Text className="text-2xl font-extrabold mb-0.5" style={{ color: Colors.darkgreen }}>
                     {columns}
                   </Text>
-                  <Text 
-                    className="text-[11px] font-semibold uppercase" 
-                    style={{ color: Colors.green, letterSpacing: 0.4 }}
-                  >
+                  <Text className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: Colors.green }}>
                     Columnas
-                  </Text>
-                </View>
-                <View 
-                  className="w-px h-9" 
-                  style={{ backgroundColor: Colors.cremit }}
-                />
-                <View className="flex-1 items-center">
-                  <Text 
-                    className="text-2xl font-extrabold mb-0.5" 
-                    style={{ color: Colors.darkgreen }}
-                  >
-                    {occupiedSlots.length}
-                  </Text>
-                  <Text 
-                    className="text-[11px] font-semibold uppercase" 
-                    style={{ color: Colors.green, letterSpacing: 0.4 }}
-                  >
-                    Ocupados
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Leyenda */}
-            <View 
-              className="bg-white rounded-2xl p-[18px]"
-              style={{
-                borderWidth: 1,
-                borderColor: Colors.cremit,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-            >
-              <View className="flex-row items-center gap-2 mb-[10px]">
-                <Ionicons name="color-palette-outline" size={20} color={Colors.green} />
-                <Text 
-                  className="text-[11px] font-bold uppercase" 
-                  style={{ color: Colors.green, letterSpacing: 1.2 }}
-                >
-                  Leyenda
-                </Text>
-              </View>
-              <View className="gap-[10px]">
-                <View className="flex-row items-center gap-[10px]">
-                  <View
-                    className="w-6 h-6 rounded-md"
-                    style={{
-                      backgroundColor: Colors.lightgreen,
-                      borderColor: Colors.mediumgreen,
-                      borderWidth: 2,
-                    }}
-                  />
-                  <Text className="text-sm font-medium" style={{ color: Colors.black }}>
-                    Espacio ocupado
-                  </Text>
-                </View>
-                <View className="flex-row items-center gap-[10px]">
-                  <View
-                    className="w-6 h-6 rounded-md"
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderColor: Colors.cremit,
-                      borderWidth: 2,
-                    }}
-                  />
-                  <Text className="text-sm font-medium" style={{ color: Colors.black }}>
-                    Espacio disponible
-                  </Text>
-                </View>
-                <View className="flex-row items-center gap-[10px]">
-                  <View
-                    className="w-6 h-6 rounded-md"
-                    style={{
-                      backgroundColor: Colors.darkgreen,
-                      borderColor: Colors.green,
-                      borderWidth: 2,
-                    }}
-                  />
-                  <Text className="text-sm font-medium" style={{ color: Colors.black }}>
-                    Seleccionado
                   </Text>
                 </View>
               </View>
@@ -455,110 +395,52 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
 
             {/* Posición seleccionada */}
             <View
-              className="bg-white rounded-2xl p-[18px]"
+              className="rounded-2xl p-[18px] shadow-sm"
               style={{
                 borderWidth: selectedSlotInfo ? 2 : 1,
                 borderColor: selectedSlotInfo ? Colors.darkgreen : Colors.cremit,
                 backgroundColor: selectedSlotInfo ? '#F7F1E7' : '#ffffff',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
               }}
             >
-              <View className="flex-row items-center gap-2 mb-[10px]">
-                <Ionicons 
-                  name={selectedSlotInfo ? 'location' : 'hand-left-outline'} 
-                  size={20} 
-                  color={Colors.green} 
-                />
-                <Text 
-                  className="text-[11px] font-bold uppercase" 
-                  style={{ color: Colors.green, letterSpacing: 1.2 }}
-                >
-                  {selectedSlotInfo ? 'Posición activa' : 'Selecciona un espacio'}
-                </Text>
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center gap-2">
+                  <View
+                    className="w-8 h-8 rounded-lg items-center justify-center"
+                    style={{ backgroundColor: selectedSlotInfo ? Colors.darkgreen : Colors.cream }}
+                  >
+                    <Ionicons
+                      name={selectedSlotInfo ? 'location' : 'hand-left-outline'}
+                      size={18}
+                      color={selectedSlotInfo ? '#FFFFFF' : Colors.brown}
+                    />
+                  </View>
+                  <Text className="text-[10px] font-bold uppercase tracking-wide" style={{ color: Colors.brown }}>
+                    {selectedSlotInfo ? 'Posición activa' : 'Selecciona'}
+                  </Text>
+                </View>
+                {selectedSlotInfo && (
+                  <View className="px-3 py-1.5 rounded-full" style={{ backgroundColor: Colors.darkgreen }}>
+                    <Text className="text-sm font-bold text-white">
+                      Nivel {selectedSlotInfo.level} · Col {selectedSlotInfo.column}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {selectedSlotInfo ? (
                 <>
-                  <View 
-                    className="px-[14px] py-2 rounded-full self-start mb-3"
-                    style={{ backgroundColor: Colors.darkgreen }}
-                  >
-                    <Text className="text-[15px] font-bold text-white">
-                      Nivel {selectedSlotInfo.level} · Col {selectedSlotInfo.column}
-                    </Text>
-                  </View>
-                  <View 
-                    className="p-3 rounded-[10px] mb-[10px]"
-                    style={{
-                      backgroundColor: Colors.cream,
-                      borderLeftWidth: 3,
-                      borderLeftColor: Colors.darkgreen,
-                    }}
-                  >
-                    <Text 
-                      className="text-[11px] font-semibold uppercase mb-1" 
-                      style={{ color: Colors.green, letterSpacing: 0.5 }}
-                    >
-                      ID de ubicación
-                    </Text>
-                    <Text 
-                      className="text-base font-bold" 
-                      style={{ color: Colors.black, fontFamily: 'monospace' }}
-                    >
-                      {selectedSlot}
-                    </Text>
-                  </View>
                   <Pressable
+                    className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3 px-4 rounded-full my-2.5 shadow-lg active:scale-[0.98] active:bg-[#656e55]"
                     onPress={() => selectedSlot && onSlotClick?.(selectedSlot)}
-                    style={({ pressed }) => ({
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      borderRadius: 999,
-                      marginVertical: 10,
-                      backgroundColor: pressed ? Colors.green : Colors.darkgreen,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.12,
-                      shadowRadius: 4,
-                      elevation: 3,
-                      transform: [{ scale: pressed ? 0.97 : 1 }],
-                    })}
                   >
                     <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
-                    <Text 
-                      style={{ 
-                        fontSize: 15, 
-                        fontWeight: 'bold', 
-                        color: '#FFFFFF',
-                        letterSpacing: 0.4 
-                      }}
-                    >
+                    <Text className="text-white text-[15px] font-bold">
                       Ver piezas
                     </Text>
                   </Pressable>
-                  <View className="flex-row items-start gap-2">
-                    <Ionicons name="bulb-outline" size={16} color={Colors.brown} style={{ marginTop: 2 }} />
-                    <Text 
-                      className="text-[13px] italic flex-1" 
-                      style={{ color: Colors.brown, lineHeight: 19 }}
-                    >
-                      Visualiza las piezas arqueológicas almacenadas en esta ubicación.
-                    </Text>
-                  </View>
                 </>
               ) : (
-                <Text 
-                  className="text-sm text-center py-2" 
-                  style={{ color: Colors.green, lineHeight: 21 }}
-                >
+                <Text className="text-sm text-center py-2 leading-[21px]" style={{ color: Colors.green }}>
                   Toca un espacio en la estantería para ver sus detalles y las piezas almacenadas.
                 </Text>
               )}
@@ -566,7 +448,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

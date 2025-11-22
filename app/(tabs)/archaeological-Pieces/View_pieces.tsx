@@ -45,7 +45,7 @@ export default function ViewPieces() {
   const shelfIdNum = shelfIdParam != null ? Number(shelfIdParam) : undefined;
 
   // Si viene con shelfId, viene del DepositMap, sino de la lista normal de piezas
-  const backRoute = shelfIdNum !== undefined ? "/(tabs)/deposit" : "/(tabs)/archaeological-Pieces";
+  const backRoute = shelfIdNum !== undefined ? "/(tabs)/archaeological-Pieces/deposit-map" : "/(tabs)/archaeological-Pieces";
 
   const { data, isLoading, isError, refetch } = useArtefactSummaries(
     typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum)
@@ -68,6 +68,19 @@ export default function ViewPieces() {
 
   // Estado para el menú desplegable
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
+
+  // Inicializar filtros desde params cuando se navega desde shelf-detail
+  useEffect(() => {
+    if (params?.level) {
+      setFilterShelfLevel(String(params.level));
+    }
+    if (params?.column) {
+      setFilterShelfColumn(String(params.column));
+    }
+    if (shelfIdParam) {
+      setFilterShelf(String(shelfIdParam));
+    }
+  }, [params?.level, params?.column, shelfIdParam]);
 
   useEffect(() => {
     const handle = setTimeout(() => {

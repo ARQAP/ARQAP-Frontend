@@ -80,13 +80,27 @@ export type Mention = {
 // src/repositories/artefactRepository.ts
 export const ArtefactRepository = {
   getAll: async (filters?: { shelfId?: number }) => {
-    const { data } = await apiClient.get("/artefacts", { params: filters });
+    // Limpiar filtros undefined/null
+    const cleanFilters: Record<string, any> = {};
+    if (filters?.shelfId !== undefined && filters?.shelfId !== null && !isNaN(filters.shelfId)) {
+      cleanFilters.shelfId = filters.shelfId;
+    }
+    
+    const { data } = await apiClient.get("/artefacts", {
+      params: Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined,
+    });
     return data as Artefact[];
   },
 
   getSummaries: async (filters?: { shelfId?: number }) => {
+    // Limpiar filtros undefined/null
+    const cleanFilters: Record<string, any> = {};
+    if (filters?.shelfId !== undefined && filters?.shelfId !== null && !isNaN(filters.shelfId)) {
+      cleanFilters.shelfId = filters.shelfId;
+    }
+    
     const { data } = await apiClient.get("/artefacts/summary", {
-      params: filters,
+      params: Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined,
     });
     return data as ArtefactSummary[];
   },
