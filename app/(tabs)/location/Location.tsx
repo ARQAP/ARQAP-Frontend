@@ -62,21 +62,53 @@ export default function Location() {
     return allSites;
   }, [allSites, selectedSiteId, searchText]);
 
-  const handleEdit = (site: SiteType) => {
+ const handleEdit = (site: SiteType) => {
     router.push({
       pathname: "/(tabs)/location/Edit_site" as any,
-      params: { id: String(site.id) },
+      params: { 
+        id: String(site.id),
+        name: site.Name,
+        location: site.Location,
+        description: site.Description,
+        regionName: site.region?.name || '',
+        countryName: site.region?.country?.name || '',
+      },
     });
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteMutation.mutateAsync(id);
-      Alert.alert("Éxito", "Sitio arqueológico eliminado correctamente.");
-    } catch (error) {
-      const errorMessage = (error as Error).message || "Error al eliminar el sitio.";
-      Alert.alert("Error", errorMessage);
+const handleDelete = (id: number) => {
+    if (!id) {
+      Alert.alert("Error", "ID de sitio no válido.");
+      return;
     }
+
+    Alert.alert(
+      "Confirmar eliminación",
+      "¿Está seguro que desea eliminar este sitio arqueológico? Esta acción no se puede deshacer.",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteMutation.mutateAsync(id);
+              
+              await refetch();
+              
+              Alert.alert("Éxito", "Sitio arqueológico eliminado correctamente.");
+            } catch (error: any) {
+              console.error("Error al eliminar:", error);
+              const errorMessage = error?.message || error?.response?.data?.message || "Error al eliminar el sitio arqueológico.";
+              Alert.alert("Error", errorMessage);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleViewDetails = (site: SiteType) => {
