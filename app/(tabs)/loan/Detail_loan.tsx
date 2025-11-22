@@ -388,10 +388,9 @@ export default function DetailLoan() {
                                     color: "#555",
                                     marginBottom: 4,
                                 }}
-                            >
-                                Fecha y hora de préstamo:
+                            >Solicitado:
                             </Text>
-                            <Text style={{ color: "#333", fontSize: 16 }}>
+                            <Text style={{ color: "#333", fontSize: 14 }}>
                                 {formatDate(loan.loanDate)} a las{" "}
                                 {formatTime(loan.loanTime)}
                             </Text>
@@ -411,7 +410,7 @@ export default function DetailLoan() {
                                 <Text
                                     style={{
                                         color: Colors.green,
-                                        fontSize: 16,
+                                        fontSize: 14,
                                         fontWeight: "600",
                                     }}
                                 >
