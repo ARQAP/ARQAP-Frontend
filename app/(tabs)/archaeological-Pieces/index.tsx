@@ -34,7 +34,7 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
       onPressOut={() => setIsPressed(false)}
       onHoverIn={() => setIsHovered(true)}
       onHoverOut={() => setIsHovered(false)}
-      className="bg-white rounded-2xl border"
+      className="bg-[#fbf9f5] rounded-2xl border"
       style={[
         styles.cardShadow,
         {

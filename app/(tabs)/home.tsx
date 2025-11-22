@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
 import { useArchaeologists } from "@/hooks/useArchaeologist";
 import { useArtefacts } from "@/hooks/useArtefact";
 import { useCollections } from "@/hooks/useCollections";
 import { useLoans } from "@/hooks/useLoan";
 import { useLogoutMutation } from "@/hooks/useUserAuth";
+import { Ionicons } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -43,7 +43,7 @@ const ActionCard = ({ title, description, icon, color, count, onPress }: ActionC
       onPressOut={() => setIsPressed(false)}
       onHoverIn={() => setIsHovered(true)}
       onHoverOut={() => setIsHovered(false)}
-      className="bg-white rounded-2xl border"
+      className="bg-[#fbf9f5] rounded-2xl border"
       style={[
         styles.cardShadow,
         {
