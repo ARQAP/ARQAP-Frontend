@@ -286,81 +286,305 @@ export default function FiltersBar({
     </View>
   );
 
+  // Estado para controlar el panel de filtros avanzados
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+
+  // Obtener filtros activos para mostrar en chips
+  const activeFilters = useMemo(() => {
+    const active: Array<{ key: keyof FilterValues; label: string; value: string }> = [];
+    if (filters.material.trim()) {
+      active.push({ key: "material", label: "Material", value: filters.material });
+    }
+    if (filters.collection.trim()) {
+      active.push({ key: "collection", label: "Colección", value: filters.collection });
+    }
+    if (filters.site.trim()) {
+      active.push({ key: "site", label: "Sitio arqueológico", value: filters.site });
+    }
+    if (filters.shelf.trim()) {
+      active.push({ key: "shelf", label: "Número de estante", value: filters.shelf });
+    }
+    if (filters.shelfLevel.trim()) {
+      active.push({ key: "shelfLevel", label: "Nivel", value: filters.shelfLevel });
+    }
+    if (filters.shelfColumn.trim()) {
+      active.push({ key: "shelfColumn", label: "Columna", value: filters.shelfColumn });
+    }
+    return active;
+  }, [filters]);
+
+  // Handler para limpiar un filtro individual
+  const handleClearSingleFilter = (key: keyof FilterValues) => {
+    updateFilter(key, "");
+  };
+
   // Vista Desktop
   if (isWeb) {
     return (
       <View
         style={{
-          padding: 28,
-          backgroundColor: "#FFFFFF",
-          borderRadius: 16,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 2,
-          borderWidth: 1,
-          borderColor: "#E8DFD0",
           marginBottom: 32,
           position: "relative", // Asegurar contexto de posicionamiento para dropdowns absolutos
           overflow: "visible", // Permitir que el dropdown se salga del contenedor
+          // Z-index alto para que el contenedor (y sus hijos como el dropdown) estén por encima
+          // del div de "PIEZAS ENCONTRADAS" que tiene z-index: 1
+          // @ts-ignore - Web-only style
+          zIndex: 10,
         }}
       >
-        {/* Título con icono y badge */}
+        {/* Barra principal de filtros */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            marginBottom: 20,
-            justifyContent: "space-between",
+            gap: 12,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            padding: 12,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 2,
+            borderWidth: 1,
+            borderColor: "#E8DFD0",
+            // Responsive: en pantallas chicas, pasar a 2 filas
+            // @ts-ignore - Web-only style
+            flexWrap: "wrap" as any,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {/* Input de búsqueda por nombre */}
+          <TextInput
+            placeholder="Buscar por nombre"
+            value={filters.name}
+            onChangeText={(text) => updateFilter("name", text)}
+            style={{
+              flex: 1,
+              minWidth: 200,
+              backgroundColor: "#FAFAF8",
+              borderRadius: 8,
+              padding: 12,
+              fontSize: 15,
+              borderWidth: 1,
+              borderColor: "#E8DFD0",
+              fontWeight: "500",
+            }}
+          />
+
+          {/* Botón "Más filtros" */}
+          <TouchableOpacity
+            onPress={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: isAdvancedFiltersOpen ? "#F0F0F0" : "transparent",
+              borderRadius: 8,
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              borderWidth: 1,
+              borderColor: "#E8DFD0",
+            }}
+            activeOpacity={0.7}
+          >
             <Ionicons
               name="filter"
-              size={22}
+              size={18}
               color="#6B705C"
-              style={{ marginRight: 10 }}
             />
             <Text
               style={{
-                fontSize: 19,
-                fontWeight: "700",
+                fontSize: 14,
+                fontWeight: "600",
                 color: "#6B705C",
-                letterSpacing: 0.5,
               }}
             >
-              Filtros de búsqueda
+              Más filtros
             </Text>
-          </View>
-          {activeFiltersCount > 0 && (
-            <View
+            <Ionicons
+              name={isAdvancedFiltersOpen ? "chevron-up" : "chevron-down"}
+              size={16}
+              color="#6B705C"
+            />
+          </TouchableOpacity>
+
+          {/* Botón "Limpiar filtros" */}
+          <TouchableOpacity
+            onPress={onClear}
+            style={{
+              backgroundColor: "transparent",
+              borderRadius: 8,
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              borderWidth: 1,
+              borderColor: Colors.brown,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+          >
+            <Text
               style={{
-                backgroundColor: Colors.green,
-                borderRadius: 12,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                minWidth: 24,
-                alignItems: "center",
-                justifyContent: "center",
+                color: Colors.brown,
+                fontSize: 14,
+                fontWeight: "600",
               }}
             >
-              <Text
-                style={{
-                  color: "white",
-                  fontSize: 12,
-                  fontWeight: "700",
-                }}
-              >
-                {activeFiltersCount}
-              </Text>
-            </View>
-          )}
+              Limpiar filtros
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {filtersContent}
-        {/* Ocultar botones cuando hay un dropdown abierto para evitar superposición */}
-        {!openSelectId && actionButtons}
+        {/* Chips de filtros activos */}
+        {activeFilters.length > 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 12,
+              alignItems: "center",
+            }}
+          >
+            {activeFilters.map((filter) => (
+              <View
+                key={filter.key}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#F0F0F0",
+                  borderRadius: 20,
+                  paddingVertical: 6,
+                  paddingLeft: 12,
+                  paddingRight: 6,
+                  gap: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "500",
+                    color: "#6B705C",
+                  }}
+                >
+                  {filter.label}: {filter.value}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => handleClearSingleFilter(filter.key)}
+                  style={{
+                    padding: 4,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={16}
+                    color="#6B705C"
+                  />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Panel de filtros avanzados (plegable) */}
+        {isAdvancedFiltersOpen && (
+          <View
+            style={{
+              marginTop: 16,
+              backgroundColor: "#FFFFFF",
+              borderRadius: 12,
+              padding: 20,
+              borderWidth: 1,
+              borderColor: "#E8DFD0",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
+          >
+            <View
+              style={{
+                display: "grid" as any,
+                gridTemplateColumns: "repeat(3, 1fr)" as any,
+                gap: 16,
+              }}
+            >
+              {/* Dropdown buscable para material */}
+              <SearchableSelect
+                value={filters.material}
+                onChange={(value) => updateFilter("material", value)}
+                options={uniqueMaterials}
+                placeholder="Filtrar por material"
+                style={selectStyle}
+                selectId="material"
+                openSelectId={openSelectId}
+                onOpenChange={setOpenSelectId}
+              />
+
+              {/* Dropdown buscable para colección */}
+              <SearchableSelect
+                value={filters.collection}
+                onChange={(value) => updateFilter("collection", value)}
+                options={uniqueCollections}
+                placeholder="Filtrar por colección"
+                style={selectStyle}
+                selectId="collection"
+                openSelectId={openSelectId}
+                onOpenChange={setOpenSelectId}
+              />
+
+              {/* Dropdown buscable para sitio arqueológico */}
+              <SearchableSelect
+                value={filters.site}
+                onChange={(value) => updateFilter("site", value)}
+                options={uniqueSites}
+                placeholder="Filtrar por sitio arqueológico"
+                style={selectStyle}
+                selectId="site"
+                openSelectId={openSelectId}
+                onOpenChange={setOpenSelectId}
+              />
+
+              {/* Filtrar por número de estante */}
+              <TextInput
+                placeholder="Filtrar por número de estante"
+                value={filters.shelf}
+                onChangeText={(text) => updateFilter("shelf", text.replace(/[^0-9]/g, ""))}
+                keyboardType="numeric"
+                style={inputStyle}
+              />
+
+              {/* Filtros condicionales de ubicación */}
+              {filters.shelf !== "" && (
+                <>
+                  <TextInput
+                    placeholder="Filtrar por nivel (1-4)"
+                    value={filters.shelfLevel}
+                    onChangeText={(text) =>
+                      updateFilter("shelfLevel", text.replace(/[^0-9]/g, ""))
+                    }
+                    keyboardType="numeric"
+                    style={inputStyle}
+                  />
+                  <TextInput
+                    placeholder="Filtrar por columna (A-D)"
+                    value={filters.shelfColumn}
+                    onChangeText={(text) =>
+                      updateFilter(
+                        "shelfColumn",
+                        text.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 1)
+                      )
+                    }
+                    autoCapitalize="characters"
+                    style={inputStyle}
+                  />
+                </>
+              )}
+            </View>
+          </View>
+        )}
       </View>
     );
   }
@@ -449,4 +673,3 @@ export default function FiltersBar({
     </View>
   );
 }
-

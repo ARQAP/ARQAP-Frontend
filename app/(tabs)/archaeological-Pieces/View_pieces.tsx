@@ -263,6 +263,8 @@ export default function ViewPieces() {
         maxWidth: MAX_CONTENT_WIDTH,
         padding: 32,
         alignSelf: "center",
+        // NO usar position: relative ni z-index aquí para evitar crear un nuevo stacking context
+        // que limite el z-index del dropdown dentro de FiltersBar
       }}
     >
       <Button
@@ -291,7 +293,10 @@ export default function ViewPieces() {
           // Deshabilitar pointer events cuando hay un dropdown abierto para que no intercepte los clics
           // @ts-ignore - Web-only style
           pointerEvents: isDropdownOpen ? "none" : "auto",
-          // Asegurar que este div tenga un z-index bajo para que el dropdown esté por encima
+          // Z-index explícito y bajo para asegurar que quede por detrás del dropdown (z-index: 100000)
+          // @ts-ignore - Web-only style
+          position: "relative" as any,
+          // @ts-ignore - Web-only style
           zIndex: 1,
         }}
       >
@@ -591,8 +596,11 @@ export default function ViewPieces() {
             // Deshabilitar pointer events cuando hay un dropdown abierto para que no intercepte los clics
             // @ts-ignore - Web-only style
             pointerEvents: isDropdownOpen ? "none" : "auto",
-            // Asegurar que este div tenga un z-index bajo para que el dropdown esté por encima
-            zIndex: 1,
+            // Asegurar que este div tenga un z-index bajo para que quede por detrás del dropdown (z-index del dropdown es 10000)
+            // @ts-ignore - Web-only style
+            position: "relative" as any,
+            // @ts-ignore - Web-only style
+            zIndex: 0,
           }}
         >
           <Text
