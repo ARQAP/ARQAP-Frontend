@@ -1,6 +1,6 @@
 import { useIsAuthenticated } from "@/hooks/useUserAuth";
 import { useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import Colors from "../../constants/Colors";
 
@@ -12,9 +12,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     const { data: token, isLoading } = useIsAuthenticated();
     const router = useRouter();
     const segments = useSegments();
+    const [isMounted, setIsMounted] = useState(false);
+
+    // Asegurarse de que el componente esté montado antes de navegar
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
-        if (!isLoading) {
+        // Esperar a que el componente esté montado y el router esté listo
+        if (!isLoading && isMounted && segments.length > 0) {
             const inAuthGroup = segments[0] === "(tabs)";
 
             if (!token && inAuthGroup) {
@@ -24,7 +31,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
                     currentPath === "/(tabs)" ||
                     currentPath === "/(tabs)/index";
                 if (!isLoginPage) {
-                    router.replace("/(tabs)");
+                    // Usar setTimeout para asegurar que el router esté listo
+                    setTimeout(() => {
+                        router.replace("/(tabs)");
+                    }, 0);
                 }
             } else if (token && inAuthGroup) {
                 // Si hay token, verificar si está en login
@@ -35,12 +45,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
                     segments.length === 1;
 
                 if (isLoginPage) {
-                    // Usar replace para evitar que puedan volver atrás al login
-                    router.replace("/(tabs)/home");
+                    // Usar setTimeout para asegurar que el router esté listo
+                    setTimeout(() => {
+                        router.replace("/(tabs)/home");
+                    }, 0);
                 }
             }
         }
-    }, [token, isLoading, segments]);
+    }, [token, isLoading, segments, isMounted, router]);
 
     // Mostrar loading mientras se verifica la autenticación
     if (isLoading) {

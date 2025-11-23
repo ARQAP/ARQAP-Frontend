@@ -1,0 +1,452 @@
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Colors from "../../constants/Colors";
+import Button from "./Button";
+import SearchableSelect from "./SearchableSelect";
+
+// Tipos para los filtros
+export interface FilterValues {
+  name: string;
+  material: string;
+  collection: string;
+  site: string;
+  shelf: string;
+  shelfLevel: string;
+  shelfColumn: string;
+}
+
+interface FiltersBarProps {
+  // Valores actuales de los filtros
+  filters: FilterValues;
+  // Callbacks para actualizar filtros
+  onFilterChange: (filters: FilterValues) => void;
+  // Datos para extraer opciones únicas
+  pieces: Array<{
+    material?: string;
+    collection?: string;
+    site?: string;
+  }>;
+  // Callback para aplicar filtros (opcional, para modo manual)
+  onApply?: () => void;
+  // Callback para limpiar filtros
+  onClear: () => void;
+  // Callback opcional para notificar cuando un dropdown está abierto
+  onDropdownOpenChange?: (isOpen: boolean) => void;
+}
+
+
+export default function FiltersBar({
+  filters,
+  onFilterChange,
+  pieces,
+  onApply,
+  onClear,
+  onDropdownOpenChange,
+}: FiltersBarProps) {
+  const isWeb = Platform.OS === "web";
+  const isMobile = Platform.OS === "android" || Platform.OS === "ios";
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+  const [openSelectId, setOpenSelectId] = useState<string | null>(null);
+
+  // Notificar cuando el estado del dropdown cambia
+  useEffect(() => {
+    onDropdownOpenChange?.(openSelectId !== null);
+  }, [openSelectId, onDropdownOpenChange]);
+
+  // Extraer valores únicos para los selects
+  const uniqueMaterials = useMemo(() => {
+    const materials = new Set<string>();
+    pieces.forEach((p) => {
+      if (p.material && p.material.trim()) {
+        materials.add(p.material.trim());
+      }
+    });
+    return Array.from(materials).sort();
+  }, [pieces]);
+
+  const uniqueCollections = useMemo(() => {
+    const collections = new Set<string>();
+    pieces.forEach((p) => {
+      if (p.collection && p.collection.trim()) {
+        collections.add(p.collection.trim());
+      }
+    });
+    return Array.from(collections).sort();
+  }, [pieces]);
+
+  const uniqueSites = useMemo(() => {
+    const sites = new Set<string>();
+    pieces.forEach((p) => {
+      if (p.site && p.site.trim()) {
+        sites.add(p.site.trim());
+      }
+    });
+    return Array.from(sites).sort();
+  }, [pieces]);
+
+  // Contar filtros activos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.name.trim()) count++;
+    if (filters.material.trim()) count++;
+    if (filters.collection.trim()) count++;
+    if (filters.site.trim()) count++;
+    if (filters.shelf.trim()) count++;
+    if (filters.shelfLevel.trim()) count++;
+    if (filters.shelfColumn.trim()) count++;
+    return count;
+  }, [filters]);
+
+  // Handlers para actualizar filtros individuales
+  const updateFilter = (key: keyof FilterValues, value: string) => {
+    onFilterChange({
+      ...filters,
+      [key]: value,
+    });
+  };
+
+  // Estilos compartidos para inputs de texto (sin borde interno visible)
+  const inputStyle = {
+    backgroundColor: isWeb ? "#FAFAF8" : "#F7F5F2",
+    borderRadius: isWeb ? 10 : 8,
+    padding: isWeb ? 15 : 12,
+    fontSize: isWeb ? 15 : 14,
+    borderWidth: 1,
+    borderColor: "#E8DFD0",
+    fontWeight: "500" as const,
+  };
+
+  // Estilos para los selects buscables (sin borde interno, solo el contenedor)
+  const selectStyle = {
+    width: "100%",
+  };
+
+  // Contenedor principal de filtros
+  const filtersContent = (
+    <View
+      style={{
+        display: isWeb ? ("grid" as any) : "flex",
+        gridTemplateColumns: isWeb ? "repeat(3, 1fr)" : undefined,
+        gap: isWeb ? 16 : 12,
+        flexDirection: isMobile ? "column" : undefined,
+      }}
+    >
+      {/* Filtrar por nombre */}
+      <TextInput
+        placeholder="Filtrar por nombre"
+        value={filters.name}
+        onChangeText={(text) => updateFilter("name", text)}
+        style={inputStyle}
+      />
+
+      {/* Dropdown buscable para material */}
+      <SearchableSelect
+        value={filters.material}
+        onChange={(value) => updateFilter("material", value)}
+        options={uniqueMaterials}
+        placeholder="Filtrar por material"
+        style={selectStyle}
+        selectId="material"
+        openSelectId={openSelectId}
+        onOpenChange={setOpenSelectId}
+      />
+
+      {/* Dropdown buscable para colección */}
+      <SearchableSelect
+        value={filters.collection}
+        onChange={(value) => updateFilter("collection", value)}
+        options={uniqueCollections}
+        placeholder="Filtrar por colección"
+        style={selectStyle}
+        selectId="collection"
+        openSelectId={openSelectId}
+        onOpenChange={setOpenSelectId}
+      />
+
+      {/* Dropdown buscable para sitio arqueológico */}
+      <SearchableSelect
+        value={filters.site}
+        onChange={(value) => updateFilter("site", value)}
+        options={uniqueSites}
+        placeholder="Filtrar por sitio arqueológico"
+        style={selectStyle}
+        selectId="site"
+        openSelectId={openSelectId}
+        onOpenChange={setOpenSelectId}
+      />
+
+      {/* Filtrar por número de estante */}
+      <TextInput
+        placeholder="Filtrar por número de estante"
+        value={filters.shelf}
+        onChangeText={(text) => updateFilter("shelf", text.replace(/[^0-9]/g, ""))}
+        keyboardType="numeric"
+        style={inputStyle}
+      />
+
+      {/* Filtros condicionales de ubicación */}
+      {filters.shelf !== "" && (
+        <>
+          <TextInput
+            placeholder="Filtrar por nivel (1-4)"
+            value={filters.shelfLevel}
+            onChangeText={(text) =>
+              updateFilter("shelfLevel", text.replace(/[^0-9]/g, ""))
+            }
+            keyboardType="numeric"
+            style={inputStyle}
+          />
+          <TextInput
+            placeholder="Filtrar por columna (A-D)"
+            value={filters.shelfColumn}
+            onChangeText={(text) =>
+              updateFilter(
+                "shelfColumn",
+                text.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 1)
+              )
+            }
+            autoCapitalize="characters"
+            style={inputStyle}
+          />
+        </>
+      )}
+    </View>
+  );
+
+  // Botones de aplicar y limpiar
+  const actionButtons = (
+    <View
+      style={{
+        flexDirection: "row",
+        gap: 12,
+        marginTop: isWeb ? 20 : 16,
+        justifyContent: "flex-start",
+        // Ocultar botones cuando hay un dropdown abierto para evitar superposición visual
+        opacity: openSelectId ? 0 : 1,
+        pointerEvents: openSelectId ? "none" : "auto",
+      }}
+    >
+      {onApply && (
+        <TouchableOpacity
+          onPress={onApply}
+          style={{
+            flex: isMobile ? 1 : undefined,
+            backgroundColor: Colors.green,
+            borderRadius: isWeb ? 10 : 8,
+            paddingVertical: isWeb ? 12 : 10,
+            paddingHorizontal: isWeb ? 24 : 16,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: "white",
+              fontSize: isWeb ? 15 : 14,
+              fontWeight: "600",
+            }}
+          >
+            Aplicar filtros
+          </Text>
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity
+        onPress={onClear}
+        style={{
+          flex: isMobile ? 1 : undefined,
+          backgroundColor: "transparent",
+          borderRadius: isWeb ? 10 : 8,
+          paddingVertical: isWeb ? 12 : 10,
+          paddingHorizontal: isWeb ? 24 : 16,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 1,
+          borderColor: Colors.brown,
+        }}
+      >
+        <Text
+          style={{
+            color: Colors.brown,
+            fontSize: isWeb ? 15 : 14,
+            fontWeight: "600",
+          }}
+        >
+          Limpiar filtros
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Vista Desktop
+  if (isWeb) {
+    return (
+      <View
+        style={{
+          padding: 28,
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: "#E8DFD0",
+          marginBottom: 32,
+          position: "relative", // Asegurar contexto de posicionamiento para dropdowns absolutos
+          overflow: "visible", // Permitir que el dropdown se salga del contenedor
+        }}
+      >
+        {/* Título con icono y badge */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 20,
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Ionicons
+              name="filter"
+              size={22}
+              color="#6B705C"
+              style={{ marginRight: 10 }}
+            />
+            <Text
+              style={{
+                fontSize: 19,
+                fontWeight: "700",
+                color: "#6B705C",
+                letterSpacing: 0.5,
+              }}
+            >
+              Filtros de búsqueda
+            </Text>
+          </View>
+          {activeFiltersCount > 0 && (
+            <View
+              style={{
+                backgroundColor: Colors.green,
+                borderRadius: 12,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                minWidth: 24,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 12,
+                  fontWeight: "700",
+                }}
+              >
+                {activeFiltersCount}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {filtersContent}
+        {/* Ocultar botones cuando hay un dropdown abierto para evitar superposición */}
+        {!openSelectId && actionButtons}
+      </View>
+    );
+  }
+
+  // Vista Mobile
+  return (
+    <View
+      style={{
+        backgroundColor: "#FFFFFF",
+        borderRadius: 12,
+        marginBottom: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+        overflow: "hidden",
+      }}
+    >
+      {/* Botón toggle para mostrar/ocultar filtros */}
+      <TouchableOpacity
+        onPress={() => setIsMobileExpanded(!isMobileExpanded)}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: 16,
+          backgroundColor: "#FFFFFF",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          <Ionicons
+            name="filter"
+            size={20}
+            color="#6B705C"
+            style={{ marginRight: 10 }}
+          />
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "700",
+              color: "#6B705C",
+            }}
+          >
+            {isMobileExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+          </Text>
+          {activeFiltersCount > 0 && (
+            <View
+              style={{
+                backgroundColor: Colors.green,
+                borderRadius: 10,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                marginLeft: 8,
+                minWidth: 20,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 11,
+                  fontWeight: "700",
+                }}
+              >
+                {activeFiltersCount}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Ionicons
+          name={isMobileExpanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color="#6B705C"
+        />
+      </TouchableOpacity>
+
+      {/* Contenido de filtros (colapsable) */}
+      {isMobileExpanded && (
+        <View style={{ padding: 16, paddingTop: 0 }}>
+          {filtersContent}
+          {actionButtons}
+        </View>
+      )}
+    </View>
+  );
+}
+

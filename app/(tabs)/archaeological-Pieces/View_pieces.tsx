@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
+import FiltersBar, { FilterValues } from "../../../components/ui/FiltersBar";
 import InfoRow from "../../../components/ui/InfoRow";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
@@ -70,44 +71,44 @@ export default function ViewPieces() {
 
   const deleteMutation = useDeleteArtefact();
 
-  const [rawQuery, setRawQuery] = useState("");
-  const [query, setQuery] = useState("");
-  const [filterMaterial, setFilterMaterial] = useState("");
-  const [filterCollection, setFilterCollection] = useState("");
-  const [filterSite, setFilterSite] = useState("");
-
-  // filtros de ubicación
-  const [filterShelf, setFilterShelf] = useState(""); // SOLO número de estante
-  const [filterShelfLevel, setFilterShelfLevel] = useState(""); // SOLO número de nivel
-  const [filterShelfColumn, setFilterShelfColumn] = useState(""); // letra A-D
+  // Estado consolidado de filtros
+  const [filters, setFilters] = useState<FilterValues>({
+    name: "",
+    material: "",
+    collection: "",
+    site: "",
+    shelf: "",
+    shelfLevel: "",
+    shelfColumn: "",
+  });
 
   // Estado para el menú desplegable
   const [menuVisible, setMenuVisible] = useState<string | null>(null);
+  // Estado para rastrear si hay un dropdown de filtros abierto
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Inicializar filtros desde params cuando se navega desde shelf-detail
   useEffect(() => {
-    if (params?.level) {
-      setFilterShelfLevel(String(params.level));
-    }
-    if (params?.column) {
-      setFilterShelfColumn(String(params.column));
-    }
-    if (shelfIdParam) {
-      setFilterShelf(String(shelfIdParam));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      ...(params?.level && { shelfLevel: String(params.level) }),
+      ...(params?.column && { shelfColumn: String(params.column) }),
+      ...(shelfIdParam && { shelf: String(shelfIdParam) }),
+    }));
   }, [params?.level, params?.column, shelfIdParam]);
 
   const isWeb = Platform.OS === "web";
   const isMobile = Platform.OS === "android" || Platform.OS === "ios";
 
-  // Debounce para el filtro de nombre
+  // Debounce para el filtro de nombre (mantener compatibilidad con lógica existente)
+  const [query, setQuery] = useState("");
   useEffect(() => {
     const handle = setTimeout(() => {
-      setQuery(rawQuery);
+      setQuery(filters.name);
     }, 250);
 
     return () => clearTimeout(handle);
-  }, [rawQuery]);
+  }, [filters.name]);
 
   // Cerrar menú al hacer click fuera en web
   useEffect(() => {
@@ -200,48 +201,47 @@ export default function ViewPieces() {
       if (query && !p.name.toLowerCase().includes(query.toLowerCase()))
         return false;
 
-      // Material
-      if (
-        filterMaterial &&
-        !(p.material || "").toLowerCase().includes(filterMaterial.toLowerCase())
-      )
-        return false;
+      // Material (filtrado por "empieza con" para permitir búsqueda parcial)
+      if (filters.material.trim() !== "") {
+        const pieceMaterial = (p.material || "").trim().toLowerCase();
+        const filterMaterial = filters.material.trim().toLowerCase();
+        if (!pieceMaterial.startsWith(filterMaterial)) return false;
+      }
 
-      // Colección
-      if (
-        filterCollection &&
-        !(p.collection || "")
-          .toLowerCase()
-          .includes(filterCollection.toLowerCase())
-      )
-        return false;
+      // Colección (filtrado por "empieza con" para permitir búsqueda parcial)
+      if (filters.collection.trim() !== "") {
+        const pieceCollection = (p.collection || "").trim().toLowerCase();
+        const filterCollection = filters.collection.trim().toLowerCase();
+        if (!pieceCollection.startsWith(filterCollection)) return false;
+      }
 
-      // Sitio arqueológico
-      if (
-        filterSite &&
-        !(p.site || "").toLowerCase().includes(filterSite.toLowerCase())
-      )
-        return false;
+      // Sitio arqueológico (filtrado por "empieza con" para permitir búsqueda parcial)
+      if (filters.site.trim() !== "") {
+        const pieceSite = (p.site || "").trim().toLowerCase();
+        const filterSite = filters.site.trim().toLowerCase();
+        if (!pieceSite.startsWith(filterSite)) return false;
+      }
 
       // ====== ESTANTERÍA (solo número) ======
-      if (filterShelf.trim() !== "") {
+      if (filters.shelf.trim() !== "") {
         const shelfText = p.shelfText || "";
         const pieceNum = shelfText.match(/\d+/)?.[0]; // número en "Estantería 1"
 
-        if (!pieceNum || pieceNum !== filterShelf.trim()) return false;
+        if (!pieceNum || pieceNum !== filters.shelf.trim()) return false;
       }
 
       // ====== NIVEL (solo número) ======
-      if (filterShelfLevel.trim() !== "") {
+      if (filters.shelfLevel.trim() !== "") {
         const levelText = p.levelText || "";
         const pieceLevel = levelText.match(/\d+/)?.[0]; // número en "Nivel 1"
 
-        if (!pieceLevel || pieceLevel !== filterShelfLevel.trim()) return false;
+        if (!pieceLevel || pieceLevel !== filters.shelfLevel.trim())
+          return false;
       }
 
       // ====== COLUMNA (letra A-D) ======
-      if (filterShelfColumn.trim() !== "") {
-        const colFiltro = filterShelfColumn.toUpperCase().trim(); // A/B/C/D
+      if (filters.shelfColumn.trim() !== "") {
+        const colFiltro = filters.shelfColumn.toUpperCase().trim(); // A/B/C/D
         const colPieza = (p.columnText || "")
           .toUpperCase()
           .replace(/COLUMNA/i, "")
@@ -252,18 +252,22 @@ export default function ViewPieces() {
 
       return true;
     });
-  }, [
-    pieces,
-    query,
-    filterMaterial,
-    filterCollection,
-    filterSite,
-    filterShelf,
-    filterShelfLevel,
-    filterShelfColumn,
-  ]);
+  }, [pieces, query, filters]);
 
   const MAX_CONTENT_WIDTH = 1400;
+
+  // Handler para limpiar todos los filtros
+  const handleClearFilters = () => {
+    setFilters({
+      name: "",
+      material: "",
+      collection: "",
+      site: "",
+      shelf: "",
+      shelfLevel: "",
+      shelfColumn: "",
+    });
+  };
 
   // ==================== VISTA WEB ====================
   const webListHeader = (
@@ -282,162 +286,14 @@ export default function ViewPieces() {
         onPress={() => router.push("/(tabs)/archaeological-Pieces/New_piece")}
       />
 
-      <View
-        style={{
-          display: "grid" as any,
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: 16,
-          marginBottom: 32,
-          padding: 28,
-          backgroundColor: "#FFFFFF",
-          borderRadius: 16,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 2,
-          borderWidth: 1,
-          borderColor: "#E8DFD0",
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
-          <Ionicons
-            name="filter"
-            size={22}
-            color="#6B705C"
-            style={{ marginRight: 10 }}
-          />
-          <Text
-            style={{
-              fontSize: 19,
-              fontWeight: "700",
-              color: "#6B705C",
-              letterSpacing: 0.5,
-            }}
-          >
-            FILTROS DE BÚSQUEDA
-          </Text>
-        </View>
-
-        <TextInput
-          placeholder="Filtrar por nombre"
-          value={rawQuery}
-          onChangeText={setRawQuery}
-          style={{
-            backgroundColor: "#FAFAF8",
-            borderRadius: 10,
-            padding: 15,
-            fontSize: 15,
-            borderWidth: 1,
-            borderColor: "#E8DFD0",
-            fontWeight: "500",
-          }}
-        />
-        <TextInput
-          placeholder="Filtrar por material"
-          value={filterMaterial}
-          onChangeText={setFilterMaterial}
-          style={{
-            backgroundColor: "#FAFAF8",
-            borderRadius: 10,
-            padding: 15,
-            fontSize: 15,
-            borderWidth: 1,
-            borderColor: "#E8DFD0",
-            fontWeight: "500",
-          }}
-        />
-        <TextInput
-          placeholder="Filtrar por colección"
-          value={filterCollection}
-          onChangeText={setFilterCollection}
-          style={{
-            backgroundColor: "#FAFAF8",
-            borderRadius: 10,
-            padding: 15,
-            fontSize: 15,
-            borderWidth: 1,
-            borderColor: "#E8DFD0",
-            fontWeight: "500",
-          }}
-        />
-        <TextInput
-          placeholder="Filtrar por sitio arqueológico"
-          value={filterSite}
-          onChangeText={setFilterSite}
-          style={{
-            backgroundColor: "#FAFAF8",
-            borderRadius: 10,
-            padding: 15,
-            fontSize: 15,
-            borderWidth: 1,
-            borderColor: "#E8DFD0",
-            fontWeight: "500",
-          }}
-        />
-        <TextInput
-          placeholder="Filtrar por numero de estante"
-          value={filterShelf}
-          onChangeText={(text) => setFilterShelf(text.replace(/[^0-9]/g, ""))}
-          keyboardType="numeric"
-          style={{
-            backgroundColor: "#FAFAF8",
-            borderRadius: 10,
-            padding: 15,
-            fontSize: 15,
-            borderWidth: 1,
-            borderColor: "#E8DFD0",
-            fontWeight: "500",
-          }}
-        />
-
-        {filterShelf !== "" && (
-          <>
-            <TextInput
-              placeholder="Filtrar por nivel (1-4)"
-              value={filterShelfLevel}
-              onChangeText={(text) =>
-                setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
-              }
-              keyboardType="numeric"
-              style={{
-                backgroundColor: "#FAFAF8",
-                borderRadius: 10,
-                padding: 15,
-                fontSize: 15,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-                fontWeight: "500",
-              }}
-            />
-            <TextInput
-              placeholder="Filtrar por columna (A-D)"
-              value={filterShelfColumn}
-              onChangeText={(text) =>
-                setFilterShelfColumn(
-                  text.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 1)
-                )
-              }
-              autoCapitalize="characters"
-              style={{
-                backgroundColor: "#FAFAF8",
-                borderRadius: 10,
-                padding: 15,
-                fontSize: 15,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-                fontWeight: "500",
-              }}
-            />
-          </>
-        )}
-      </View>
+      {/* Componente de filtros mejorado */}
+      <FiltersBar
+        filters={filters}
+        onFilterChange={setFilters}
+        pieces={pieces}
+        onClear={handleClearFilters}
+        onDropdownOpenChange={setIsDropdownOpen}
+      />
 
       <View
         style={{
@@ -446,6 +302,11 @@ export default function ViewPieces() {
           marginTop: 24,
           marginBottom: 24,
           paddingLeft: 4,
+          // Deshabilitar pointer events cuando hay un dropdown abierto para que no intercepte los clics
+          // @ts-ignore - Web-only style
+          pointerEvents: isDropdownOpen ? "none" : "auto",
+          // Asegurar que este div tenga un z-index bajo para que el dropdown esté por encima
+          zIndex: 1,
         }}
       >
         <Ionicons
@@ -719,146 +580,26 @@ export default function ViewPieces() {
           }
         />
 
-        <View
-          style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "700",
-              color: "#6B705C",
-              marginBottom: 12,
-            }}
-          >
-            FILTROS DE BÚSQUEDA
-          </Text>
-
-          <View style={{ gap: 12 }}>
-            <TextInput
-              placeholder="Filtrar por nombre"
-              value={rawQuery}
-              onChangeText={setRawQuery}
-              style={{
-                backgroundColor: "#F7F5F2",
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-              }}
-            />
-            <TextInput
-              placeholder="Filtrar por material"
-              value={filterMaterial}
-              onChangeText={setFilterMaterial}
-              style={{
-                backgroundColor: "#F7F5F2",
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-              }}
-            />
-            <TextInput
-              placeholder="Filtrar por colección"
-              value={filterCollection}
-              onChangeText={setFilterCollection}
-              style={{
-                backgroundColor: "#F7F5F2",
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-              }}
-            />
-            <TextInput
-              placeholder="Filtrar por sitio arqueológico"
-              value={filterSite}
-              onChangeText={setFilterSite}
-              style={{
-                backgroundColor: "#F7F5F2",
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-              }}
-            />
-            <TextInput
-              placeholder="Filtrar por numero de estante"
-              value={filterShelf}
-              onChangeText={(text) =>
-                setFilterShelf(text.replace(/[^0-9]/g, ""))
-              }
-              keyboardType="numeric"
-              style={{
-                backgroundColor: "#F7F5F2",
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                borderWidth: 1,
-                borderColor: "#E8DFD0",
-              }}
-            />
-
-            {filterShelf !== "" && (
-              <>
-                <TextInput
-                  placeholder="Filtrar por nivel (1-4)"
-                  value={filterShelfLevel}
-                  onChangeText={(text) =>
-                    setFilterShelfLevel(text.replace(/[^0-9]/g, ""))
-                  }
-                  keyboardType="numeric"
-                  style={{
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 14,
-                    borderWidth: 1,
-                    borderColor: "#E8DFD0",
-                  }}
-                />
-                <TextInput
-                  placeholder="Filtrar por columna (A-D)"
-                  value={filterShelfColumn}
-                  onChangeText={(text) =>
-                    setFilterShelfColumn(
-                      text.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 1)
-                    )
-                  }
-                  autoCapitalize="characters"
-                  style={{
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 14,
-                    borderWidth: 1,
-                    borderColor: "#E8DFD0",
-                  }}
-                />
-              </>
-            )}
-          </View>
-        </View>
+        {/* Componente de filtros mejorado */}
+        <FiltersBar
+          filters={filters}
+          onFilterChange={setFilters}
+          pieces={pieces}
+          onClear={handleClearFilters}
+          onDropdownOpenChange={setIsDropdownOpen}
+        />
 
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             marginBottom: 16,
+            marginTop: 8,
+            // Deshabilitar pointer events cuando hay un dropdown abierto para que no intercepte los clics
+            // @ts-ignore - Web-only style
+            pointerEvents: isDropdownOpen ? "none" : "auto",
+            // Asegurar que este div tenga un z-index bajo para que el dropdown esté por encima
+            zIndex: 1,
           }}
         >
           <Text
@@ -1096,6 +837,8 @@ export default function ViewPieces() {
         contentContainerStyle={{
           paddingBottom: 40,
         }}
+        // Permitir scroll anidado - ambos scrolls pueden funcionar simultáneamente
+        nestedScrollEnabled={true}
       />
     );
   };
