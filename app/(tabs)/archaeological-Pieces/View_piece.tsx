@@ -1,32 +1,31 @@
-// app/(tabs)/archaeological-Pieces/View_piece.tsx
+import { useArtefact } from "@/hooks/useArtefact";
+import { useMentionsByArtefactId } from "@/hooks/useMentions";
+import { apiClient } from "@/lib/api";
+import type { Artefact } from "@/repositories/artefactRepository";
+import {
+  INPLClassifierDTO,
+  INPLRepository,
+} from "@/repositories/inplClassifierRepository";
+import { getToken } from "@/services/authStorage";
+import { useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
-  Text,
-  View,
-  TouchableOpacity,
-  useWindowDimensions,
   Image,
   Linking,
-  Platform,
   Modal,
+  Platform,
   Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
-import Navbar from "../Navbar";
-import Colors from "../../../constants/Colors";
 import Badge from "../../../components/ui/Badge";
 import InfoRow from "../../../components/ui/InfoRow";
-import { useLocalSearchParams } from "expo-router";
-import { useArtefact } from "@/hooks/useArtefact";
-import { useMentionsByArtefactId } from "@/hooks/useMentions";
-import type { Artefact } from "@/repositories/artefactRepository";
-import { apiClient } from "@/lib/api";
-import { getToken } from "@/services/authStorage";
-import {
-  INPLRepository,
-  INPLClassifierDTO,
-} from "@/repositories/inplClassifierRepository";
+import Colors from "../../../constants/Colors";
+import Navbar from "../Navbar";
 
 type Piece = {
   id: number;
@@ -61,19 +60,22 @@ export default function ViewPiece() {
   const [inplFichas, setInplFichas] = useState<InplFichaView[]>([]);
 
   // grilla ubicación
-  const columns = ["COLUMNA A", "COLUMNA B", "COLUMNA C", "COLUMNA D"];
-  const levels = ["NIVEL 1", "NIVEL 2", "NIVEL 3", "NIVEL 4"];
+  const columns = ["A", "B", "C", "D"];
+  const levels = [1, 2, 3, 4];
   const containerMaxWidth = 720;
-  const leftLabelWidth = 52;
+  const leftLabelWidth = 64;
   const gap = 8;
-  const parentWidth = Math.min(windowWidth * 0.92, containerMaxWidth);
-  const containerWidth = Math.max(0, parentWidth - 32);
+  const horizontalPadding = 48;
+  const containerWidth = Math.min(
+    windowWidth - horizontalPadding,
+    containerMaxWidth
+  );
   const availableWidthForCells = Math.max(
     0,
     containerWidth - leftLabelWidth - gap * (columns.length - 1)
   );
   const rawCellSize = Math.floor(availableWidthForCells / columns.length);
-  const cellSize = Math.max(48, Math.min(rawCellSize, 110));
+  const cellSize = Math.max(56, Math.min(rawCellSize, 110));
 
   // fetch pieza
   const { data, isLoading, isError, refetch } = useArtefact(id ?? undefined);
@@ -723,25 +725,29 @@ export default function ViewPiece() {
           {/* UBICACIÓN FÍSICA */}
           <View
             style={{
-              marginTop: 8,
-              marginBottom: 12,
-              backgroundColor: "#FFF",
-              padding: 12,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: "#E6DAC4",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+              alignItems: "center",
             }}
           >
             <Text
               style={{
                 fontFamily: "MateSC-Regular",
-                fontWeight: "700",
+                fontSize: 18,
+                fontWeight: "600",
                 textAlign: "center",
-                marginBottom: 8,
-                color: Colors.black,
+                marginBottom: 20,
+                color: "#8B5E3C",
               }}
             >
-              UBICACIÓN FÍSICA DE LA PIEZA
+              Ubicación Física de la Pieza
             </Text>
 
             {!piece.shelf ||
@@ -750,7 +756,8 @@ export default function ViewPiece() {
               <Text
                 style={{
                   fontFamily: "CrimsonText-Regular",
-                  color: "#666",
+                  fontSize: 14,
+                  color: "#4A3725",
                   textAlign: "center",
                 }}
               >
@@ -758,151 +765,221 @@ export default function ViewPiece() {
               </Text>
             ) : (
               <>
-                <View style={{ marginBottom: 8, alignItems: "center" }}>
+                <View style={{ marginBottom: 16, alignItems: "center" }}>
                   <View
-                    style={{ width: containerWidth, alignItems: "flex-start" }}
+                    style={{
+                      backgroundColor: Colors.green,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                    }}
                   >
-                    <View
+                    <Text
                       style={{
-                        backgroundColor: Colors.green,
-                        alignSelf: "flex-start",
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        borderRadius: 6,
+                        color: Colors.cremit,
+                        fontFamily: "CrimsonText-Regular",
+                        fontSize: 14,
+                        fontWeight: "600",
                       }}
                     >
-                      <Text
-                        style={{
-                          color: Colors.cremit,
-                          fontFamily: "CrimsonText-Regular",
-                        }}
-                      >
-                        {piece.shelf}
-                      </Text>
-                    </View>
+                      {piece.shelf}
+                    </Text>
                   </View>
                 </View>
 
+                {/* Labels superiores: Columna y Nivel */}
                 <View
                   style={{
-                    width: containerWidth,
-                    marginBottom: 6,
-                    alignSelf: "center",
+                    width: containerWidth * 0.85,
+                    flexDirection: "row",
+                    marginBottom: 12,
+                    justifyContent: "space-between",
+                    paddingHorizontal: leftLabelWidth * 0.9 + 8,
                   }}
                 >
                   <View
                     style={{
-                      flexDirection: "row",
+                      flex: 1,
                       alignItems: "center",
-                      width: "100%",
                     }}
                   >
-                    <View style={{ width: leftLabelWidth }} />
-                    <View style={{ flexDirection: "row" }}>
-                      {columns.map((c, ci) => (
+                    <Text
+                      style={{
+                        fontFamily: "MateSC-Regular",
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: "#8B5E3C",
+                      }}
+                    >
+                      Columna y Nivel:
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Grid container con padding para no pegarse a los bordes */}
+                <View
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  {/* encabezado columnas */}
+                  <View
+                    style={{
+                      width: containerWidth * 0.85,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <View style={{ width: leftLabelWidth * 0.9 }} />
+                      <View style={{ flexDirection: "row", flex: 1 }}>
+                        {columns.map((c, ci) => (
+                          <View
+                            key={c}
+                            style={{
+                              flex: 1,
+                              paddingHorizontal: 4,
+                              alignItems: "center",
+                            }}
+                          >
+                            <View
+                              style={{
+                                backgroundColor: "#8B5E3C",
+                                width: 50,
+                                height: 50,
+                                borderRadius: 10,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                shadowColor: "#8B5E3C",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 2,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "#FFFFFF",
+                                  fontFamily: "MateSC-Regular",
+                                  fontSize: 18,
+                                  fontWeight: "700",
+                                }}
+                              >
+                                {c}
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* filas niveles */}
+                  <View style={{ width: containerWidth * 0.85 }}>
+                    {levels.map((lvl, li) => (
+                      <View
+                        key={lvl}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 10,
+                        }}
+                      >
                         <View
-                          key={c}
                           style={{
-                            width: cellSize,
-                            paddingHorizontal: gap / 2,
-                            alignItems: "center",
-                            marginRight: ci < columns.length - 1 ? gap : 0,
+                            width: leftLabelWidth * 0.9,
+                            height: cellSize * 0.9,
+                            justifyContent: "center",
+                            paddingRight: 8,
                           }}
                         >
                           <View
                             style={{
-                              backgroundColor: "#2F2F2F",
-                              paddingHorizontal: 6,
-                              paddingVertical: 4,
-                              borderRadius: 6,
+                              backgroundColor: Colors.brown,
+                              width: 50,
+                              height: 50,
+                              borderRadius: 10,
+                              justifyContent: "center",
+                              alignItems: "center",
+                              shadowColor: "#8B5E3C",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.2,
+                              shadowRadius: 4,
+                              elevation: 2,
                             }}
                           >
                             <Text
                               style={{
                                 color: Colors.cremit,
-                                fontFamily: "CrimsonText-Regular",
-                                fontSize: 11,
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 18,
+                                fontWeight: "700",
                               }}
                             >
-                              {c}
+                              {lvl}
                             </Text>
                           </View>
                         </View>
-                      ))}
-                    </View>
-                  </View>
-                </View>
 
-                <View>
-                  {levels.map((lvl, li) => (
-                    <View
-                      key={lvl}
-                      style={{
-                        width: containerWidth,
-                        alignSelf: "center",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 6,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: leftLabelWidth,
-                          height: cellSize,
-                          justifyContent: "center",
-                        }}
-                      >
-                        <View
-                          style={{
-                            backgroundColor: Colors.brown,
-                            paddingVertical: 6,
-                            paddingHorizontal: 8,
-                            borderRadius: 6,
-                            alignSelf: "flex-start",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: Colors.cremit,
-                              fontFamily: "CrimsonText-Regular",
-                              fontSize: 12,
-                            }}
-                          >
-                            {lvl}
-                          </Text>
+                        <View style={{ flexDirection: "row", flex: 1, gap: 8 }}>
+                          {columns.map((c, ci) => {
+                            const isSelected =
+                              piece.selectedLevel === li &&
+                              piece.selectedColumn === ci;
+                            return (
+                              <View
+                                key={c}
+                                style={{
+                                  flex: 1,
+                                  paddingHorizontal: 2,
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    width: "100%",
+                                    aspectRatio: 1,
+                                    borderRadius: 10,
+                                    backgroundColor: isSelected
+                                      ? Colors.brown
+                                      : "#F7F5F2",
+                                    borderWidth: isSelected ? 3 : 2,
+                                    borderColor: isSelected
+                                      ? Colors.brown
+                                      : "#E5D4C1",
+                                    shadowColor: isSelected ? "#8B5E3C" : "transparent",
+                                    shadowOffset: { width: 0, height: isSelected ? 3 : 0 },
+                                    shadowOpacity: isSelected ? 0.3 : 0,
+                                    shadowRadius: isSelected ? 6 : 0,
+                                    elevation: isSelected ? 4 : 0,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  {isSelected && (
+                                    <View
+                                      style={{
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: 6,
+                                        backgroundColor: Colors.cremit,
+                                      }}
+                                    />
+                                  )}
+                                </View>
+                              </View>
+                            );
+                          })}
                         </View>
                       </View>
-
-                      <View style={{ flexDirection: "row" }}>
-                        {columns.map((c, ci) => {
-                          const isSelected =
-                            piece.selectedLevel === li &&
-                            piece.selectedColumn === ci;
-                          return (
-                            <View
-                              key={c}
-                              style={{
-                                width: cellSize,
-                                paddingHorizontal: gap / 2,
-                                marginRight: ci < columns.length - 1 ? gap : 0,
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: cellSize,
-                                  height: cellSize,
-                                  borderRadius: 6,
-                                  backgroundColor: isSelected
-                                    ? Colors.brown
-                                    : "#EADFCB",
-                                }}
-                              />
-                            </View>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </View>
               </>
             )}

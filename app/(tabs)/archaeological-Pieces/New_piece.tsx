@@ -1,16 +1,15 @@
-// app/(tabs)/archaeological-Pieces/New_piece.tsx
 import React, { useMemo, useRef, useState } from "react";
 import {
-    Alert,
-    Image,
-    Platform,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import Button from "../../../components/ui/Button";
 import Colors from "../../../constants/Colors";
@@ -19,14 +18,14 @@ import Navbar from "../Navbar";
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
 import { useArchaeologists } from "@/hooks/useArchaeologist";
 import {
-    useCreateArtefact,
-    useUploadArtefactHistoricalRecord,
-    useUploadArtefactPicture,
+  useCreateArtefact,
+  useUploadArtefactHistoricalRecord,
+  useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
 import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
 import {
-    useCreatePhysicalLocation,
-    usePhysicalLocations,
+  useCreatePhysicalLocation,
+  usePhysicalLocations,
 } from "@/hooks/usePhysicalLocation";
 import { ArtefactRepository } from "@/repositories/artefactRepository";
 import { useRouter } from "expo-router";
@@ -38,7 +37,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "@/lib/api";
 import { INPLRepository } from "@/repositories/inplClassifierRepository";
 import SimplePickerModal, {
-    SimplePickerItem,
+  SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
 
 export default function NewPiece() {
@@ -70,8 +69,8 @@ export default function NewPiece() {
     number | null
   >(null);
   const [shelfCode, setShelfCode] = useState<string>("");
-  const [selectedLevel, setSelectedLevel] = useState<number>(2); // 0..3 → NIVEL 3 por defecto
-  const [selectedColumn, setSelectedColumn] = useState<number>(2); // 0..3 → C por defecto
+  const [selectedLevel, setSelectedLevel] = useState<number>(0); // 0..3 → NIVEL 1 por defecto
+  const [selectedColumn, setSelectedColumn] = useState<number>(0); // 0..3 → A por defecto
   const [archaeologicalSiteId, setArchaeologicalSiteId] = useState<
     number | null
   >(null);
@@ -624,14 +623,15 @@ export default function NewPiece() {
       onPress={onPress}
       disabled={!onPress}
       style={{
-        backgroundColor: subdued ? "#f3f3f3" : "#fff",
-        borderRadius: 6,
-        padding: 8,
+        backgroundColor: subdued ? "#f3f3f3" : "#F7F5F2",
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         borderWidth: 1,
-        borderColor: "#E6DAC4",
+        borderColor: "#E5D4C1",
       }}
     >
-      <Text style={{ fontFamily: "CrimsonText-Regular", color: Colors.black }}>
+      <Text style={{ fontFamily: "CrimsonText-Regular", fontSize: 16, color: "#4A3725" }}>
         {value || label}
       </Text>
     </TouchableOpacity>
@@ -644,969 +644,1213 @@ export default function NewPiece() {
         showBackArrow
         redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
       />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <Text
-          style={{
-            fontWeight: "700",
-            marginBottom: 8,
-            fontFamily: "MateSC-Regular",
-            color: Colors.black,
-          }}
-        >
-          Ingrese los datos de la nueva pieza arqueológica
-        </Text>
-
-        {/* nombre / material */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: Platform.OS === "web" ? 32 : 20,
+          paddingTop: Platform.OS === "web" ? 40 : 20,
+          paddingBottom: Platform.OS === "web" ? 32 : 20,
+        }}
+      >
         <View
           style={{
-            flexDirection: windowWidth < 520 ? "column" : "row",
-            gap: 12,
-            marginBottom: 12,
+            width: "100%",
+            maxWidth: 800,
+            alignSelf: "center",
           }}
         >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontWeight: "700",
-                marginBottom: 6,
-                fontFamily: "MateSC-Regular",
-                color: Colors.black,
-              }}
-            >
-              Nombre
-            </Text>
-            <TextInput
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                if (nameError) setNameError("");
-              }}
-              placeholder="Nombre"
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 6,
-                padding: 8,
-                fontFamily: "CrimsonText-Regular",
-                color: Colors.black,
-                borderWidth: nameError ? 1 : 0,
-                borderColor: nameError ? "#ff4444" : "transparent",
-              }}
-            />
-            {nameError ? (
-              <Text
-                style={{
-                  color: "#ff4444",
-                  fontSize: 12,
-                  marginTop: 4,
-                  fontFamily: "CrimsonText-Regular",
-                }}
-              >
-                {nameError}
-              </Text>
-            ) : null}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontWeight: "700",
-                marginBottom: 6,
-                fontFamily: "MateSC-Regular",
-                color: Colors.black,
-              }}
-            >
-              Material
-            </Text>
-            <TextInput
-              value={material}
-              onChangeText={(text) => {
-                setMaterial(text);
-                if (materialError) setMaterialError("");
-              }}
-              placeholder="Material"
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 6,
-                padding: 8,
-                fontFamily: "CrimsonText-Regular",
-                color: Colors.black,
-                borderWidth: materialError ? 1 : 0,
-                borderColor: materialError ? "#ff4444" : "transparent",
-              }}
-            />
-            {materialError ? (
-              <Text
-                style={{
-                  color: "#ff4444",
-                  fontSize: 12,
-                  marginTop: 4,
-                  fontFamily: "CrimsonText-Regular",
-                }}
-              >
-                {materialError}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        {/* observación */}
-        <View style={{ marginBottom: 12 }}>
-          <Text
-            style={{
-              fontWeight: "700",
-              marginBottom: 6,
-              fontFamily: "MateSC-Regular",
-              color: Colors.black,
-            }}
-          >
-            Observación
-          </Text>
-          <TextInput
-            multiline
-            value={observation}
-            onChangeText={setObservation}
-            placeholder="Observación de la pieza"
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 6,
-              padding: 8,
-              minHeight: 80,
-              fontFamily: "CrimsonText-Regular",
-              color: Colors.black,
-            }}
-          />
-        </View>
-
-        {/* disponible */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            marginBottom: 12,
-          }}
-        >
-          <Text
-            style={{
-              fontWeight: "700",
-              fontFamily: "MateSC-Regular",
-              color: Colors.black,
-            }}
-          >
-            Disponible
-          </Text>
-          <Switch value={available} onValueChange={setAvailable} />
-        </View>
-
-        {/* clasificador interno (select simple) */}
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontWeight: "700",
-              marginBottom: 6,
-              fontFamily: "MateSC-Regular",
-              color: Colors.black,
-            }}
-          >
-            Clasificador interno
-          </Text>
-          <SimpleSelectRow
-            label="Seleccionar clasificador"
-            value={
-              internalClassifierId
-                ? (() => {
-                    const ic = internalClassifiers.find(
-                      (x) => x.id === internalClassifierId
-                    );
-                    return ic
-                      ? `#${ic.number} (${ic.color})`
-                      : "Seleccionar clasificador";
-                  })()
-                : "Seleccionar clasificador"
-            }
-            onPress={() => setIntClsPickerOpen(true)} // abrir modal reutilizable
-          />
-          <TouchableOpacity
-            style={{
-              paddingVertical: 8,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "flex-end",
-            }}
-            onPress={() => {
-              router.push(
-                "/(tabs)/archaeological-Pieces/New_internal-classifier"
-              );
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Crear nuevo Clasificador Interno"
-          >
-            <Text
-              style={{
-                color: "#A68B5B",
-                marginRight: 6,
-                fontFamily: "MateSC-Regular",
-              }}
-            >
-              Crear nuevo Clasificador Interno
-            </Text>
-            <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Imagen + Ficha Histórica */}
-        <View style={{ marginBottom: 12 }}>
-          <Text
-            style={{
-              fontWeight: "700",
-              marginBottom: 6,
-              fontFamily: "MateSC-Regular",
-              color: Colors.black,
-            }}
-          >
-            Archivos
-          </Text>
+          {/* Encabezado */}
           <View
             style={{
-              flexDirection: "row",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 28,
+              marginBottom: 32,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
             }}
           >
-            <TouchableOpacity
-              onPress={pickImage}
-              style={{
-                width: 96,
-                height: 96,
-                backgroundColor: "#FFF",
-                borderRadius: 6,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "#DDD",
-              }}
-            >
-              {photoUri ? (
-                <Image
-                  source={{ uri: photoUri }}
-                  style={{ width: 92, height: 92, borderRadius: 6 }}
-                />
-              ) : null}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={pickImage}
-              style={{
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                backgroundColor: Colors.green,
-                borderRadius: 6,
-              }}
-            >
-              <Text
-                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
-              >
-                SUBIR IMAGEN
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={pickFile}
-              style={{
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                backgroundColor: Colors.brown,
-                borderRadius: 6,
-              }}
-            >
-              <Text
-                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
-              >
-                SUBIR FICHA HISTÓRICA
-              </Text>
-            </TouchableOpacity>
-
-            {Platform.OS === "web" ? (
-              <>
-                <input
-                  ref={imageInputRef}
-                  id="file-image"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={onWebImageChange}
-                />
-                <input
-                  ref={docInputRef}
-                  id="file-doc"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  style={{ display: "none" }}
-                  onChange={onWebDocChange}
-                />
-                <input
-                  ref={inplInputRef}
-                  id="file-inpl"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={onWebInplChange}
-                />
-              </>
-            ) : null}
-            <TouchableOpacity
-              onPress={() => setInplModalOpen(true)}
-              style={{
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                backgroundColor: "#8B6C42",
-                borderRadius: 6,
-              }}
-            >
-              <Text
-                style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
-              >
-                SUBIR FICHA INPL
-              </Text>
-            </TouchableOpacity>
-
-            {Platform.OS === "web" ? (
-              <>
-                <input
-                  id="file-inpl"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={onWebInplChange}
-                />
-              </>
-            ) : null}
-          </View>
-          {docName ? (
             <Text
               style={{
-                marginTop: 8,
+                fontFamily: "MateSC-Regular",
+                fontSize: 28,
+                color: "#8B5E3C",
+                marginBottom: 8,
+                fontWeight: "600",
+              }}
+            >
+              Registro de Pieza Arqueológica
+            </Text>
+            <Text
+              style={{
                 fontFamily: "CrimsonText-Regular",
-                color: Colors.black,
+                fontSize: 16,
+                color: "#A0785D",
               }}
             >
-              Archivo: {docName}
+              Ingrese los datos de la nueva pieza arqueológica
             </Text>
-          ) : null}
-        </View>
-
-        {/* Colección */}
-        <View style={{ marginBottom: 12 }}>
-          <Text
-            style={{
-              fontWeight: "700",
-              marginBottom: 6,
-              fontFamily: "MateSC-Regular",
-              color: Colors.black,
-            }}
-          >
-            Colección
-          </Text>
-          <SimpleSelectRow
-            label="Sin colección"
-            value={
-              collectionId
-                ? (collections.find((c) => c.id === collectionId)?.name ??
-                  "Sin colección")
-                : "Sin colección"
-            }
-            onPress={() => setCollPickerOpen(true)} // abrir modal reutilizable
-          />
-        </View>
-
-        {/* Arqueólogo */}
-        <View style={{ marginBottom: 12 }}>
-          <Text
-            style={{
-              fontWeight: "700",
-              marginBottom: 6,
-              fontFamily: "MateSC-Regular",
-              color: Colors.black,
-            }}
-          >
-            Arqueólogo
-          </Text>
-          <SimpleSelectRow
-            label="Seleccionar arqueólogo"
-            value={
-              archaeologistId
-                ? (() => {
-                    const a = archaeologists.find(
-                      (x) => x.id === archaeologistId
-                    );
-                    return a
-                      ? `${a.firstname} ${a.lastname}`
-                      : "Seleccionar arqueólogo";
-                  })()
-                : "Seleccionar arqueólogo"
-            }
-            onPress={() => setArchPickerOpen(true)} // abrir modal reutilizable
-          />
-        </View>
-
-        {/* Sitio (placeholder) + Estantería */}
-        <View
-          style={{
-            flexDirection: windowWidth < 520 ? "column" : "row",
-            gap: 12,
-            marginBottom: 12,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontWeight: "700",
-                marginBottom: 6,
-                fontFamily: "MateSC-Regular",
-                color: Colors.black,
-              }}
-            >
-              Sitio arqueológico
-            </Text>
-            <SimpleSelectRow
-              label="Seleccionar sitio arqueológico"
-              value={
-                archaeologicalSiteId
-                  ? (archaeologicalSites.find(
-                      (s) => s.id === archaeologicalSiteId
-                    )?.Name ?? "Seleccionar sitio arqueológico")
-                  : "Seleccionar sitio arqueológico"
-              }
-              onPress={() => setArchaeologicalSitePickerOpen(true)}
-            />
           </View>
 
-          <View style={{ width: windowWidth < 520 ? "100%" : 140 }}>
-            <Text
+          {/* Formulario - Información Básica */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
+            {/* nombre / material */}
+            <View
               style={{
-                fontWeight: "700",
-                marginBottom: 6,
-                fontFamily: "MateSC-Regular",
-                color: Colors.black,
+                flexDirection: windowWidth < 520 ? "column" : "row",
+                gap: 16,
+                marginBottom: 24,
               }}
             >
-              Estantería
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Nombre
+                </Text>
+                <TextInput
+                  value={name}
+                  onChangeText={(text) => {
+                    setName(text);
+                    if (nameError) setNameError("");
+                  }}
+                  placeholder="Ingrese el nombre"
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: nameError ? 2 : 1,
+                    borderColor: nameError ? "#ff4444" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+                {nameError ? (
+                  <Text
+                    style={{
+                      color: "#ff4444",
+                      fontSize: 12,
+                      marginTop: 4,
+                      fontFamily: "CrimsonText-Regular",
+                    }}
+                  >
+                    {nameError}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Material
+                </Text>
+                <TextInput
+                  value={material}
+                  onChangeText={(text) => {
+                    setMaterial(text);
+                    if (materialError) setMaterialError("");
+                  }}
+                  placeholder="Ingrese el material"
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: materialError ? 2 : 1,
+                    borderColor: materialError ? "#ff4444" : "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+                {materialError ? (
+                  <Text
+                    style={{
+                      color: "#ff4444",
+                      fontSize: 12,
+                      marginTop: 4,
+                      fontFamily: "CrimsonText-Regular",
+                    }}
+                  >
+                    {materialError}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+
+            {/* observación */}
+            <View style={{ marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Observación
+              </Text>
+              <TextInput
+                multiline
+                value={observation}
+                onChangeText={setObservation}
+                placeholder="Observación de la pieza"
+                placeholderTextColor="#B8967D"
+                selectionColor="#8B5E3C"
+                style={{
+                  backgroundColor: "#F7F5F2",
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  minHeight: 100,
+                  borderWidth: 1,
+                  borderColor: "#E5D4C1",
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#4A3725",
+                }}
+              />
+            </View>
+
+            {/* disponible */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                  fontWeight: "600",
+                }}
+              >
+                Disponible
+              </Text>
+              <Switch value={available} onValueChange={setAvailable} />
+            </View>
+          </View>
+
+          {/* Clasificador Interno */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontSize: 15,
+                color: "#8B5E3C",
+                marginBottom: 8,
+                fontWeight: "600",
+              }}
+            >
+              Clasificador interno
             </Text>
-
             <SimpleSelectRow
-              label="Seleccionar estantería"
-              value={shelfIdFromCode ? `Estantería ${shelfCode}` : undefined}
-              onPress={() => setShelfPickerOpen(true)}
+              label="Seleccionar clasificador"
+              value={
+                internalClassifierId
+                  ? (() => {
+                      const ic = internalClassifiers.find(
+                        (x) => x.id === internalClassifierId
+                      );
+                      return ic
+                        ? `#${ic.number} (${ic.color})`
+                        : "Seleccionar clasificador";
+                    })()
+                  : "Seleccionar clasificador"
+              }
+              onPress={() => setIntClsPickerOpen(true)}
             />
-
-            {/* Link: Crear nueva Estantería */}
             <TouchableOpacity
               style={{
                 paddingVertical: 8,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "flex-end",
+                marginTop: 8,
               }}
               onPress={() => {
-                router.push("/(tabs)/archaeological-Pieces/New_shelf");
+                router.push(
+                  "/(tabs)/archaeological-Pieces/New_internal-classifier"
+                );
               }}
               accessibilityRole="button"
-              accessibilityLabel="Crear nueva Estantería"
+              accessibilityLabel="Crear nuevo Clasificador Interno"
             >
               <Text
                 style={{
-                  color: "#A68B5B",
+                  color: "#8B5E3C",
                   marginRight: 6,
                   fontFamily: "MateSC-Regular",
+                  fontSize: 14,
                 }}
               >
-                Crear nueva Estantería
+                Crear nuevo Clasificador Interno
               </Text>
-              <Ionicons name="arrow-forward-outline" size={16} color="#A68B5B" />
+              <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Ubicación física (grid) */}
-        <View
-          style={{
-            marginBottom: 8,
-            backgroundColor: "#fff",
-            padding: 8,
-            borderRadius: 6,
-          }}
-        >
-          <Text
+          {/* Archivos */}
+          <View
             style={{
-              fontFamily: "MateSC-Regular",
-              fontWeight: "700",
-              textAlign: "center",
-              marginBottom: 8,
-              color: Colors.black,
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
             }}
           >
-            UBICACIÓN FÍSICA DE LA PIEZA
-          </Text>
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontSize: 15,
+                color: "#8B5E3C",
+                marginBottom: 16,
+                fontWeight: "600",
+              }}
+            >
+              Archivos
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+                marginBottom: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={pickImage}
+                style={{
+                  width: 96,
+                  height: 96,
+                  backgroundColor: "#F7F5F2",
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: "#E5D4C1",
+                }}
+              >
+                {photoUri ? (
+                  <Image
+                    source={{ uri: photoUri }}
+                    style={{ width: 92, height: 92, borderRadius: 12 }}
+                  />
+                ) : null}
+              </TouchableOpacity>
 
-          <View style={{ marginBottom: 8, alignItems: "center" }}>
-            <View style={{ width: containerWidth, alignItems: "flex-start" }}>
+              <TouchableOpacity
+                onPress={pickImage}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  backgroundColor: Colors.green,
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                  }}
+                >
+                  SUBIR IMAGEN
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={pickFile}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  backgroundColor: Colors.brown,
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                  }}
+                >
+                  SUBIR FICHA HISTÓRICA
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setInplModalOpen(true)}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  backgroundColor: "#8B6C42",
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                  }}
+                >
+                  SUBIR FICHA INPL
+                </Text>
+              </TouchableOpacity>
+
+              {Platform.OS === "web" ? (
+                <>
+                  <input
+                    ref={imageInputRef}
+                    id="file-image"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={onWebImageChange}
+                  />
+                  <input
+                    ref={docInputRef}
+                    id="file-doc"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    style={{ display: "none" }}
+                    onChange={onWebDocChange}
+                  />
+                  <input
+                    ref={inplInputRef}
+                    id="file-inpl"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={onWebInplChange}
+                  />
+                </>
+              ) : null}
+            </View>
+            {docName ? (
+              <Text
+                style={{
+                  marginTop: 8,
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 14,
+                  color: "#4A3725",
+                }}
+              >
+                Archivo: {docName}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Relaciones */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
+            {/* Colección */}
+            <View style={{ marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Colección
+              </Text>
+              <SimpleSelectRow
+                label="Sin colección"
+                value={
+                  collectionId
+                    ? (collections.find((c) => c.id === collectionId)?.name ??
+                      "Sin colección")
+                    : "Sin colección"
+                }
+                onPress={() => setCollPickerOpen(true)}
+              />
+            </View>
+
+            {/* Arqueólogo */}
+            <View style={{ marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Arqueólogo
+              </Text>
+              <SimpleSelectRow
+                label="Seleccionar arqueólogo"
+                value={
+                  archaeologistId
+                    ? (() => {
+                        const a = archaeologists.find(
+                          (x) => x.id === archaeologistId
+                        );
+                        return a
+                          ? `${a.firstname} ${a.lastname}`
+                          : "Seleccionar arqueólogo";
+                      })()
+                    : "Seleccionar arqueólogo"
+                }
+                onPress={() => setArchPickerOpen(true)}
+              />
+            </View>
+
+            {/* Sitio + Estantería */}
+            <View
+              style={{
+                flexDirection: windowWidth < 520 ? "column" : "row",
+                gap: 16,
+                marginBottom: 16,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Sitio arqueológico
+                </Text>
+                <SimpleSelectRow
+                  label="Seleccionar sitio arqueológico"
+                  value={
+                    archaeologicalSiteId
+                      ? (archaeologicalSites.find(
+                          (s) => s.id === archaeologicalSiteId
+                        )?.Name ?? "Seleccionar sitio arqueológico")
+                      : "Seleccionar sitio arqueológico"
+                  }
+                  onPress={() => setArchaeologicalSitePickerOpen(true)}
+                />
+              </View>
+
+              <View style={{ width: windowWidth < 520 ? "100%" : 180 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Estantería
+                </Text>
+
+                <SimpleSelectRow
+                  label="Seleccionar estantería"
+                  value={shelfIdFromCode ? `Estantería ${shelfCode}` : undefined}
+                  onPress={() => setShelfPickerOpen(true)}
+                />
+
+                {/* Link: Crear nueva Estantería */}
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 8,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    marginTop: 8,
+                  }}
+                  onPress={() => {
+                    router.push("/(tabs)/archaeological-Pieces/New_shelf");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Crear nueva Estantería"
+                >
+                  <Text
+                    style={{
+                      color: "#8B5E3C",
+                      marginRight: 6,
+                      fontFamily: "MateSC-Regular",
+                      fontSize: 14,
+                    }}
+                  >
+                    Crear nueva Estantería
+                  </Text>
+                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Ubicación física de la pieza */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MateSC-Regular",
+                fontSize: 18,
+                fontWeight: "600",
+                textAlign: "center",
+                marginBottom: 20,
+                color: "#8B5E3C",
+              }}
+            >
+              Ubicación Física de la Pieza
+            </Text>
+
+            <View style={{ marginBottom: 16, alignItems: "center" }}>
               <View
                 style={{
                   backgroundColor: Colors.green,
-                  alignSelf: "flex-start",
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 6,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 12,
                 }}
               >
                 <Text
                   style={{
                     color: Colors.cremit,
                     fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                    fontWeight: "600",
                   }}
                 >
                   ESTANTERIA {shelfCode || "--"}
                 </Text>
               </View>
             </View>
-          </View>
 
-          {/* encabezado columnas */}
-          <View
-            style={{
-              width: containerWidth,
-              marginBottom: 6,
-              alignSelf: "center",
-            }}
-          >
+                {/* Labels superiores: Columna y Nivel */}
+                <View
+                  style={{
+                    width: containerWidth * 0.85,
+                    flexDirection: "row",
+                    marginBottom: 12,
+                    justifyContent: "space-between",
+                    paddingHorizontal: leftLabelWidth * 0.9 + 8,
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "MateSC-Regular",
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: "#8B5E3C",
+                      }}
+                    >
+                      Columna y Nivel:
+                    </Text>
+                  </View>
+                </View>
+            {/* Grid container con padding para no pegarse a los bordes */}
             <View
               style={{
-                flexDirection: "row",
+                paddingHorizontal: 16,
+                paddingVertical: 12,
                 alignItems: "center",
-                width: "100%",
               }}
             >
-              <View style={{ width: leftLabelWidth }} />
-              <View style={{ flexDirection: "row" }}>
-                {columns.map((c, ci) => (
+
+              {/* encabezado columnas */}
+              <View
+                style={{
+                  width: containerWidth * 0.85,
+                  marginBottom: 12,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  <View style={{ width: leftLabelWidth * 0.9 }} />
+                  <View style={{ flexDirection: "row", flex: 1 }}>
+                    {columns.map((c, ci) => (
+                      <View
+                        key={c}
+                        style={{
+                          flex: 1,
+                          paddingHorizontal: 4,
+                          alignItems: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            backgroundColor: "#8B5E3C",
+                            width: 50,
+                            height: 50,
+                            borderRadius: 10,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            shadowColor: "#8B5E3C",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            elevation: 2,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "#FFFFFF",
+                              fontFamily: "MateSC-Regular",
+                              fontSize: 18,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {c}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              {/* filas niveles */}
+              <View style={{ width: containerWidth * 0.85 }}>
+                {levels.map((lvl, li) => (
                   <View
-                    key={c}
+                    key={lvl}
                     style={{
-                      width: cellSize,
-                      paddingHorizontal: gap / 2,
+                      flexDirection: "row",
                       alignItems: "center",
-                      marginRight: ci < columns.length - 1 ? gap : 0,
+                      marginBottom: 10,
                     }}
                   >
                     <View
                       style={{
-                        backgroundColor: "#2F2F2F",
-                        paddingHorizontal: 6,
-                        paddingVertical: 4,
-                        borderRadius: 6,
+                        width: leftLabelWidth * 0.9,
+                        height: cellSize * 0.9,
+                        justifyContent: "center",
+                        paddingRight: 8,
                       }}
                     >
-                      <Text
+                      <View
                         style={{
-                          color: Colors.cremit,
-                          fontFamily: "CrimsonText-Regular",
-                          fontSize: 11,
+                          backgroundColor: Colors.brown,
+                          width: 50,
+                          height: 50,
+                          borderRadius: 10,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          shadowColor: "#8B5E3C",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 4,
+                          elevation: 2,
                         }}
                       >
-                        COLUMNA {c}
-                      </Text>
+                        <Text
+                          style={{
+                            color: Colors.cremit,
+                            fontFamily: "MateSC-Regular",
+                            fontSize: 18,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {lvl}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: "row", flex: 1, gap: 8 }}>
+                      {columns.map((c, ci) => {
+                        const isSelected =
+                          selectedLevel === li && selectedColumn === ci;
+                        return (
+                          <View
+                            key={c}
+                            style={{
+                              flex: 1,
+                              paddingHorizontal: 2,
+                            }}
+                          >
+                            <TouchableOpacity
+                              onPress={() => {
+                                setSelectedLevel(li);
+                                setSelectedColumn(ci);
+                              }}
+                              style={{
+                                width: "100%",
+                                aspectRatio: 1,
+                                borderRadius: 10,
+                                backgroundColor: isSelected
+                                  ? Colors.brown
+                                  : "#F7F5F2",
+                                borderWidth: isSelected ? 3 : 2,
+                                borderColor: isSelected
+                                  ? Colors.brown
+                                  : "#E5D4C1",
+                                shadowColor: isSelected ? "#8B5E3C" : "transparent",
+                                shadowOffset: { width: 0, height: isSelected ? 3 : 0 },
+                                shadowOpacity: isSelected ? 0.3 : 0,
+                                shadowRadius: isSelected ? 6 : 0,
+                                elevation: isSelected ? 4 : 0,
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                            >
+                              {isSelected && (
+                                <View
+                                  style={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: 6,
+                                    backgroundColor: Colors.cremit,
+                                  }}
+                                />
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
                     </View>
                   </View>
                 ))}
               </View>
             </View>
+
+            <Text
+              style={{
+                marginTop: 12,
+                fontFamily: "CrimsonText-Regular",
+                fontSize: 14,
+                color: "#4A3725",
+                textAlign: "center",
+              }}
+            >
+              Ubicación física ID seleccionado: {physicalLocationId ?? "—"}
+            </Text>
           </View>
 
-          {/* filas niveles */}
-          <View>
-            {levels.map((lvl, li) => (
-              <View
-                key={lvl}
-                style={{
-                  width: containerWidth,
-                  alignSelf: "center",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 6,
-                }}
-              >
-                <View
-                  style={{
-                    width: leftLabelWidth,
-                    height: cellSize,
-                    justifyContent: "center",
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: Colors.brown,
-                      paddingVertical: 6,
-                      paddingHorizontal: 8,
-                      borderRadius: 6,
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: Colors.cremit,
-                        fontFamily: "CrimsonText-Regular",
-                        fontSize: 12,
-                      }}
-                    >
-                      NIVEL {lvl}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={{ flexDirection: "row" }}>
-                  {columns.map((c, ci) => {
-                    const isSelected =
-                      selectedLevel === li && selectedColumn === ci;
-                    return (
-                      <View
-                        key={c}
-                        style={{
-                          width: cellSize,
-                          paddingHorizontal: gap / 2,
-                          marginRight: ci < columns.length - 1 ? gap : 0,
-                        }}
-                      >
-                        <TouchableOpacity
-                          onPress={() => {
-                            setSelectedLevel(li);
-                            setSelectedColumn(ci);
-                          }}
-                          style={{
-                            width: cellSize,
-                            height: cellSize,
-                            borderRadius: 6,
-                            backgroundColor: isSelected
-                              ? Colors.brown
-                              : "#EADFCB",
-                          }}
-                        />
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-          </View>
-
-          <Text
-            style={{
-              marginTop: 8,
-              fontFamily: "CrimsonText-Regular",
-              color: Colors.black,
-            }}
-          >
-            Ubicación física ID seleccionado: {physicalLocationId ?? "—"}
-          </Text>
-        </View>
-
-        {/* Menciones: formulario para agregar + lista */}
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: "#fff",
-            padding: 12,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: "#E6DAC4",
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "MateSC-Regular",
-              fontWeight: "700",
-              marginBottom: 8,
-              color: Colors.black,
-            }}
-          >
-            MENCIONES DE LA PIEZA ARQUEOLÓGICA (OPCIONAL)
-          </Text>
-
-          {/* inputs: nombre + enlace */}
+          {/* Menciones: formulario para agregar + lista */}
           <View
             style={{
-              flexDirection: windowWidth < 520 ? "column" : "row",
-              gap: 12,
-              marginBottom: 8,
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 3,
             }}
           >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: "MateSC-Regular",
-                  color: Colors.black,
-                  marginBottom: 6,
-                }}
-              >
-                Titulo
-              </Text>
-              <TextInput
-                value={mentionTitle}
-                onChangeText={setMentionTitle}
-                placeholder="Titulo"
-                maxLength={100}
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 6,
-                  padding: 8,
-                  borderWidth: 1,
-                  borderColor: "#E6DAC4",
-                  fontFamily: "CrimsonText-Regular",
-                  color: Colors.black,
-                }}
-              />
-            </View>
-
-            <View style={{ width: windowWidth < 520 ? "100%" : 200 }}>
-              <Text
-                style={{
-                  fontFamily: "MateSC-Regular",
-                  color: Colors.black,
-                  marginBottom: 6,
-                }}
-              >
-                ENLACE
-              </Text>
-              <TextInput
-                value={mentionLink}
-                onChangeText={setMentionLink}
-                placeholder="Enlace"
-                maxLength={246}
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 6,
-                  padding: 8,
-                  borderWidth: 1,
-                  borderColor: "#E6DAC4",
-                  fontFamily: "CrimsonText-Regular",
-                  color: Colors.black,
-                }}
-              />
-            </View>
-          </View>
-
-          {/* descripción */}
-          <View style={{ marginBottom: 8 }}>
             <Text
               style={{
                 fontFamily: "MateSC-Regular",
-                color: Colors.black,
-                marginBottom: 6,
+                fontSize: 18,
+                fontWeight: "600",
+                marginBottom: 16,
+                color: "#8B5E3C",
               }}
             >
-              DESCRIPCIÓN
+              Menciones de la Pieza Arqueológica (Opcional)
             </Text>
-            <TextInput
-              multiline
-              value={mentionDescription}
-              onChangeText={setMentionDescription}
-              placeholder="Descripción"
+
+            {/* inputs: nombre + enlace */}
+            <View
               style={{
-                backgroundColor: "#fff",
-                borderRadius: 6,
-                padding: 8,
-                minHeight: 80,
+                flexDirection: windowWidth < 520 ? "column" : "row",
+                gap: 16,
+                marginBottom: 16,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Título
+                </Text>
+                <TextInput
+                  value={mentionTitle}
+                  onChangeText={setMentionTitle}
+                  placeholder="Ingrese el título"
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  maxLength={100}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+              </View>
+
+              <View style={{ width: windowWidth < 520 ? "100%" : 200 }}>
+                <Text
+                  style={{
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 15,
+                    color: "#8B5E3C",
+                    marginBottom: 8,
+                    fontWeight: "600",
+                  }}
+                >
+                  Enlace
+                </Text>
+                <TextInput
+                  value={mentionLink}
+                  onChangeText={setMentionLink}
+                  placeholder="Ingrese el enlace"
+                  placeholderTextColor="#B8967D"
+                  selectionColor="#8B5E3C"
+                  maxLength={246}
+                  style={{
+                    backgroundColor: "#F7F5F2",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#E5D4C1",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 16,
+                    color: "#4A3725",
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* descripción */}
+            <View style={{ marginBottom: 16 }}>
+              <Text
+                style={{
+                  fontFamily: "MateSC-Regular",
+                  fontSize: 15,
+                  color: "#8B5E3C",
+                  marginBottom: 8,
+                  fontWeight: "600",
+                }}
+              >
+                Descripción
+              </Text>
+              <TextInput
+                multiline
+                value={mentionDescription}
+                onChangeText={setMentionDescription}
+                placeholder="Ingrese la descripción"
+                placeholderTextColor="#B8967D"
+                selectionColor="#8B5E3C"
+                style={{
+                  backgroundColor: "#F7F5F2",
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  minHeight: 100,
+                  borderWidth: 1,
+                  borderColor: "#E5D4C1",
+                  fontFamily: "CrimsonText-Regular",
+                  fontSize: 16,
+                  color: "#4A3725",
+                }}
+              />
+            </View>
+
+            {/* botón agregar */}
+            <View style={{ alignItems: "flex-end", marginBottom: 16 }}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: Colors.green,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+                onPress={() => {
+                  const title = mentionTitle.trim();
+                  const link = mentionLink.trim();
+                  const desc = mentionDescription.trim();
+
+                  // al menos nombre o enlace
+                  if (!title && !link) return;
+
+                  const m = {
+                    id: Date.now(),
+                    title,
+                    link,
+                    description: desc,
+                  };
+                  setMentions((prev) => [m, ...prev]);
+                  setMentionTitle("");
+                  setMentionLink("");
+                  setMentionDescription("");
+                }}
+              >
+                <Text
+                  style={{
+                    color: Colors.cremit,
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                  }}
+                >
+                  AGREGAR MENCIÓN
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* tabla/lista de menciones */}
+            <View
+              style={{
                 borderWidth: 1,
-                borderColor: "#E6DAC4",
-                fontFamily: "CrimsonText-Regular",
-                color: Colors.black,
+                borderColor: "#E5D4C1",
+                borderRadius: 12,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: "#F7F5F2",
+                  padding: 12,
+                }}
+              >
+                <Text style={{ flex: 2, fontFamily: "MateSC-Regular", fontSize: 14, color: "#8B5E3C" }}>
+                  Nombre
+                </Text>
+                <Text style={{ flex: 2, fontFamily: "MateSC-Regular", fontSize: 14, color: "#8B5E3C" }}>
+                  Enlace
+                </Text>
+                <Text style={{ flex: 3, fontFamily: "MateSC-Regular", fontSize: 14, color: "#8B5E3C" }}>
+                  Descripción
+                </Text>
+                <Text
+                  style={{
+                    width: 100,
+                    textAlign: "center",
+                    fontFamily: "MateSC-Regular",
+                    fontSize: 14,
+                    color: "#8B5E3C",
+                  }}
+                >
+                  Acciones
+                </Text>
+              </View>
+
+              {mentions.length === 0 ? (
+                <View style={{ padding: 16 }}>
+                  <Text
+                    style={{
+                      fontFamily: "CrimsonText-Regular",
+                      fontSize: 14,
+                      color: "#4A3725",
+                      textAlign: "center",
+                    }}
+                  >
+                    No hay menciones agregadas.
+                  </Text>
+                </View>
+              ) : (
+                mentions.map((m) => (
+                  <View
+                    key={m.id}
+                    style={{
+                      flexDirection: "row",
+                      padding: 12,
+                      alignItems: "flex-start",
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#E5D4C1",
+                    }}
+                  >
+                    {/* NOMBRE */}
+                    <View style={{ flex: 2, paddingRight: 8, minWidth: 0 }}>
+                      <Text
+                        style={{
+                          fontFamily: "CrimsonText-Regular",
+                          fontSize: 14,
+                          color: "#4A3725",
+                          flexShrink: 1,
+                          ...(Platform.OS === "web"
+                            ? ({ wordBreak: "break-all" } as any)
+                            : {}),
+                        }}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
+                        {m.title}
+                      </Text>
+                    </View>
+
+                    {/* ENLACE */}
+                    <View style={{ flex: 2, paddingRight: 8, minWidth: 0 }}>
+                      <Text
+                        style={{
+                          fontFamily: "CrimsonText-Regular",
+                          fontSize: 14,
+                          color: "#2B6CB0",
+                          flexShrink: 1,
+                          ...(Platform.OS === "web"
+                            ? ({ wordBreak: "break-all" } as any)
+                            : {}),
+                        }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {m.link}
+                      </Text>
+                    </View>
+
+                    {/* DESCRIPCIÓN */}
+                    <View style={{ flex: 3, paddingRight: 8, minWidth: 0 }}>
+                      <Text
+                        style={{
+                          fontFamily: "CrimsonText-Regular",
+                          fontSize: 14,
+                          color: "#4A3725",
+                          flexShrink: 1,
+                          ...(Platform.OS === "web"
+                            ? ({ wordBreak: "break-word" } as any)
+                            : {}),
+                        }}
+                        numberOfLines={3}
+                        ellipsizeMode="tail"
+                      >
+                        {m.description}
+                      </Text>
+                    </View>
+
+                    {/* ACCIONES */}
+                    <View style={{ width: 100, alignItems: "center" }}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          setMentions((prev) => prev.filter((x) => x.id !== m.id))
+                        }
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: "#F3D6C1",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ fontFamily: "CrimsonText-Regular", fontSize: 12 }}>
+                          Eliminar
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          {/* Guardar */}
+          <View style={{ gap: 16 }}>
+            <Button
+              title="Crear pieza"
+              onPress={handleSave}
+              style={{
+                backgroundColor: "#6B705C",
+                borderRadius: 12,
+                paddingVertical: 14,
+              }}
+              textStyle={{
+                fontFamily: "MateSC-Regular",
+                fontWeight: "bold",
+                fontSize: 16,
+                color: "#FFFFFF",
               }}
             />
           </View>
-
-          {/* botón agregar */}
-          <View style={{ alignItems: "flex-end", marginBottom: 12 }}>
-            <TouchableOpacity
-              style={{
-                backgroundColor: Colors.green,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                const title = mentionTitle.trim();
-                const link = mentionLink.trim();
-                const desc = mentionDescription.trim();
-
-                // al menos nombre o enlace
-                if (!title && !link) return;
-
-                const m = {
-                  id: Date.now(),
-                  title,
-                  link,
-                  description: desc,
-                };
-                setMentions((prev) => [m, ...prev]);
-                setMentionTitle("");
-                setMentionLink("");
-                setMentionDescription("");
-              }}
-            >
-              <Text
-                style={{
-                  color: Colors.cremit,
-                  fontFamily: "CrimsonText-Regular",
-                }}
-              >
-                AGREGAR MENCIÓN
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* tabla/lista de menciones */}
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "#E6DAC4",
-              borderRadius: 8,
-              overflow: "hidden",
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                backgroundColor: "#EADFCB",
-                padding: 8,
-              }}
-            >
-              <Text style={{ flex: 2, fontFamily: "MateSC-Regular" }}>
-                NOMBRE
-              </Text>
-              <Text style={{ flex: 2, fontFamily: "MateSC-Regular" }}>
-                ENLACE
-              </Text>
-              <Text style={{ flex: 3, fontFamily: "MateSC-Regular" }}>
-                DESCRIPCIÓN
-              </Text>
-              <Text
-                style={{
-                  width: 80,
-                  textAlign: "center",
-                  fontFamily: "MateSC-Regular",
-                }}
-              >
-                ACCIONES
-              </Text>
-            </View>
-
-            {mentions.length === 0 ? (
-              <View style={{ padding: 12 }}>
-                <Text
-                  style={{
-                    fontFamily: "CrimsonText-Regular",
-                    color: Colors.black,
-                  }}
-                >
-                  No hay menciones agregadas.
-                </Text>
-              </View>
-            ) : (
-              mentions.map((m) => (
-                <View
-                  key={m.id}
-                  style={{
-                    flexDirection: "row",
-                    padding: 8,
-                    alignItems: "flex-start",
-                    borderBottomWidth: 1,
-                    borderBottomColor: "#F0E6DB",
-                  }}
-                >
-                  {/* NOMBRE */}
-                  <View style={{ flex: 2, paddingRight: 4, minWidth: 0 }}>
-                    <Text
-                      style={{
-                        fontFamily: "CrimsonText-Regular",
-                        color: Colors.black,
-                        flexShrink: 1,
-                        ...(Platform.OS === "web"
-                          ? ({ wordBreak: "break-all" } as any)
-                          : {}),
-                      }}
-                      numberOfLines={2}
-                      ellipsizeMode="tail"
-                    >
-                      {m.title}
-                    </Text>
-                  </View>
-
-                  {/* ENLACE */}
-                  <View style={{ flex: 2, paddingRight: 4, minWidth: 0 }}>
-                    <Text
-                      style={{
-                        fontFamily: "CrimsonText-Regular",
-                        color: "#2B6CB0",
-                        flexShrink: 1,
-                        ...(Platform.OS === "web"
-                          ? ({ wordBreak: "break-all" } as any)
-                          : {}),
-                      }}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {m.link}
-                    </Text>
-                  </View>
-
-                  {/* DESCRIPCIÓN */}
-                  <View style={{ flex: 3, paddingRight: 4, minWidth: 0 }}>
-                    <Text
-                      style={{
-                        fontFamily: "CrimsonText-Regular",
-                        color: Colors.black,
-                        flexShrink: 1,
-                        ...(Platform.OS === "web"
-                          ? ({ wordBreak: "break-word" } as any)
-                          : {}),
-                      }}
-                      numberOfLines={3}
-                      ellipsizeMode="tail"
-                    >
-                      {m.description}
-                    </Text>
-                  </View>
-
-                  {/* ACCIONES */}
-                  <View style={{ width: 80, alignItems: "center" }}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setMentions((prev) => prev.filter((x) => x.id !== m.id))
-                      }
-                      style={{
-                        padding: 6,
-                        backgroundColor: "#F3D6C1",
-                        borderRadius: 6,
-                      }}
-                    >
-                      <Text style={{ fontFamily: "CrimsonText-Regular" }}>
-                        Eliminar
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        </View>
-
-        {/* Guardar */}
-        <View style={{ marginTop: 12 }}>
-          <Button
-            title="Crear pieza"
-            onPress={handleSave}
-            className="bg-[#6B705C] rounded-lg py-3 items-center"
-            textClassName="text-white"
-          />
         </View>
       </ScrollView>
 
@@ -1683,7 +1927,7 @@ export default function NewPiece() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.4)",
+            backgroundColor: "rgba(0,0,0,0.5)",
             justifyContent: "center",
             alignItems: "center",
             padding: 16,
@@ -1692,17 +1936,23 @@ export default function NewPiece() {
           <View
             style={{
               width: Math.min(containerWidth, 520),
-              backgroundColor: "#fff",
-              borderRadius: 12,
-              padding: 16,
-              gap: 12,
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              gap: 16,
+              shadowColor: "#8B5E3C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 5,
             }}
           >
             <Text
               style={{
                 fontFamily: "MateSC-Regular",
-                fontWeight: "700",
-                color: Colors.black,
+                fontSize: 20,
+                fontWeight: "600",
+                color: "#8B5E3C",
               }}
             >
               Cargar Ficha INPL
@@ -1711,16 +1961,17 @@ export default function NewPiece() {
             {inplPreviewUri ? (
               <Image
                 source={{ uri: inplPreviewUri }}
-                style={{ width: "100%", height: 220, borderRadius: 8 }}
+                style={{ width: "100%", height: 220, borderRadius: 12 }}
                 resizeMode="cover"
               />
             ) : (
               <View
                 style={{
                   height: 180,
-                  borderRadius: 8,
+                  borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: "#DDD",
+                  borderColor: "#E5D4C1",
+                  backgroundColor: "#F7F5F2",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -1728,7 +1979,8 @@ export default function NewPiece() {
                 <Text
                   style={{
                     fontFamily: "CrimsonText-Regular",
-                    color: Colors.black,
+                    fontSize: 14,
+                    color: "#4A3725",
                   }}
                 >
                   Sin imagen seleccionada
@@ -1739,21 +1991,25 @@ export default function NewPiece() {
             <View
               style={{
                 flexDirection: "row",
-                gap: 8,
+                gap: 12,
                 justifyContent: "flex-end",
               }}
             >
               <TouchableOpacity
                 onPress={pickInplFicha}
                 style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
                   backgroundColor: Colors.green,
-                  borderRadius: 8,
+                  borderRadius: 12,
                 }}
               >
                 <Text
-                  style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+                  style={{
+                    color: "#fff",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                  }}
                 >
                   ELEGIR IMAGEN
                 </Text>
@@ -1767,16 +2023,17 @@ export default function NewPiece() {
                     inplFileNativeRef.current = null;
                   }}
                   style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                     backgroundColor: "#F3D6C1",
-                    borderRadius: 8,
+                    borderRadius: 12,
                   }}
                 >
                   <Text
                     style={{
-                      color: Colors.black,
+                      color: "#4A3725",
                       fontFamily: "CrimsonText-Regular",
+                      fontSize: 14,
                     }}
                   >
                     QUITAR
@@ -1787,14 +2044,18 @@ export default function NewPiece() {
               <TouchableOpacity
                 onPress={() => setInplModalOpen(false)}
                 style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
                   backgroundColor: Colors.brown,
-                  borderRadius: 8,
+                  borderRadius: 12,
                 }}
               >
                 <Text
-                  style={{ color: "#fff", fontFamily: "CrimsonText-Regular" }}
+                  style={{
+                    color: "#fff",
+                    fontFamily: "CrimsonText-Regular",
+                    fontSize: 14,
+                  }}
                 >
                   LISTO
                 </Text>
