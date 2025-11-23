@@ -56,13 +56,6 @@ export default function ArchaeologicalPiecesLayout() {
         }}
       />
       <Stack.Screen 
-        name="New_shelf" 
-        options={{
-          animation: 'slide_from_bottom',
-          presentation: 'modal',
-        }}
-      />
-      <Stack.Screen 
         name="New_internal-classifier" 
         options={{
           animation: 'slide_from_bottom',
