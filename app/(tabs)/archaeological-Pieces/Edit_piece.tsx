@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -1287,32 +1286,7 @@ export default function EditPiece() {
                   onPress={() => setShelfPickerOpen(true)}
                 />
 
-                <TouchableOpacity
-                  style={{
-                    paddingVertical: 8,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    marginTop: 8,
-                  }}
-                  onPress={() =>
-                    router.push("/(tabs)/archaeological-Pieces/New_shelf")
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel="Crear nueva Estantería"
-                >
-                  <Text
-                    style={{
-                      color: "#8B5E3C",
-                      marginRight: 6,
-                      fontFamily: "MateSC-Regular",
-                      fontSize: 14,
-                    }}
-                  >
-                    Crear nueva Estantería
-                  </Text>
-                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
-                </TouchableOpacity>
+                {/* Eliminada la opción de crear estantería; solo seleccionar existente */}
               </View>
             </View>
           </View>

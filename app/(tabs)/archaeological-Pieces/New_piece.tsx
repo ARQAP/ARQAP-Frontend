@@ -1220,33 +1220,7 @@ export default function NewPiece() {
                   onPress={() => setShelfPickerOpen(true)}
                 />
 
-                {/* Link: Crear nueva Estantería */}
-                <TouchableOpacity
-                  style={{
-                    paddingVertical: 8,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    marginTop: 8,
-                  }}
-                  onPress={() => {
-                    router.push("/(tabs)/archaeological-Pieces/New_shelf");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Crear nueva Estantería"
-                >
-                  <Text
-                    style={{
-                      color: "#8B5E3C",
-                      marginRight: 6,
-                      fontFamily: "MateSC-Regular",
-                      fontSize: 14,
-                    }}
-                  >
-                    Crear nueva Estantería
-                  </Text>
-                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
-                </TouchableOpacity>
+                {/* Se eliminó la opción de crear nueva estantería; solo seleccionar */}
               </View>
             </View>
           </View>

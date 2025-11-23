@@ -7,7 +7,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-g
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Colors from "../constants/Colors"
 import DepositoSvg from "../Distribucion Deposito.svg"
-import { useArtefacts } from "../hooks/useArtefact"
+import { useArtefactSummaries } from "../hooks/useArtefact"
 
 type ShelfBox = { id: string; x: number; y: number; w: number; h: number; label?: string }
 
@@ -104,7 +104,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 
   // Tanstack Query para obtener artefactos del estante seleccionado
   const selectedShelfId = selected ? SHELF_ID_MAP[selected.id] : undefined
-  const { data: items, isLoading: loading, refetch } = useArtefacts(
+  const { data: items, isLoading: loading, refetch } = useArtefactSummaries(
     selectedShelfId ? { shelfId: selectedShelfId } : undefined
   )
 
@@ -145,21 +145,15 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
 
   const details = useMemo(() => {
     if (!items || !Array.isArray(items)) return null
+    // `items` vienen como ArtefactSummary: usan `collectionName` y `archaeologistName`.
     const count = items.length
     const collections = Array.from(
-      new Set(items.map((i: any) => (i.collection && (i.collection.name || i.collection)) || null).filter(Boolean)),
+      new Set(items.map((i: any) => (i.collectionName || null)).filter(Boolean)),
     ).slice(0, 5)
     const archaeologists = Array.from(
-      new Set(
-        items
-          .map((i: any) => {
-            const arch = i.archaeologist
-            if (!arch) return null
-            return arch.name || [arch.firstname, arch.lastname].filter(Boolean).join(" ")
-          })
-          .filter(Boolean),
-      ),
+      new Set(items.map((i: any) => (i.archaeologistName || null)).filter(Boolean)),
     ).slice(0, 5)
+
     return { count, collections, archaeologists }
   }, [items])
 

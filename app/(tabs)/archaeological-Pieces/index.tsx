@@ -38,23 +38,30 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
       style={[
         styles.cardShadow,
         {
-          borderColor: isHovered && isDesktop ? color : 'rgba(0,0,0,0.06)',
+          borderColor: isHovered && isDesktop ? color : "rgba(0,0,0,0.06)",
           borderWidth: isHovered && isDesktop ? 2 : 1,
           paddingHorizontal: isDesktop ? 32 : 16,
-          paddingVertical: isDesktop ? 24 : 16,
-          minHeight: isDesktop ? 150 : 110,
+          paddingVertical: isDesktop ? 24 : 20,
+          minHeight: isDesktop ? 150 : 120,
+          justifyContent: "center",
+          shadowRadius: isHovered && isDesktop ? 12 : 10,
           shadowOpacity: isHovered && isDesktop ? 0.15 : 0.08,
         },
         {
           transform: [
-            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 }
+            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 },
           ],
         },
         isHovered && isDesktop && { translateY: -2 },
         Platform.select({ web: isDesktop ? { cursor: "pointer" } : {} }),
       ]}
     >
-      <View className="flex-row items-center">
+      <View
+        className="flex-row"
+        style={{
+          alignItems: "center",
+        }}
+      >
         <View
           className="rounded-xl items-center justify-center mr-5 shrink-0"
           style={[
@@ -72,12 +79,12 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
         </View>
         <View className="flex-1">
           <Text
-            className="font-bold mb-1.5"
+            className="mb-1.5"
             style={[
               styles.titleText,
               {
                 color: isHovered && isDesktop ? color : Colors.black,
-                fontSize: isDesktop ? 25 : 19,
+                fontSize: isDesktop ? 27 : 21,
                 lineHeight: isDesktop ? 32 : 24,
               },
             ]}
@@ -90,7 +97,7 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
               {
                 color: Colors.black,
                 opacity: 0.7,
-                fontSize: isDesktop ? 22 : 15,
+                fontSize: isDesktop ? 22 : 16,
                 lineHeight: isDesktop ? 28 : 20,
               },
             ]}
@@ -135,19 +142,25 @@ export default function ArchaeologicalPiecesIndex() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: isDesktop ? 48 : 32,
+          flexGrow: 1, // clave para poder centrar en Y en mobile
         }}
       >
         {/* Contenedor central más ancho y más arriba en escritorio */}
         <View
-          className="w-full mx-auto"
+          className="w-full mx-auto flex-1"
           style={{
-              maxWidth: isDesktop ? 1360 : 720,
-              paddingHorizontal: isDesktop ? 35 : 16,
-              paddingTop: isDesktop ? 35 : 5,
+            maxWidth: isDesktop ? 1360 : 720,
+            paddingHorizontal: isDesktop ? 35 : 16,
+            paddingTop: isDesktop ? 35 : 0,
+            paddingBottom: isDesktop ? 0 : 24,
+            justifyContent: isDesktop ? "flex-start" : "center", // móvil centrado en eje Y
           }}
         >
           {/* Header */}
-          <View style={{ marginBottom: isDesktop ? 36 : 24 }} className="items-center">
+          <View
+            style={{ marginBottom: isDesktop ? 36 : 24 }}
+            className="items-center"
+          >
             <Text
               style={[
                 styles.headerTitle,
@@ -264,17 +277,6 @@ export default function ArchaeologicalPiecesIndex() {
                 rowGap: isDesktop ? 0 : 14,
               }}
             >
-              <View style={{ flex: 1 }}>
-                <ActionCard
-                  title="Nueva estantería"
-                  description="Agregue ubicaciones físicas"
-                  icon="archive-outline"
-                  color={Colors.lightbrown}
-                  onPress={() =>
-                    router.push("/(tabs)/archaeological-Pieces/New_shelf")
-                  }
-                />
-              </View>
               <View style={{ flex: 1 }}>
                 <ActionCard
                   title="Clasificador interno"
