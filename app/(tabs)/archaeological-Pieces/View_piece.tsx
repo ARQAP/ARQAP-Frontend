@@ -168,11 +168,14 @@ export default function ViewPiece() {
 
     const records = (a as any)?.historicalRecord ?? (a as any)?.records ?? [];
     const fichaHistorica = Array.isArray(records)
-      ? records.map((r: any, idx: number) => ({
-          id: Number(r?.id ?? idx + 1),
-          title: r?.filename ?? r?.name ?? "Documento",
-          url: abs(r?.filePath ?? r?.url ?? r?.uri ?? r?.path),
-        }))
+      ? records
+          .map((r: any, idx: number) => ({
+            id: Number(r?.id ?? idx + 1),
+            title: r?.filename ?? r?.name ?? "Documento",
+            // Usar filePath directamente, igual que las imágenes
+            url: abs(r?.filePath ?? r?.url ?? r?.uri ?? r?.path),
+          }))
+          .filter((f) => f.url) // Solo incluir si tiene URL válida
       : [];
 
     const internal =
@@ -225,8 +228,11 @@ export default function ViewPiece() {
     for (const f of dtoFichas) {
       try {
         if (Platform.OS === "web") {
+          // En web, crear blob con Content-Type correcto
           const blob = await INPLRepository.fetchFichaBlob(f.id);
-          const objUrl = URL.createObjectURL(blob);
+          // Asegurar que el blob tenga el Content-Type correcto
+          const typedBlob = new Blob([blob], { type: "application/pdf" });
+          const objUrl = URL.createObjectURL(typedBlob);
           out.push({ id: Number(f.id), url: objUrl, filename: f.filename });
         } else {
           const token = await getToken();
@@ -241,7 +247,9 @@ export default function ViewPiece() {
 
           if (response.ok) {
             const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
+            // Asegurar que el blob tenga el Content-Type correcto
+            const typedBlob = new Blob([blob], { type: "application/pdf" });
+            const url = URL.createObjectURL(typedBlob);
             out.push({ id: Number(f.id), url: url, filename: f.filename });
           } else {
             console.warn(
@@ -461,7 +469,11 @@ export default function ViewPiece() {
               FICHA TÉCNICA
             </Text>
 
-            <InfoRow icon="cube-outline" label="MATERIAL" value={piece.material} />
+            <InfoRow
+              icon="cube-outline"
+              label="MATERIAL"
+              value={piece.material}
+            />
             <InfoRow
               icon="location-outline"
               label="SITIO ARQUEOLÓGICO"
@@ -483,7 +495,11 @@ export default function ViewPiece() {
               value={piece.internalClassifier}
             />
             <InfoRow
-              icon={piece.available ? "checkmark-circle-outline" : "close-circle-outline"}
+              icon={
+                piece.available
+                  ? "checkmark-circle-outline"
+                  : "close-circle-outline"
+              }
               label="DISPONIBLE"
               value={piece.available ? "Sí" : "No"}
             />
@@ -590,54 +606,54 @@ export default function ViewPiece() {
               style={{
                 fontFamily: "MateSC-Regular",
                 color: "#333",
-                marginBottom: 6,
+                marginBottom: 8,
               }}
             >
               FICHA HISTÓRICA
             </Text>
             {piece.fichaHistorica && piece.fichaHistorica.length > 0 ? (
-              piece.fichaHistorica.map((f) => (
-                <View
-                  key={f.id}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: "#F7F5F2",
-                    padding: 8,
-                    borderRadius: 6,
-                    marginBottom: 6,
-                  }}
-                >
-                  <Text style={{ fontFamily: "CrimsonText-Regular" }}>
-                    {f.title}
-                  </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 12 }}
+              >
+                {piece.fichaHistorica.map((f) => (
                   <TouchableOpacity
-                    style={{
-                      backgroundColor: Colors.green,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 6,
-                    }}
-                    onPress={() => {
-                      if (f.url) {
-                        Linking.openURL(f.url).catch((err) =>
-                          console.warn("No se pudo abrir la URL", err)
-                        );
-                      }
-                    }}
+                    key={f.id}
+                    onPress={() => setPreviewUri(f.url || null)}
+                    style={{ borderRadius: 6 }}
                   >
-                    <Text
+                    <Image
+                      source={{ uri: f.url }}
                       style={{
-                        color: Colors.cremit,
-                        fontFamily: "CrimsonText-Regular",
+                        width: 150,
+                        height: 120,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: "#E6DAC4",
+                        ...(Platform.OS === "web"
+                          ? { cursor: "zoom-in" as any }
+                          : {}),
                       }}
-                    >
-                      {Platform.OS === "web" ? "ABRIR" : "VER"}
-                    </Text>
+                      resizeMode="cover"
+                    />
+                    {f.title && (
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          maxWidth: 150,
+                          marginTop: 4,
+                          fontSize: 12,
+                          fontFamily: "CrimsonText-Regular",
+                          color: Colors.black,
+                        }}
+                      >
+                        {f.title}
+                      </Text>
+                    )}
                   </TouchableOpacity>
-                </View>
-              ))
+                ))}
+              </ScrollView>
             ) : (
               <Text
                 style={{
@@ -672,44 +688,72 @@ export default function ViewPiece() {
             </Text>
 
             {inplFichas.length > 0 ? (
-              <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-                {inplFichas.map((f) => (
-                  <TouchableOpacity
+              inplFichas.map((f) => {
+                return (
+                  <View
                     key={f.id}
-                    onPress={() => setPreviewUri(f.url)}
-                    style={{ borderRadius: 6 }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      backgroundColor: "#F7F5F2",
+                      padding: 8,
+                      borderRadius: 6,
+                      marginBottom: 6,
+                    }}
                   >
-                    <Image
-                      source={{ uri: f.url }}
+                    <Text style={{ fontFamily: "CrimsonText-Regular" }}>
+                      {f.filename || "Ficha INPL"}
+                    </Text>
+                    <TouchableOpacity
                       style={{
-                        width: 140,
-                        height: 110,
+                        backgroundColor: Colors.green,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
                         borderRadius: 6,
-                        borderWidth: 1,
-                        borderColor: "#E6DAC4",
-                        ...(Platform.OS === "web"
-                          ? { cursor: "zoom-in" as any }
-                          : {}),
                       }}
-                      resizeMode="cover"
-                    />
-                    {!!f.filename && (
+                      onPress={async () => {
+                        try {
+                          if (Platform.OS === "web") {
+                            // En web, abrir directamente en nueva pestaña
+                            const token = await getToken();
+                            const baseUrl = apiClient.defaults.baseURL || "";
+                            const downloadUrl = `${baseUrl}/inplFichas/${f.id}/download`;
+
+                            // Usar la URL del servidor con token en query string
+                            const urlWithAuth = token
+                              ? `${downloadUrl}?token=${encodeURIComponent(token)}`
+                              : downloadUrl;
+
+                            // Abrir directamente en nueva pestaña
+                            if (typeof window !== "undefined") {
+                              window.open(urlWithAuth, "_blank");
+                            }
+                          } else {
+                            // En móvil, usar la URL del blob que ya tenemos
+                            if (f.url) {
+                              Linking.openURL(f.url).catch((err) =>
+                                console.warn("No se pudo abrir el PDF", err)
+                              );
+                            }
+                          }
+                        } catch (err) {
+                          console.warn("Error abriendo PDF", err);
+                        }
+                      }}
+                    >
                       <Text
-                        numberOfLines={1}
                         style={{
-                          maxWidth: 140,
-                          marginTop: 4,
-                          fontSize: 12,
+                          color: Colors.cremit,
                           fontFamily: "CrimsonText-Regular",
-                          color: Colors.black,
                         }}
                       >
-                        {f.filename}
+                        {Platform.OS === "web" ? "ABRIR PDF" : "VER PDF"}
                       </Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
             ) : (
               <Text
                 style={{
@@ -953,8 +997,13 @@ export default function ViewPiece() {
                                     borderColor: isSelected
                                       ? Colors.brown
                                       : "#E5D4C1",
-                                    shadowColor: isSelected ? "#8B5E3C" : "transparent",
-                                    shadowOffset: { width: 0, height: isSelected ? 3 : 0 },
+                                    shadowColor: isSelected
+                                      ? "#8B5E3C"
+                                      : "transparent",
+                                    shadowOffset: {
+                                      width: 0,
+                                      height: isSelected ? 3 : 0,
+                                    },
                                     shadowOpacity: isSelected ? 0.3 : 0,
                                     shadowRadius: isSelected ? 6 : 0,
                                     elevation: isSelected ? 4 : 0,
