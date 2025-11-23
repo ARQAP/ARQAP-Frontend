@@ -47,16 +47,18 @@ const ActionCard = ({ title, description, icon, color, count, onPress }: ActionC
       style={[
         styles.cardShadow,
         {
-          borderColor: isHovered && isDesktop ? color : 'rgba(0,0,0,0.06)',
+          borderColor: isHovered && isDesktop ? color : "rgba(0,0,0,0.06)",
           borderWidth: isHovered && isDesktop ? 2 : 1,
           paddingHorizontal: isDesktop ? 32 : 16,
           paddingVertical: isDesktop ? 24 : 16,
           minHeight: isDesktop ? 150 : 110,
+          justifyContent: "center",
+          shadowRadius: isHovered && isDesktop ? 12 : 10,
           shadowOpacity: isHovered && isDesktop ? 0.15 : 0.08,
         },
         {
           transform: [
-            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 }
+            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 },
           ],
         },
         isHovered && isDesktop && { translateY: -2 },
@@ -82,12 +84,12 @@ const ActionCard = ({ title, description, icon, color, count, onPress }: ActionC
           </View>
           <View className="flex-1">
             <Text
-              className="font-bold mb-1.5"
+              className="mb-1.5"
               style={[
                 styles.titleText,
                 {
                   color: isHovered && isDesktop ? color : Colors.black,
-                  fontSize: isDesktop ? 25 : 19,
+                  fontSize: isDesktop ? 27 : 21,
                   lineHeight: isDesktop ? 32 : 24,
                 },
               ]}
@@ -100,7 +102,7 @@ const ActionCard = ({ title, description, icon, color, count, onPress }: ActionC
                 {
                   color: Colors.black,
                   opacity: 0.7,
-                  fontSize: isDesktop ? 22 : 15,
+                  fontSize: isDesktop ? 22 : 16,
                   lineHeight: isDesktop ? 28 : 20,
                 },
               ]}
@@ -110,22 +112,21 @@ const ActionCard = ({ title, description, icon, color, count, onPress }: ActionC
             </Text>
           </View>
         </View>
-        
+
         <View
-          className="items-center justify-center rounded-full shrink-0 ml-4"
+          className="items-center justify-center shrink-0 ml-4"
           style={{
-            backgroundColor: color,
-            width: isDesktop ? 56 : 40,
-            height: isDesktop ? 56 : 40,
-            opacity: 1,
+            paddingRight: isDesktop ? 6 : 2,
           }}
         >
           <Text
             style={{
-              color: Colors.white,
-              fontSize: isDesktop ? 20 : 16,
-              fontWeight: "bold",
+              color: Colors.green,
+              fontSize: isDesktop ? 34 : 24,
               fontFamily: "MateSC-Regular",
+              letterSpacing: 2,
+              textAlign: "right",
+              opacity: 0.9,
             }}
           >
             {count}
@@ -178,7 +179,7 @@ const QuickAction = ({ title, icon, onPress }: QuickActionProps) => {
         },
         {
           transform: [
-            { scale: isPressed ? 0.96 : isHovered && isDesktop ? 1.04 : 1 }
+            { scale: isPressed ? 0.96 : isHovered && isDesktop ? 1.04 : 1 },
           ],
         },
         Platform.select({ web: isDesktop ? { cursor: "pointer" } : {} }),
@@ -215,7 +216,7 @@ export default function HomeScreen() {
   const isDesktop = width >= 1024;
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const router = useRouter();
-  
+
   const logoutMutation = useLogoutMutation();
   const { data: artefacts = [] } = useArtefacts();
   const { data: collections = [] } = useCollections();
@@ -230,9 +231,9 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
-      router.replace('/');
+      router.replace("/");
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error("Error al cerrar sesión:", error);
     }
   };
 
@@ -259,7 +260,7 @@ export default function HomeScreen() {
   return (
     <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
       <Navbar title="Inicio" />
-      
+
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -276,7 +277,10 @@ export default function HomeScreen() {
           }}
         >
           {/* Header */}
-          <View style={{ marginBottom: isDesktop ? 36 : 24 }} className="items-center">
+          <View
+            style={{ marginBottom: isDesktop ? 36 : 24 }}
+            className="items-center"
+          >
             <Text
               style={[
                 styles.headerTitle,
@@ -321,7 +325,12 @@ export default function HomeScreen() {
             </Text>
           )}
 
-          <View style={{ rowGap: isDesktop ? 20 : 14, marginBottom: isDesktop ? 30 : 20 }}>
+          <View
+            style={{
+              rowGap: isDesktop ? 20 : 14,
+              marginBottom: isDesktop ? 30 : 20,
+            }}
+          >
             {/* Primera fila */}
             <View
               style={{
@@ -371,8 +380,8 @@ export default function HomeScreen() {
                   color={Colors.green}
                   count={sites.length}
                   onPress={() =>
-                  router.push("/(tabs)/location/Location")
-                }
+                    router.push("/(tabs)/location/Location")
+                  }
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -383,8 +392,8 @@ export default function HomeScreen() {
                   color={Colors.green}
                   count={archaeologists.length}
                   onPress={() =>
-                  router.push("/(tabs)/archaeologist/View_archaeologist")
-                }
+                    router.push("/(tabs)/archaeologist/View_archaeologist")
+                  }
                 />
               </View>
             </View>
@@ -396,14 +405,17 @@ export default function HomeScreen() {
                 icon="swap-horizontal-outline"
                 color={Colors.green}
                 count={activeLoans.length}
-                onPress={() =>
-                  router.push("/(tabs)/loan/View_loan")
-                }
+                onPress={() => router.push("/(tabs)/loan/View_loan")}
               />
             </View>
           </View>
 
-          <View style={{ marginTop: isDesktop ? 40 : 30, marginBottom: isDesktop ? 40 : 30 }}>
+          <View
+            style={{
+              marginTop: isDesktop ? 40 : 30,
+              marginBottom: isDesktop ? 40 : 30,
+            }}
+          >
             {isDesktop && (
               <Text
                 style={[
@@ -418,7 +430,7 @@ export default function HomeScreen() {
                 Acciones Rápidas
               </Text>
             )}
-            
+
             <View
               style={{
                 flexDirection: isDesktop ? "row" : "column",
@@ -443,7 +455,9 @@ export default function HomeScreen() {
               <QuickAction
                 title="Nueva Colección"
                 icon="add-circle-outline"
-                onPress={() => router.push("/(tabs)/collection/New_collection")}
+                onPress={() =>
+                  router.push("/(tabs)/collection/New_collection")
+                }
               />
             </View>
           </View>
@@ -481,7 +495,7 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <Text
-                  className="text-white font-medium"
+                  className="text-white"
                   style={[
                     styles.buttonText,
                     {
@@ -539,7 +553,6 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontFamily: "MateSC-Regular",
-    fontWeight: "bold",
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
