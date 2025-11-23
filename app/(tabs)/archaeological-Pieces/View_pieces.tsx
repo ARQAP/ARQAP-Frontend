@@ -61,7 +61,6 @@ export default function ViewPieces() {
       ? "/(tabs)/archaeological-Pieces/deposit-map"
       : "/(tabs)/archaeological-Pieces";
 
-
   const { data, isLoading, isError, refetch } = useArtefactSummaries(
     typeof shelfIdNum === "number" && !Number.isNaN(shelfIdNum)
       ? { shelfId: shelfIdNum }
@@ -109,23 +108,10 @@ export default function ViewPieces() {
     return () => clearTimeout(handle);
   }, [rawQuery]);
 
-  // Cerrar menú al hacer click fuera en web
-  useEffect(() => {
-    if (!isWeb || !menuVisible) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      // Verificar si el click fue fuera del menú
-      if (!target.closest("[data-menu-container]")) {
-        setMenuVisible(null);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuVisible, isWeb]);
+  // 🔥 IMPORTANTE: eliminamos el listener global de click-outside en web
+  // porque puede interferir con los onPress del menú.
+  // Si en el futuro querés volver a implementarlo, conviene hacerlo con
+  // un overlay/Portal en lugar de document.addEventListener.
 
   const pieces: Piece[] = useMemo(() => {
     const list = (data ?? []) as ArtefactSummary[];
@@ -501,6 +487,7 @@ export default function ViewPieces() {
               e.currentTarget.style.shadowOpacity = "0.16";
               e.currentTarget.style.borderColor = "#6B705C";
             }}
+            // @ts-ignore
             onMouseLeave={(e: any) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.shadowOpacity = "0.08";
@@ -584,11 +571,11 @@ export default function ViewPieces() {
                   alignItems: "center",
                   position: "relative",
                 }}
-                // @ts-ignore - Web-only attribute
+                // @ts-ignore - Web-only attribute para el contenedor del menú
                 data-menu-container={isWeb ? true : undefined}
               >
                 <TouchableOpacity
-                  onPress={(e) => {
+                  onPress={(e: any) => {
                     // @ts-ignore RN synthetic event
                     e.stopPropagation?.();
                     if (p.id) {
@@ -628,11 +615,14 @@ export default function ViewPieces() {
                       shadowRadius: 4,
                       elevation: 10,
                       zIndex: 1000,
-                      width: 120,
+                      width: 140,
                     }}
                   >
                     <TouchableOpacity
-                      onPress={() => handleEdit(p.id!)}
+                      onPress={(e: any) => {
+                        e.stopPropagation?.();
+                        handleEdit(p.id!);
+                      }}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
@@ -653,7 +643,10 @@ export default function ViewPieces() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      onPress={() => handleDelete(p.id!)}
+                      onPress={(e: any) => {
+                        e.stopPropagation?.();
+                        handleDelete(p.id!);
+                      }}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
@@ -972,7 +965,7 @@ export default function ViewPieces() {
               </View>
 
               <TouchableOpacity
-                onPress={(e) => {
+                onPress={(e: any) => {
                   // @ts-ignore RN synthetic event
                   e.stopPropagation?.();
                   if (p.id) {
