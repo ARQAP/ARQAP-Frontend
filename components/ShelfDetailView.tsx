@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { ClipPath, Defs, G, Rect, Text as SvgText, } from 'react-native-svg';
+import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
 import Colors from '../constants/Colors';
 
 type SlotId = string;
@@ -19,7 +19,6 @@ type ShelfDetailViewProps = {
   shelfId: number;
   levels: number;
   columns: number;
-  occupiedSlots?: SlotId[]; // se usa sólo para el contador, no para la visual
   onSlotClick?: (slotId: SlotId) => void;
   onClose?: () => void;
 };
@@ -28,16 +27,22 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   shelfName,
   levels,
   columns,
-  occupiedSlots = [],
   onSlotClick,
   onClose,
 }) => {
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
   const windowWidth = Dimensions.get('window').width;
-  const isDesktop = windowWidth >= 768;
-  const isMobile = !isDesktop;
+  const windowHeight = Dimensions.get('window').height;
+  
+  // Usamos 1024px como punto de quiebre para activar el diseño "Dashboard"
+  // Menos de eso, usa tu diseño original (Mobile/Tablet vertical)
+  const isDesktop = windowWidth >= 1024;
+  
+  // Variable auxiliar para ajustar fuentes dentro del SVG (mantiene tu lógica original)
+  // Tu código original usaba 768 para definir tamaños de fuente, mantenemos eso para la consistencia interna del SVG
+  const isLargeScreen = windowWidth >= 768; 
 
-  // Proporciones del SVG (sistema de coordenadas interno)
+  // --- LÓGICA MATEMÁTICA (Idéntica a tu original) ---
   const svgWidth = 360;
   const svgHeight = 230;
   const padding = 20;
@@ -45,9 +50,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   const usableWidth = svgWidth - padding * 2;
   const usableHeight = svgHeight - padding * 2;
 
-  // Zonas para labels y grilla
-  const headerHeight = 24; // fila de columnas
-  const sideLabelWidth = 26; // columna de niveles
+  const headerHeight = 24; 
+  const sideLabelWidth = 26; 
 
   const gridWidth = usableWidth - sideLabelWidth - 8;
   const gridHeight = usableHeight - headerHeight - 8;
@@ -61,18 +65,16 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   const gridOriginX = padding + sideLabelWidth + 4;
   const gridOriginY = padding + headerHeight + 4;
 
-  // Tamaños de fuente adaptados
-  const colLabelFontSize = isDesktop ? 11 : 12;
-  const rowLabelFontSize = isDesktop ? 11 : 12;
-  const headerTagFontSize = isDesktop ? 9 : 10;
+  const colLabelFontSize = isLargeScreen ? 11 : 12;
+  const rowLabelFontSize = isLargeScreen ? 11 : 12;
+  const headerTagFontSize = isLargeScreen ? 9 : 10;
 
-  // 1-1 ES ARRIBA A LA IZQUIERDA
   const slots = useMemo(
     () =>
       Array.from({ length: levels }).flatMap((_, levelIndex) =>
         Array.from({ length: columns }).map((_, colIndex) => {
-          const uiLevel = levelIndex + 1; // fila superior = 1
-          const uiCol = colIndex + 1; // columna izquierda = 1
+          const uiLevel = levelIndex + 1; 
+          const uiCol = colIndex + 1; 
           const id = `L${uiLevel}-C${uiCol}`;
 
           const x = gridOriginX + colIndex * slotWidth;
@@ -86,7 +88,6 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
 
   const handleSlotClick = (slotId: SlotId) => {
     setSelectedSlot(slotId);
-    // el callback real se ejecuta desde el botón "Ver piezas"
   };
 
   const selectedSlotInfo = useMemo(() => {
@@ -94,14 +95,202 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
     const match = selectedSlot.match(/L(\d+)-C(\d+)/);
     if (!match) return null;
     const [, level, column] = match;
-    return { level: Number(level), column: Number(column) };
+    const colNum = Number(column);
+    const colLetter = String.fromCharCode(64 + colNum);
+    return { level: Number(level), column: colLetter };
   }, [selectedSlot]);
 
   const outerStroke = 1.2;
 
+  // --- RENDERIZADO DEL SVG (Extraído para usar en ambas vistas) ---
+  const renderSvgContent = () => (
+    <Svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <Defs>
+        <ClipPath id="gridRoundedClip">
+          <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} />
+        </ClipPath>
+      </Defs>
+
+      {/* Fondo general */}
+      <Rect
+        x={outerStroke / 2} y={outerStroke / 2}
+        width={svgWidth - outerStroke} height={svgHeight - outerStroke}
+        fill={Colors.cream} rx={24} stroke={Colors.cremit} strokeWidth={outerStroke}
+      />
+
+      {/* Contenedor principal */}
+      <Rect
+        x={padding - 6} y={padding - 4}
+        width={usableWidth + 12} height={usableHeight + 8}
+        fill="#ffffff" rx={18} stroke={Colors.cremit} strokeWidth={1}
+      />
+
+      {/* Cabecera de columnas (A, B, C ...) */}
+      {Array.from({ length: columns }).map((_, colIndex) => {
+        const colNumber = colIndex + 1;
+        const colLetter = String.fromCharCode(64 + colNumber); // 1 -> A
+        const colCenterX = gridOriginX + colIndex * slotWidth + slotWidth / 2;
+        return (
+          <SvgText key={`col-label-${colLetter}`} x={colCenterX} y={padding + headerHeight - 6} textAnchor="middle" fontSize={colLabelFontSize} fontWeight="600" fill={Colors.brown}>
+            {colLetter}
+          </SvgText>
+        );
+      })}
+
+      <SvgText x={padding + sideLabelWidth / 2} y={padding + headerHeight - 6} textAnchor="middle" fontSize={headerTagFontSize} fontWeight="600" fill={Colors.brown}>N</SvgText>
+
+      {/* Labels de niveles */}
+      {Array.from({ length: levels }).map((_, levelIndex) => {
+        const levelNumber = levelIndex + 1;
+        const rowCenterY = gridOriginY + levelIndex * levelHeight + levelHeight / 2;
+        return (
+          <SvgText key={`row-label-${levelNumber}`} x={padding + sideLabelWidth / 2} y={rowCenterY + 3} textAnchor="middle" fontSize={rowLabelFontSize} fontWeight="600" fill={Colors.brown}>
+            {levelNumber}
+          </SvgText>
+        );
+      })}
+
+      <G clipPath="url(#gridRoundedClip)">
+        <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} fill={Colors.cream} opacity={0.65} />
+        
+        {/* Grilla */}
+        {Array.from({ length: levels }).map((_, levelIndex) =>
+          Array.from({ length: columns }).map((_, colIndex) => (
+            <Rect key={`cell-${levelIndex}-${colIndex}`} x={gridOriginX + colIndex * slotWidth} y={gridOriginY + levelIndex * levelHeight} width={slotWidth} height={levelHeight} fill="transparent" stroke={Colors.cremit} strokeWidth={0.9} />
+          ))
+        )}
+
+        {/* Slots */}
+        {slots.map(({ id, uiLevel, uiCol, x, y }) => {
+          const selected = selectedSlot === id;
+          const fill = selected ? Colors.darkgreen : '#ffffff';
+          const stroke = selected ? Colors.green : Colors.cremit;
+          const labelColor = selected ? '#ffffff' : Colors.brown;
+          
+          const gapX = slotWidth * 0.12;
+          const gapY = levelHeight * 0.18;
+          const slotX = x + gapX;
+          const slotY = y + gapY;
+          const slotW = slotWidth - gapX * 2;
+          const slotH = levelHeight - gapY * 2;
+
+          // Tu lógica original de fuentes
+          const slotLabelFontSize = selected
+            ? isLargeScreen ? 13 : 14
+            : isLargeScreen ? 11.5 : 12.5;
+
+          const textX = !isLargeScreen ? slotX + slotW / 2.5 : slotX + slotW / 2;
+          const textOffsetY = Platform.OS === 'ios' ? 5 : (!isLargeScreen ? 3.5 : slotLabelFontSize * 0.35);
+          const textY = slotY + slotH / 2 + textOffsetY;
+          const colLetter = String.fromCharCode(64 + uiCol);
+
+          return (
+            <G key={id} onPress={() => handleSlotClick(id)} style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : undefined}>
+              <Rect x={slotX + 1.2} y={slotY + 1.6} width={slotW} height={slotH} fill="#000" opacity={0.05} rx={10} />
+              <Rect x={slotX} y={slotY} width={slotW} height={slotH} fill={fill} stroke={stroke} strokeWidth={selected ? 2 : 1.4} rx={10} />
+              <SvgText x={textX} y={textY} textAnchor="middle" fontSize={slotLabelFontSize} fontWeight={selected ? '700' : '600'} fill={labelColor}>
+                {uiLevel}-{colLetter}
+              </SvgText>
+            </G>
+          );
+        })}
+      </G>
+      <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} fill="none" stroke={Colors.cremit} strokeWidth={1.2} pointerEvents="none" />
+    </Svg>
+  );
+
+  // ==========================================
+  // VISTA DESKTOP
+  // ==========================================
+  if (isDesktop) {
+    return (
+      <View className="flex-1 items-center justify-center p-8" style={{ backgroundColor: '#f3e9dd' }}>
+        {onClose && (
+          <Pressable onPress={onClose} className="absolute top-6 right-6 w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm z-50 hover:bg-gray-100">
+            <Ionicons name="close" size={24} color="#374151" />
+          </Pressable>
+        )}
+
+        <View 
+          className="flex-row bg-white rounded-[32px] shadow-2xl overflow-hidden border border-white/50"
+          style={{ width: '90%', maxWidth: 1200, height: Math.min(750, windowHeight * 0.85) }}
+        >
+          {/* Panel Izquierdo: Mapa */}
+          <View className="flex-[1.8] bg-[#FDFCF8] items-center justify-center p-10 border-r border-gray-100 relative">
+             <View className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+             <Text className="absolute top-8 left-8 text-xs font-bold uppercase text-gray-400 tracking-widest">Vista de Estante</Text>
+             <View className="w-full h-full max-w-[600px] aspect-[4/3]">
+                {renderSvgContent()}
+             </View>
+          </View>
+
+          {/* Panel Derecho: Info */}
+          <View className="flex-1 p-8 bg-white flex-col h-full">
+            <View>
+              <View className="flex-row items-center gap-2 mb-1">
+                <View className="w-8 h-8 rounded-lg items-center justify-center bg-green-50">
+                  <Ionicons name="cube" size={16} color={Colors.darkgreen} />
+                </View>
+                <Text className="text-xs font-bold uppercase tracking-wider text-gray-500">Inventario</Text>
+              </View>
+              <Text className="text-3xl font-bold text-gray-900 mb-6">{shelfName}</Text>
+
+              <View className="flex-row gap-3 mb-6">
+                <View className="flex-1 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                   <Text className="text-2xl font-bold text-gray-800">{levels}</Text>
+                   <Text className="text-[10px] font-bold uppercase text-gray-400">Niveles</Text>
+                </View>
+                <View className="flex-1 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                   <Text className="text-2xl font-bold text-gray-800">{columns}</Text>
+                   <Text className="text-[10px] font-bold uppercase text-gray-400">Columnas</Text>
+                </View>
+              </View>
+            </View>
+            
+            <View className="h-px bg-gray-100 w-full my-2" />
+
+            <View className="flex-1 justify-center py-4">
+              {selectedSlotInfo ? (
+                <View className="bg-white border-2 border-green-600 rounded-2xl p-5 shadow-sm">
+                   <View className="flex-row justify-between items-start mb-2">
+                      <View>
+                        <Text className="text-xs font-bold uppercase text-green-700 mb-1">Posición Seleccionada</Text>
+                        <Text className="text-2xl font-bold text-gray-900">{selectedSlotInfo.level}-{selectedSlotInfo.column}</Text>
+                      </View>
+                      <Ionicons name="checkmark-circle" size={24} color={Colors.darkgreen} />
+                   </View>
+                   <Pressable
+                      className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3.5 px-4 rounded-xl shadow-md hover:bg-[#3a491b] active:scale-95 transition-all mt-4"
+                      onPress={() => selectedSlot && onSlotClick?.(selectedSlot)}
+                    >
+                      <Ionicons name="eye-outline" size={20} color="#FFFFFF" />
+                      <Text className="text-white text-base font-bold">Ver Piezas</Text>
+                    </Pressable>
+                </View>
+              ) : (
+                <View className="items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
+                  <Ionicons name="hand-left-outline" size={32} color="#9CA3AF" />
+                  <Text className="text-gray-400 font-medium text-center mt-3">Selecciona un espacio</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // ==========================================
+  // VISTA MOBILE
+  // ==========================================
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.cream }}>
-      {/* Header */}
+      {/* Header Original */}
       <View className="px-6 pt-5 pb-4 border-b bg-white" style={{ borderBottomColor: Colors.cremit }}>
         <Text className="text-[11px] font-semibold uppercase mb-1 tracking-widest" style={{ color: Colors.brown }}>
           Vista Detallada
@@ -111,20 +300,19 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
         </Text>
       </View>
 
-      {/* Botón de cierre flotante */}
+      {/* Botón de cierre flotante Original */}
       {onClose && (
         <Pressable
           onPress={onClose}
-          className={`absolute right-7 w-11 h-11 rounded-full items-center justify-center z-10 border-[1.5px] bg-white shadow-lg active:scale-95 ${Platform.OS === 'android' ? 'top-16' : 'top-4'
-            }`}
+          className={`absolute right-7 w-11 h-11 rounded-full items-center justify-center z-10 border-[1.5px] bg-white shadow-lg active:scale-95 ${
+            Platform.OS === 'android' ? 'top-16' : 'top-4'
+          }`}
           style={({ pressed }) => ({
             borderColor: Colors.cremit,
             backgroundColor: pressed ? Colors.cremitLight : '#ffffff',
           })}
         >
-          <Text className="text-[22px] font-bold" style={{ color: Colors.black }}>
-            ✕
-          </Text>
+          <Text className="text-[22px] font-bold" style={{ color: Colors.black }}>✕</Text>
         </Pressable>
       )}
 
@@ -134,255 +322,41 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View
-          className={`w-full max-w-[1180px] flex-col gap-5 ${isDesktop ? 'md:flex-row md:gap-6 md:items-stretch' : 'items-center'
-            }`}
+          className={`w-full max-w-[1180px] flex-col gap-5 ${
+            isLargeScreen ? 'md:flex-row md:gap-6 md:items-stretch' : 'items-center'
+          }`}
         >
-          {/* SVG */}
+          {/* Contenedor SVG Original */}
           <View
             className="bg-white rounded-2xl p-[18px]"
             style={{
               borderWidth: 1,
               borderColor: Colors.cremit,
-              // 🔍 En mobile le damos más altura real y dejamos que el SVG se expanda
-              minHeight: isDesktop ? 260 : 320,
-              maxHeight: isDesktop ? 420 : undefined,
-              height: isDesktop ? 420 : 320,
+              minHeight: isLargeScreen ? 260 : 320,
+              maxHeight: isLargeScreen ? 420 : undefined,
+              height: isLargeScreen ? 420 : 320,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.05,
               shadowRadius: 9,
               elevation: 3,
-              width: isDesktop ? '65%' : '100%',
+              width: isLargeScreen ? '65%' : '100%',
             }}
           >
             <Text className="text-xs font-semibold uppercase text-center mb-3 tracking-wide" style={{ color: Colors.brown }}>
               Mapa de estantería
             </Text>
             <View className="flex-1 items-center justify-center">
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                preserveAspectRatio="xMidYMid meet"
-              >
-                {/* Clip redondeado EXACTO de la grilla */}
-                <Defs>
-                  <ClipPath id="gridRoundedClip">
-                    <Rect
-                      x={gridOriginX}
-                      y={gridOriginY}
-                      width={gridWidth}
-                      height={gridHeight}
-                      rx={12}
-                    />
-                  </ClipPath>
-                </Defs>
-
-                {/* Fondo general */}
-                <Rect
-                  x={outerStroke / 2}
-                  y={outerStroke / 2}
-                  width={svgWidth - outerStroke}
-                  height={svgHeight - outerStroke}
-                  fill={Colors.cream}
-                  rx={24}
-                  stroke={Colors.cremit}
-                  strokeWidth={outerStroke}
-                />
-
-
-                {/* Contenedor principal */}
-                <Rect
-                  x={padding - 6}
-                  y={padding - 4}
-                  width={usableWidth + 12}
-                  height={usableHeight + 8}
-                  fill="#ffffff"
-                  rx={18}
-                  stroke={Colors.cremit}
-                  strokeWidth={1}
-                />
-
-                {/* Cabecera de columnas (1..M) */}
-                {Array.from({ length: columns }).map((_, colIndex) => {
-                  const colNumber = colIndex + 1;
-                  const colCenterX =
-                    gridOriginX + colIndex * slotWidth + slotWidth / 2;
-
-                  return (
-                    <SvgText
-                      key={`col-label-${colNumber}`}
-                      x={colCenterX}
-                      y={padding + headerHeight - 6}
-                      textAnchor="middle"
-                      fontSize={colLabelFontSize}
-                      fontWeight="600"
-                      fill={Colors.brown}
-                    >
-                      {colNumber}
-                    </SvgText>
-                  );
-                })}
-
-                {/* Etiqueta "N" a la izquierda */}
-                <SvgText
-                  x={padding + sideLabelWidth / 2}
-                  y={padding + headerHeight - 6}
-                  textAnchor="middle"
-                  fontSize={headerTagFontSize}
-                  fontWeight="600"
-                  fill={Colors.brown}
-                >
-                  N
-                </SvgText>
-
-                {/* Labels de niveles (1..N) – 1 ARRIBA */}
-                {Array.from({ length: levels }).map((_, levelIndex) => {
-                  const levelNumber = levelIndex + 1;
-                  const rowCenterY =
-                    gridOriginY + levelIndex * levelHeight + levelHeight / 2;
-
-                  return (
-                    <SvgText
-                      key={`row-label-${levelNumber}`}
-                      x={padding + sideLabelWidth / 2}
-                      y={rowCenterY + 3}
-                      textAnchor="middle"
-                      fontSize={rowLabelFontSize}
-                      fontWeight="600"
-                      fill={Colors.brown}
-                    >
-                      {levelNumber}
-                    </SvgText>
-                  );
-                })}
-
-                {/* Todo lo de la matriz va “recortado” */}
-                <G clipPath="url(#gridRoundedClip)">
-                  {/* Fondo suave de grilla */}
-                  <Rect
-                    x={gridOriginX}
-                    y={gridOriginY}
-                    width={gridWidth}
-                    height={gridHeight}
-                    fill={Colors.cream}
-                    opacity={0.65}
-                  />
-
-                  {/* Celdas con borde (toda la matriz) */}
-                  {Array.from({ length: levels }).map((_, levelIndex) =>
-                    Array.from({ length: columns }).map((_, colIndex) => {
-                      const cellX = gridOriginX + colIndex * slotWidth;
-                      const cellY = gridOriginY + levelIndex * levelHeight;
-                      const cellW = slotWidth;
-                      const cellH = levelHeight;
-
-                      return (
-                        <Rect
-                          key={`cell-${levelIndex}-${colIndex}`}
-                          x={cellX}
-                          y={cellY}
-                          width={cellW}
-                          height={cellH}
-                          fill="transparent"
-                          stroke={Colors.cremit}
-                          strokeWidth={0.9}
-                        />
-                      );
-                    }),
-                  )}
-
-                  {/* Slots (igual que los tenías) */}
-                  {slots.map(({ id, uiLevel, uiCol, x, y }) => {
-                    const selected = selectedSlot === id;
-
-                    const fill = selected ? Colors.darkgreen : '#ffffff';
-                    const stroke = selected ? Colors.green : Colors.cremit;
-                    const labelColor = selected ? '#ffffff' : Colors.brown;
-
-                    const gapX = slotWidth * 0.12;
-                    const gapY = levelHeight * 0.18;
-
-                    const slotX = x + gapX;
-                    const slotY = y + gapY;
-                    const slotW = slotWidth - gapX * 2;
-                    const slotH = levelHeight - gapY * 2;
-
-                    const slotLabelFontSize = selected
-                      ? isDesktop ? 13 : 14
-                      : isDesktop ? 11.5 : 12.5;
-
-                    const textX = isMobile ? slotX + slotW / 2.5 : slotX + slotW / 2;
-                    const textOffsetY =
-                      Platform.OS === 'ios'
-                        ? 5
-                        : (isMobile ? 3.5 : slotLabelFontSize * 0.35);
-                    const textY = slotY + slotH / 2 + textOffsetY;
-
-                    return (
-                      <G
-                        key={id}
-                        onPress={() => handleSlotClick(id)}
-                        style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : undefined}
-                      >
-                        <Rect
-                          x={slotX + 1.2}
-                          y={slotY + 1.6}
-                          width={slotW}
-                          height={slotH}
-                          fill="#000"
-                          opacity={0.05}
-                          rx={10}
-                        />
-
-                        <Rect
-                          x={slotX}
-                          y={slotY}
-                          width={slotW}
-                          height={slotH}
-                          fill={fill}
-                          stroke={stroke}
-                          strokeWidth={selected ? 2 : 1.4}
-                          rx={10}
-                        />
-
-                        <SvgText
-                          x={textX}
-                          y={textY}
-                          textAnchor="middle"
-                          fontSize={slotLabelFontSize}
-                          fontWeight={selected ? '700' : '600'}
-                          fill={labelColor}
-                        >
-                          {uiLevel}-{uiCol}
-                        </SvgText>
-                      </G>
-                    );
-                  })}
-                </G>
-
-                {/* Borde externo encima, para rematar y tapar cualquier micro-gap */}
-                <Rect
-                  x={gridOriginX}
-                  y={gridOriginY}
-                  width={gridWidth}
-                  height={gridHeight}
-                  rx={12}
-                  fill="none"
-                  stroke={Colors.cremit}
-                  strokeWidth={1.2}
-                  pointerEvents="none"
-                />
-              </Svg>
-
+              {/* Aquí inyectamos el SVG extraído, que se adapta al contenedor */}
+              {renderSvgContent()}
             </View>
           </View>
 
-          {/* Panel derecho */}
+          {/* Panel derecho Original */}
           <View
             className="gap-4 mt-1"
             style={{
-              width: isDesktop ? '33%' : '100%',
+              width: isLargeScreen ? '33%' : '100%',
               maxWidth: 340,
             }}
           >
@@ -404,21 +378,13 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
 
               <View className="flex-row items-center rounded-xl py-[14px] px-[10px]" style={{ backgroundColor: Colors.cream }}>
                 <View className="flex-1 items-center">
-                  <Text className="text-2xl font-extrabold mb-0.5" style={{ color: Colors.darkgreen }}>
-                    {levels}
-                  </Text>
-                  <Text className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: Colors.green }}>
-                    Niveles
-                  </Text>
+                  <Text className="text-2xl font-extrabold mb-0.5" style={{ color: Colors.darkgreen }}>{levels}</Text>
+                  <Text className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: Colors.green }}>Niveles</Text>
                 </View>
                 <View className="w-px h-9" style={{ backgroundColor: Colors.cremit }} />
                 <View className="flex-1 items-center">
-                  <Text className="text-2xl font-extrabold mb-0.5" style={{ color: Colors.darkgreen }}>
-                    {columns}
-                  </Text>
-                  <Text className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: Colors.green }}>
-                    Columnas
-                  </Text>
+                  <Text className="text-2xl font-extrabold mb-0.5" style={{ color: Colors.darkgreen }}>{columns}</Text>
+                  <Text className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: Colors.green }}>Columnas</Text>
                 </View>
               </View>
             </View>
@@ -434,15 +400,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
             >
               <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center gap-2">
-                  <View
-                    className="w-8 h-8 rounded-lg items-center justify-center"
-                    style={{ backgroundColor: selectedSlotInfo ? Colors.darkgreen : Colors.cream }}
-                  >
-                    <Ionicons
-                      name={selectedSlotInfo ? 'location' : 'hand-left-outline'}
-                      size={18}
-                      color={selectedSlotInfo ? '#FFFFFF' : Colors.brown}
-                    />
+                  <View className="w-8 h-8 rounded-lg items-center justify-center" style={{ backgroundColor: selectedSlotInfo ? Colors.darkgreen : Colors.cream }}>
+                    <Ionicons name={selectedSlotInfo ? 'location' : 'hand-left-outline'} size={18} color={selectedSlotInfo ? '#FFFFFF' : Colors.brown} />
                   </View>
                   <Text className="text-[10px] font-bold uppercase tracking-wide" style={{ color: Colors.brown }}>
                     {selectedSlotInfo ? 'Posición activa' : 'Selecciona'}
@@ -450,25 +409,19 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                 </View>
                 {selectedSlotInfo && (
                   <View className="px-3 py-1.5 rounded-full" style={{ backgroundColor: Colors.darkgreen }}>
-                    <Text className="text-sm font-bold text-white">
-                      Nivel {selectedSlotInfo.level} · Col {selectedSlotInfo.column}
-                    </Text>
+                    <Text className="text-sm font-bold text-white">Nivel {selectedSlotInfo.level} · Col {selectedSlotInfo.column}</Text>
                   </View>
                 )}
               </View>
 
               {selectedSlotInfo ? (
-                <>
-                  <Pressable
-                    className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3 px-4 rounded-full my-2.5 shadow-lg active:scale-[0.98] active:bg-[#656e55]"
-                    onPress={() => selectedSlot && onSlotClick?.(selectedSlot)}
-                  >
-                    <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
-                    <Text className="text-white text-[15px] font-bold">
-                      Ver piezas
-                    </Text>
-                  </Pressable>
-                </>
+                <Pressable
+                  className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3 px-4 rounded-full my-2.5 shadow-lg active:scale-[0.98] active:bg-[#656e55]"
+                  onPress={() => selectedSlot && onSlotClick?.(selectedSlot)}
+                >
+                  <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
+                  <Text className="text-white text-[15px] font-bold">Ver piezas</Text>
+                </Pressable>
               ) : (
                 <Text className="text-sm text-center py-2 leading-[21px]" style={{ color: Colors.green }}>
                   Toca un espacio en la estantería para ver sus detalles y las piezas almacenadas.
