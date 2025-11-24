@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { ArchaeologicalSiteCard, GenericList } from "../../../components/ui";
+import { ArchaeologicalSiteCard } from "../../../components/ui";
 import Button from "../../../components/ui/Button";
 import SimplePickerModal, {
     type SimplePickerItem,
@@ -200,6 +200,175 @@ export default function Location() {
         );
     }
 
+    const renderHeader = () => (
+        <View>
+            <View
+                style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 28,
+                    marginBottom: 32,
+                    shadowColor: "#8B5E3C",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    elevation: 3,
+                }}
+            >
+                <Text
+                    style={{
+                        fontFamily: "MateSC-Regular",
+                        fontSize: 28,
+                        color: "#8B5E3C",
+                        marginBottom: 8,
+                        fontWeight: "600",
+                    }}
+                >
+                    Gestión de Sitios Arqueológicos
+                </Text>
+                <Text
+                    style={{
+                        fontFamily: "CrimsonText-Regular",
+                        fontSize: 16,
+                        color: "#A0785D",
+                        marginBottom: 24,
+                    }}
+                >
+                    Administra y consulta el registro de sitios arqueológicos
+                    del sistema
+                </Text>
+
+                <Button
+                    title="+ Registrar nuevo sitio arqueológico"
+                    onPress={() => router.push("/(tabs)/location/New_location")}
+                    textStyle={{
+                        fontFamily: "MateSC-Regular",
+                        fontWeight: "bold",
+                        fontSize: 15,
+                    }}
+                />
+            </View>
+
+            <View
+                style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 24,
+                    marginBottom: 24,
+                    shadowColor: "#8B5E3C",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    elevation: 3,
+                }}
+            >
+                <Text
+                    style={{
+                        fontFamily: "MateSC-Regular",
+                        fontSize: 18,
+                        color: "#8B5E3C",
+                        marginBottom: 16,
+                        fontWeight: "600",
+                    }}
+                >
+                    Búsqueda
+                </Text>
+
+                <TouchableOpacity
+                    onPress={() => setShowPicker(true)}
+                    style={{
+                        backgroundColor: "#F7F5F2",
+                        borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        borderWidth: 1,
+                        borderColor: "#E5D4C1",
+                        flexDirection: "row",
+                        alignItems: "center",
+                    }}
+                >
+                    <Ionicons
+                        name="search"
+                        size={18}
+                        color="#8B5E3C"
+                        style={{ marginRight: 8 }}
+                    />
+                    <Text
+                        style={{
+                            fontFamily: "CrimsonText-Regular",
+                            fontSize: 16,
+                            color: searchDisplayText ? "#8B5E3C" : "#B8967D",
+                            flex: 1,
+                        }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >
+                        {searchDisplayText || "Buscar sitio arqueológico..."}
+                    </Text>
+                </TouchableOpacity>
+
+                {(selectedSiteId || searchText) && (
+                    <TouchableOpacity
+                        onPress={clearSearch}
+                        style={{
+                            marginTop: 12,
+                            alignSelf: "flex-start",
+                            backgroundColor: "#E5D4C1",
+                            paddingHorizontal: 16,
+                            paddingVertical: 8,
+                            borderRadius: 8,
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontFamily: "CrimsonText-Regular",
+                                fontSize: 14,
+                                color: "#8B5E3C",
+                                fontWeight: "600",
+                            }}
+                        >
+                            ✕ Limpiar búsqueda
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 16,
+                        paddingTop: 16,
+                        borderTopWidth: 1,
+                        borderTopColor: "#E5D4C1",
+                    }}
+                >
+                    <View
+                        style={{
+                            backgroundColor: "#8B5E3C",
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            marginRight: 10,
+                        }}
+                    />
+                    <Text
+                        style={{
+                            fontFamily: "CrimsonText-Regular",
+                            fontSize: 17,
+                            color: "#8B5E3C",
+                            fontWeight: "600",
+                        }}
+                    >
+                        {filteredSites.length}{" "}
+                        {filteredSites.length === 1
+                            ? "Sitio arqueológico encontrado"
+                            : "Sitios arqueológicos encontrados"}
+                    </Text>
+                </View>
+            </View>
+        </View>
+    );
+
     return (
         <View className="flex-1 bg-[#F3E9DD] p-0">
             <Navbar title="Sitios Arqueológicos" showBackArrow />
@@ -219,221 +388,55 @@ export default function Location() {
                         alignSelf: "center",
                     }}
                 >
-                    <View
-                        style={{
-                            backgroundColor: "#FFFFFF",
-                            borderRadius: 16,
-                            padding: 28,
-                            marginBottom: 32,
-                            shadowColor: "#8B5E3C",
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.08,
-                            shadowRadius: 12,
-                            elevation: 3,
-                        }}
-                    >
-                        <Text
-                            style={{
-                                fontFamily: "MateSC-Regular",
-                                fontSize: 28,
-                                color: "#8B5E3C",
-                                marginBottom: 8,
-                                fontWeight: "600",
-                            }}
-                        >
-                            Gestión de Sitios Arqueológicos
-                        </Text>
-                        <Text
-                            style={{
-                                fontFamily: "CrimsonText-Regular",
-                                fontSize: 16,
-                                color: "#A0785D",
-                                marginBottom: 24,
-                            }}
-                        >
-                            Administra y consulta el registro de sitios
-                            arqueológicos del sistema
-                        </Text>
+                    {renderHeader()}
 
-                        <Button
-                            title="+ Registrar nuevo sitio arqueológico"
-                            onPress={() =>
-                                router.push("/(tabs)/location/New_location")
-                            }
-                            textStyle={{
-                                fontFamily: "MateSC-Regular",
-                                fontWeight: "bold",
-                                fontSize: 15,
-                            }}
-                        />
-                    </View>
-
-                    <View
-                        style={{
-                            backgroundColor: "#FFFFFF",
-                            borderRadius: 16,
-                            padding: 24,
-                            marginBottom: 24,
-                            shadowColor: "#8B5E3C",
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.08,
-                            shadowRadius: 12,
-                            elevation: 3,
-                        }}
-                    >
-                        <Text
-                            style={{
-                                fontFamily: "MateSC-Regular",
-                                fontSize: 18,
-                                color: "#8B5E3C",
-                                marginBottom: 16,
-                                fontWeight: "600",
-                            }}
-                        >
-                            Búsqueda
-                        </Text>
-
-                        <TouchableOpacity
-                            onPress={() => setShowPicker(true)}
-                            style={{
-                                backgroundColor: "#F7F5F2",
-                                borderRadius: 12,
-                                paddingHorizontal: 16,
-                                paddingVertical: 12,
-                                borderWidth: 1,
-                                borderColor: "#E5D4C1",
-                                flexDirection: "row",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Ionicons
-                                name="search"
-                                size={18}
-                                color="#8B5E3C"
-                                style={{ marginRight: 8 }}
-                            />
-                            <Text
-                                style={{
-                                    fontFamily: "CrimsonText-Regular",
-                                    fontSize: 16,
-                                    color: searchDisplayText
-                                        ? "#8B5E3C"
-                                        : "#B8967D",
-                                    flex: 1,
-                                }}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
-                            >
-                                {searchDisplayText ||
-                                    "Buscar sitio arqueológico..."}
-                            </Text>
-                        </TouchableOpacity>
-
-                        {(selectedSiteId || searchText) && (
-                            <TouchableOpacity
-                                onPress={clearSearch}
-                                style={{
-                                    marginTop: 12,
-                                    alignSelf: "flex-start",
-                                    backgroundColor: "#E5D4C1",
-                                    paddingHorizontal: 16,
-                                    paddingVertical: 8,
-                                    borderRadius: 8,
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        fontFamily: "CrimsonText-Regular",
-                                        fontSize: 14,
-                                        color: "#8B5E3C",
-                                        fontWeight: "600",
-                                    }}
-                                >
-                                    ✕ Limpiar búsqueda
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-
+                    {/* Lista de sitios arqueológicos */}
+                    {filteredSites.length === 0 ? (
                         <View
                             style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                marginTop: 16,
-                                paddingTop: 16,
-                                borderTopWidth: 1,
-                                borderTopColor: "#E5D4C1",
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: 16,
+                                padding: 24,
+                                shadowColor: "#8B5E3C",
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.08,
+                                shadowRadius: 12,
+                                elevation: 3,
                             }}
                         >
-                            <View
-                                style={{
-                                    backgroundColor: "#8B5E3C",
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: 4,
-                                    marginRight: 10,
-                                }}
-                            />
-                            <Text
-                                style={{
-                                    fontFamily: "CrimsonText-Regular",
-                                    fontSize: 17,
-                                    color: "#8B5E3C",
-                                    fontWeight: "600",
-                                }}
-                            >
-                                {filteredSites.length}{" "}
-                                {filteredSites.length === 1
-                                    ? "Sitio arqueológico encontrado"
-                                    : "Sitios arqueológicos encontrados"}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View
-                        style={{
-                            backgroundColor: "#FFFFFF",
-                            borderRadius: 16,
-                            padding: 24,
-                            shadowColor: "#8B5E3C",
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.08,
-                            shadowRadius: 12,
-                            elevation: 3,
-                        }}
-                    >
-                        {filteredSites.length === 0 ? (
                             <Text
                                 style={{
                                     fontFamily: "CrimsonText-Regular",
                                     fontSize: 15,
                                     color: "#8B5E3C",
+                                    textAlign: "center",
                                 }}
                             >
                                 No hay sitios arqueológicos registrados.
                             </Text>
-                        ) : (
-                            <View style={{ flex: 1 }}>
-                                <GenericList
-                                    data={filteredSites}
-                                    renderItem={renderSiteCard}
-                                    keyExtractor={(item) =>
-                                        item.id?.toString() || ""
-                                    }
-                                    isLoading={false}
-                                    isRefreshing={isFetching}
-                                    onRefresh={refetch}
-                                    emptyStateMessage="No hay sitios arqueológicos registrados"
-                                    error={null}
-                                    customStyles={{
-                                        container: {
-                                            backgroundColor: "transparent",
-                                            paddingTop: 0,
-                                        },
+                        </View>
+                    ) : (
+                        <View>
+                            {filteredSites.map((site, index) => (
+                                <View
+                                    key={site.id?.toString() || index}
+                                    style={{
+                                        marginBottom:
+                                            index === filteredSites.length - 1
+                                                ? 0
+                                                : 16,
                                     }}
-                                />
-                            </View>
-                        )}
-                    </View>
+                                >
+                                    <ArchaeologicalSiteCard
+                                        site={site}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                        onViewDetails={handleViewDetails}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 
