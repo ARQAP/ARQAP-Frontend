@@ -1,12 +1,12 @@
 import Navbar from "@/app/(tabs)/Navbar";
-import { LoanCard } from "@/components/ui";
+import { LoanCard, LoanFiltersBar, LoanFilterValues } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import Colors from "@/constants/Colors";
 import { useLoans, useUpdateLoan } from "@/hooks/useLoan";
 import { Loan } from "@/repositories/loanRepository";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -33,6 +33,20 @@ export default function ViewLoan() {
         useState(false);
     const [isFinishedSectionExpanded, setIsFinishedSectionExpanded] =
         useState(false);
+
+    // Estados para los filtros
+    const [activeFilters, setActiveFilters] = useState<LoanFilterValues>({
+        artifactName: "",
+        requesterName: "",
+    });
+    const [finishedFilters, setFinishedFilters] = useState<LoanFilterValues>({
+        artifactName: "",
+        requesterName: "",
+    });
+
+    // Estados para controlar cuando hay dropdowns abiertos
+    const [isActiveDropdownOpen, setIsActiveDropdownOpen] = useState(false);
+    const [isFinishedDropdownOpen, setIsFinishedDropdownOpen] = useState(false);
 
     const handleViewDetails = (loan: Loan) => {
         router.push(`/(tabs)/loan/Detail_loan?id=${loan.id}`);
@@ -79,81 +93,152 @@ export default function ViewLoan() {
         }
     };
 
-    // Separar préstamos según tengan returnTime o no
-    const activeLoans = loans
-        .filter((loan) => !loan.returnTime)
-        .sort((a, b) => {
-            console.log("Loan A:", {
-                id: a.id,
-                loanDate: a.loanDate,
-                loanTime: a.loanTime,
-                combined: `${a.loanDate}T${a.loanTime || "00:00:00"}`,
+    // Separar y filtrar préstamos activos
+    const activeLoans = useMemo(() => {
+        return loans
+            .filter((loan) => !loan.returnTime)
+            .filter((loan) => {
+                // Filtrar por nombre de pieza
+                if (activeFilters.artifactName && loan.artefact?.name) {
+                    if (
+                        !loan.artefact.name
+                            .toLowerCase()
+                            .includes(activeFilters.artifactName.toLowerCase())
+                    ) {
+                        return false;
+                    }
+                }
+
+                // Filtrar por solicitante
+                if (
+                    activeFilters.requesterName.trim() !== "" &&
+                    loan.requester
+                ) {
+                    const fullName =
+                        `${loan.requester.firstname || ""} ${loan.requester.lastname || ""}`.trim();
+                    if (
+                        !fullName
+                            .toLowerCase()
+                            .startsWith(
+                                activeFilters.requesterName.toLowerCase()
+                            )
+                    ) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            .sort((a, b) => {
+                let dateTimeA, dateTimeB;
+
+                try {
+                    if (a.loanTime && a.loanTime.includes("T")) {
+                        dateTimeA = new Date(a.loanTime).getTime();
+                    } else {
+                        dateTimeA = new Date(
+                            `${a.loanDate}T${a.loanTime || "00:00:00"}`
+                        ).getTime();
+                    }
+
+                    if (b.loanTime && b.loanTime.includes("T")) {
+                        dateTimeB = new Date(b.loanTime).getTime();
+                    } else {
+                        dateTimeB = new Date(
+                            `${b.loanDate}T${b.loanTime || "00:00:00"}`
+                        ).getTime();
+                    }
+                } catch (error) {
+                    console.error("Error parsing dates:", error);
+                    dateTimeA = new Date(a.loanDate).getTime();
+                    dateTimeB = new Date(b.loanDate).getTime();
+                }
+
+                return dateTimeB - dateTimeA;
             });
-            console.log("Loan B:", {
-                id: b.id,
-                loanDate: b.loanDate,
-                loanTime: b.loanTime,
-                combined: `${b.loanDate}T${b.loanTime || "00:00:00"}`,
+    }, [loans, activeFilters.artifactName, activeFilters.requesterName]);
+
+    // Separar y filtrar préstamos finalizados
+    const finishedLoans = useMemo(() => {
+        return loans
+            .filter((loan) => loan.returnTime)
+            .filter((loan) => {
+                // Filtrar por nombre de pieza
+                if (finishedFilters.artifactName && loan.artefact?.name) {
+                    if (
+                        !loan.artefact.name
+                            .toLowerCase()
+                            .includes(
+                                finishedFilters.artifactName.toLowerCase()
+                            )
+                    ) {
+                        return false;
+                    }
+                }
+
+                // Filtrar por solicitante
+                if (
+                    finishedFilters.requesterName.trim() !== "" &&
+                    loan.requester
+                ) {
+                    const fullName =
+                        `${loan.requester.firstname || ""} ${loan.requester.lastname || ""}`.trim();
+                    if (
+                        !fullName
+                            .toLowerCase()
+                            .startsWith(
+                                finishedFilters.requesterName.toLowerCase()
+                            )
+                    ) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            .sort((a, b) => {
+                let dateTimeA, dateTimeB;
+
+                try {
+                    if (a.loanTime && a.loanTime.includes("T")) {
+                        dateTimeA = new Date(a.loanTime).getTime();
+                    } else {
+                        dateTimeA = new Date(
+                            `${a.loanDate}T${a.loanTime || "00:00:00"}`
+                        ).getTime();
+                    }
+
+                    if (b.loanTime && b.loanTime.includes("T")) {
+                        dateTimeB = new Date(b.loanTime).getTime();
+                    } else {
+                        dateTimeB = new Date(
+                            `${b.loanDate}T${b.loanTime || "00:00:00"}`
+                        ).getTime();
+                    }
+                } catch (error) {
+                    console.error("Error parsing dates:", error);
+                    dateTimeA = new Date(a.loanDate).getTime();
+                    dateTimeB = new Date(b.loanDate).getTime();
+                }
+
+                return dateTimeB - dateTimeA;
             });
+    }, [loans, finishedFilters.artifactName, finishedFilters.requesterName]);
 
-            let dateTimeA, dateTimeB;
-
-            try {
-                if (a.loanTime && a.loanTime.includes("T")) {
-                    dateTimeA = new Date(a.loanTime).getTime();
-                } else {
-                    dateTimeA = new Date(
-                        `${a.loanDate}T${a.loanTime || "00:00:00"}`
-                    ).getTime();
-                }
-
-                if (b.loanTime && b.loanTime.includes("T")) {
-                    dateTimeB = new Date(b.loanTime).getTime();
-                } else {
-                    dateTimeB = new Date(
-                        `${b.loanDate}T${b.loanTime || "00:00:00"}`
-                    ).getTime();
-                }
-            } catch (error) {
-                console.error("Error parsing dates:", error);
-                dateTimeA = new Date(a.loanDate).getTime();
-                dateTimeB = new Date(b.loanDate).getTime();
-            }
-
-            const result = dateTimeB - dateTimeA;
-            console.log("Comparison result:", result);
-            return result;
+    // Handlers para limpiar filtros
+    const handleClearActiveFilters = () => {
+        setActiveFilters({
+            artifactName: "",
+            requesterName: "",
         });
+    };
 
-    const finishedLoans = loans
-        .filter((loan) => loan.returnTime)
-        .sort((a, b) => {
-            let dateTimeA, dateTimeB;
-
-            try {
-                if (a.loanTime && a.loanTime.includes("T")) {
-                    dateTimeA = new Date(a.loanTime).getTime();
-                } else {
-                    dateTimeA = new Date(
-                        `${a.loanDate}T${a.loanTime || "00:00:00"}`
-                    ).getTime();
-                }
-
-                if (b.loanTime && b.loanTime.includes("T")) {
-                    dateTimeB = new Date(b.loanTime).getTime();
-                } else {
-                    dateTimeB = new Date(
-                        `${b.loanDate}T${b.loanTime || "00:00:00"}`
-                    ).getTime();
-                }
-            } catch (error) {
-                console.error("Error parsing dates:", error);
-                dateTimeA = new Date(a.loanDate).getTime();
-                dateTimeB = new Date(b.loanDate).getTime();
-            }
-
-            return dateTimeB - dateTimeA;
+    const handleClearFinishedFilters = () => {
+        setFinishedFilters({
+            artifactName: "",
+            requesterName: "",
         });
+    };
 
     const renderLoanCard = (loan: Loan) => (
         <LoanCard
@@ -223,6 +308,8 @@ export default function ViewLoan() {
                     // Centrado en web, stretch en mobile
                     alignItems: Platform.OS === "web" ? "center" : "stretch",
                 }}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled={true}
             >
                 <View
                     style={{
@@ -365,35 +452,56 @@ export default function ViewLoan() {
                             />
                         </TouchableOpacity>
 
-                        {isActiveSectionExpanded &&
-                            (activeLoans.length > 0 ? (
-                                activeLoans.map((loan) => (
+                        {isActiveSectionExpanded && (
+                            <>
+                                {/* Filtros para préstamos activos */}
+                                <LoanFiltersBar
+                                    filters={activeFilters}
+                                    onFilterChange={setActiveFilters}
+                                    loans={loans.filter(
+                                        (loan) => !loan.returnTime
+                                    )}
+                                    onClear={handleClearActiveFilters}
+                                    onDropdownOpenChange={
+                                        setIsActiveDropdownOpen
+                                    }
+                                />
+
+                                {/* Lista de préstamos activos filtrados */}
+                                {activeLoans.length > 0 ? (
+                                    activeLoans.map((loan) => (
+                                        <View
+                                            key={loan.id}
+                                            style={{ marginBottom: 10 }}
+                                        >
+                                            {renderLoanCard(loan)}
+                                        </View>
+                                    ))
+                                ) : (
                                     <View
-                                        key={loan.id}
-                                        style={{ marginBottom: 10 }}
-                                    >
-                                        {renderLoanCard(loan)}
-                                    </View>
-                                ))
-                            ) : (
-                                <View
-                                    style={{
-                                        backgroundColor: "#F7F5F2",
-                                        padding: 20,
-                                        borderRadius: 12,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <Text
                                         style={{
-                                            color: Colors.brown,
-                                            fontSize: 14,
+                                            backgroundColor: "#F7F5F2",
+                                            padding: 20,
+                                            borderRadius: 12,
+                                            alignItems: "center",
                                         }}
                                     >
-                                        No hay préstamos activos
-                                    </Text>
-                                </View>
-                            ))}
+                                        <Text
+                                            style={{
+                                                color: Colors.brown,
+                                                fontSize: 14,
+                                            }}
+                                        >
+                                            {loans.filter(
+                                                (loan) => !loan.returnTime
+                                            ).length > 0
+                                                ? "No se encontraron préstamos activos con los filtros aplicados"
+                                                : "No hay préstamos activos"}
+                                        </Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
                     </View>
 
                     {/* Préstamos Finalizados */}
@@ -452,35 +560,56 @@ export default function ViewLoan() {
                             />
                         </TouchableOpacity>
 
-                        {isFinishedSectionExpanded &&
-                            (finishedLoans.length > 0 ? (
-                                finishedLoans.map((loan) => (
+                        {isFinishedSectionExpanded && (
+                            <>
+                                {/* Filtros para préstamos finalizados */}
+                                <LoanFiltersBar
+                                    filters={finishedFilters}
+                                    onFilterChange={setFinishedFilters}
+                                    loans={loans.filter(
+                                        (loan) => loan.returnTime
+                                    )}
+                                    onClear={handleClearFinishedFilters}
+                                    onDropdownOpenChange={
+                                        setIsFinishedDropdownOpen
+                                    }
+                                />
+
+                                {/* Lista de préstamos finalizados filtrados */}
+                                {finishedLoans.length > 0 ? (
+                                    finishedLoans.map((loan) => (
+                                        <View
+                                            key={loan.id}
+                                            style={{ marginBottom: 10 }}
+                                        >
+                                            {renderLoanCard(loan)}
+                                        </View>
+                                    ))
+                                ) : (
                                     <View
-                                        key={loan.id}
-                                        style={{ marginBottom: 10 }}
-                                    >
-                                        {renderLoanCard(loan)}
-                                    </View>
-                                ))
-                            ) : (
-                                <View
-                                    style={{
-                                        backgroundColor: "#F7F5F2",
-                                        padding: 20,
-                                        borderRadius: 12,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <Text
                                         style={{
-                                            color: Colors.green,
-                                            fontSize: 14,
+                                            backgroundColor: "#F7F5F2",
+                                            padding: 20,
+                                            borderRadius: 12,
+                                            alignItems: "center",
                                         }}
                                     >
-                                        No hay préstamos finalizados
-                                    </Text>
-                                </View>
-                            ))}
+                                        <Text
+                                            style={{
+                                                color: Colors.green,
+                                                fontSize: 14,
+                                            }}
+                                        >
+                                            {loans.filter(
+                                                (loan) => loan.returnTime
+                                            ).length > 0
+                                                ? "No se encontraron préstamos finalizados con los filtros aplicados"
+                                                : "No hay préstamos finalizados"}
+                                        </Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
                     </View>
                 </View>
             </ScrollView>

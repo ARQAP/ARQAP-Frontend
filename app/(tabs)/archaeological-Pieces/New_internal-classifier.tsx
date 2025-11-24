@@ -152,7 +152,7 @@ export default function New_internal_classifier() {
                 </Text>
                 <TextInput
                   style={{
-                    backgroundColor: Colors.cremitLight,
+                    backgroundColor: "#F7F5F2",
                     borderRadius: 12,
                     paddingHorizontal: 16,
                     paddingVertical: 12,
