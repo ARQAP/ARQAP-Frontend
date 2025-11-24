@@ -635,6 +635,21 @@ export default function ArchaeologicalPiecesIndex() {
                 />
               </View>
             </View>
+
+            {/* Cuarta fila - Movimientos Internos */}
+            <View style={{ marginTop: isDesktop ? 0 : 0 }}>
+              <ActionCard
+                title="Movimientos Internos"
+                description="Registre y consulte movimientos de piezas dentro del depósito"
+                icon="move-outline"
+                color={Colors.brown}
+                onPress={() =>
+                  router.push(
+                    "/(tabs)/internal-movements/View_movements"
+                  )
+                }
+              />
+            </View>
           </View>
         </View>
       </ScrollView>

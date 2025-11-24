@@ -25,6 +25,7 @@ import {
     useArtefactSummaries,
     useDeleteArtefact,
 } from "../../../hooks/useArtefact";
+import { getShelfLabel, getShelfShortLabel } from "@/utils/shelfLabels";
 
 // Tipo extendido para incluir campos adicionales que se usan en la UI
 type Piece = ArtefactSummary & {
@@ -120,7 +121,7 @@ export default function ViewPieces() {
             const shelfText =
                 a.shelfCode == null
                     ? undefined
-                    : `Estantería ${String(a.shelfCode)}`;
+                    : getShelfLabel(a.shelfCode);
             const levelText =
                 a.level == null ? undefined : `Nivel ${String(a.level)}`;
             const columnText =
@@ -210,13 +211,26 @@ export default function ViewPieces() {
                 if (!pieceSite.startsWith(filterSite)) return false;
             }
 
-            // ====== ESTANTERÍA (solo número) ======
+            // ====== ESTANTERÍA (busca por código numérico o por etiqueta) ======
             if (filters.shelf.trim() !== "") {
-                const shelfText = p.shelfText || "";
-                const pieceNum = shelfText.match(/\d+/)?.[0]; // número en "Estantería 1"
-
-                if (!pieceNum || pieceNum !== filters.shelf.trim())
+                const filterValue = filters.shelf.trim().toUpperCase();
+                const pieceShelfCode = p.shelfCode;
+                
+                if (pieceShelfCode == null) return false;
+                
+                // Obtener la etiqueta de la pieza
+                const pieceLabel = getShelfLabel(pieceShelfCode).toUpperCase();
+                const pieceShortLabel = getShelfShortLabel(pieceShelfCode).toUpperCase();
+                const pieceCode = String(pieceShelfCode);
+                
+                // Buscar por código numérico, etiqueta completa o etiqueta corta
+                const matchesCode = pieceCode === filterValue;
+                const matchesLabel = pieceLabel.includes(filterValue);
+                const matchesShortLabel = pieceShortLabel.includes(filterValue);
+                
+                if (!matchesCode && !matchesLabel && !matchesShortLabel) {
                     return false;
+                }
             }
 
             // ====== NIVEL (solo número) ======
