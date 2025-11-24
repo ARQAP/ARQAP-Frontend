@@ -13,7 +13,7 @@ export const useInternalClassifiers = () => {
     queryKey: KEY,
     queryFn: InternalClassifierRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
@@ -23,7 +23,7 @@ export const useInternalClassifier = (name?: string) => {
     queryKey: [...KEY, "name", name],
     queryFn: () => InternalClassifierRepository.getByName(name as string),
     enabled: !!token && !!name,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
@@ -67,6 +67,6 @@ export const useInternalClassifierNames = () => {
     queryKey: [...KEY, "names"],
     queryFn: InternalClassifierRepository.getAllNames,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };

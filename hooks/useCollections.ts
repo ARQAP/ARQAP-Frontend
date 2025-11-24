@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsAuthenticated } from "./useUserAuth";
 import {
   Collection,
   CollectionRepository,
 } from "@/repositories/collectionRepository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["collections"];
 
@@ -13,7 +13,7 @@ export const useCollections = () => {
     queryKey: KEY,
     queryFn: CollectionRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsAuthenticated } from "./useUserAuth";
 import {
   Shelf,
   ShelfRepository,
 } from "@/repositories/shelfRepository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["shelfs"];
 
@@ -13,7 +13,7 @@ export const useShelves = () => {
     queryKey: KEY,
     queryFn: ShelfRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
@@ -23,7 +23,7 @@ export const useShelf = (id?: number) => {
     queryKey: [...KEY, id],
     queryFn: () => ShelfRepository.getById(id as number),
     enabled: !!token && !!id,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

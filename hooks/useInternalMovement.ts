@@ -1,6 +1,6 @@
+import { InternalMovement, InternalMovementRepository } from "@/repositories/internalMovementRepository";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAuthenticated } from "./useUserAuth";
-import { InternalMovement, InternalMovementRepository } from "@/repositories/internalMovementRepository";
 
 const KEY = ["internal-movements"];
 
@@ -10,7 +10,7 @@ export const useInternalMovements = () => {
     queryKey: KEY,
     queryFn: InternalMovementRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
@@ -29,7 +29,7 @@ export const useInternalMovementsByArtefactId = (artefactId?: number) => {
     queryKey: [...KEY, "artefact", artefactId],
     queryFn: () => InternalMovementRepository.getByArtefactId(artefactId as number),
     enabled: !!token && !!artefactId,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
@@ -39,7 +39,7 @@ export const useActiveInternalMovementByArtefactId = (artefactId?: number) => {
     queryKey: [...KEY, "artefact", artefactId, "active"],
     queryFn: () => InternalMovementRepository.getActiveByArtefactId(artefactId as number),
     enabled: !!token && !!artefactId,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
