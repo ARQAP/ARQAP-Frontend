@@ -1011,7 +1011,7 @@ export default function ViewPiece() {
                             }}
                         >
                             {piece.shelfCode 
-                                ? `Mapa de el ${getShelfLabel(piece.shelfCode)}`
+                                ? `Mapa del ${getShelfLabel(piece.shelfCode)}`
                                 : "Ubicación Física de la Pieza"}
                         </Text>
 

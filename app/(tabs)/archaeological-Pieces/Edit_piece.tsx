@@ -1998,7 +1998,7 @@ export default function EditPiece() {
                             }}
                         >
                             {shelfIdFromCode 
-                                ? `Mapa de el ${getShelfLabel(shelfCode)}`
+                                ? `Mapa del ${getShelfLabel(shelfCode)}`
                                 : "Ubicación Física de la Pieza"}
                         </Text>
 
