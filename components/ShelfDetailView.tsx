@@ -97,6 +97,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
 
   const handleSlotClick = (slotId: SlotId) => {
     setSelectedSlot(slotId);
+    // Llamar al callback si está definido
+    onSlotClick?.(slotId);
   };
 
   const selectedSlotInfo = useMemo(() => {

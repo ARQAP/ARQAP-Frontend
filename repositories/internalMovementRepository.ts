@@ -19,6 +19,7 @@ export type InternalMovement = {
   observations?: string | null;
   requesterId?: number | null;
   requester?: Requester | null;
+  groupMovementId?: number | null; // Para agrupar movimientos creados juntos
 };
 
 export const InternalMovementRepository = {
@@ -52,6 +53,11 @@ export const InternalMovementRepository = {
   create: async (payload: InternalMovement) => {
     const { data } = await apiClient.post("/internal-movements/", payload);
     return data as InternalMovement;
+  },
+
+  createBatch: async (payloads: InternalMovement[]) => {
+    const { data } = await apiClient.post("/internal-movements/batch", payloads);
+    return data as InternalMovement[];
   },
 
   update: async (id: number, payload: InternalMovement) => {

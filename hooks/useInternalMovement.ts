@@ -53,6 +53,16 @@ export const useCreateInternalMovement = () => {
   });
 };
 
+export const useCreateBatchInternalMovements = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payloads: InternalMovement[]) => InternalMovementRepository.createBatch(payloads),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+    },
+  });
+};
+
 export const useUpdateInternalMovement = () => {
   const qc = useQueryClient();
   return useMutation({

@@ -73,6 +73,57 @@ export default function ViewMovements() {
         }
     };
 
+    // Agrupar movimientos por groupMovementId y calcular estadísticas
+    const groupMovements = (movementsList: InternalMovement[], allMovements: InternalMovement[]) => {
+        const grouped = new Map<number | null, InternalMovement[]>();
+        const ungrouped: InternalMovement[] = [];
+
+        movementsList.forEach((movement) => {
+            if (movement.groupMovementId != null) {
+                const groupId = movement.groupMovementId;
+                if (!grouped.has(groupId)) {
+                    grouped.set(groupId, []);
+                }
+                grouped.get(groupId)!.push(movement);
+            } else {
+                ungrouped.push(movement);
+            }
+        });
+
+        // Ordenar movimientos dentro de cada grupo
+        grouped.forEach((groupMovements) => {
+            groupMovements.sort((a, b) => {
+                try {
+                    const dateTimeA = new Date(a.movementTime).getTime();
+                    const dateTimeB = new Date(b.movementTime).getTime();
+                    return dateTimeB - dateTimeA;
+                } catch (error) {
+                    return 0;
+                }
+            });
+        });
+
+        // Calcular estadísticas para cada grupo
+        const groupStats = new Map<number, { total: number; active: number; finished: number }>();
+        grouped.forEach((groupMovements, groupId) => {
+            if (groupId !== null) {
+                // Encontrar todos los movimientos de este grupo en la lista completa
+                const allGroupMovements = allMovements.filter(
+                    (m) => m.groupMovementId === groupId
+                );
+                const active = allGroupMovements.filter((m) => !m.returnTime).length;
+                const finished = allGroupMovements.filter((m) => m.returnTime).length;
+                groupStats.set(groupId, {
+                    total: allGroupMovements.length,
+                    active,
+                    finished,
+                });
+            }
+        });
+
+        return { grouped, ungrouped, groupStats };
+    };
+
     // Separar movimientos según estén activos o finalizados
     const activeMovements = movements
         .filter((movement) => !movement.returnTime)
@@ -97,6 +148,9 @@ export default function ViewMovements() {
                 return 0;
             }
         });
+
+    const activeGrouped = groupMovements(activeMovements, movements);
+    const finishedGrouped = groupMovements(finishedMovements, movements);
 
     const renderMovementCard = (movement: InternalMovement) => (
         <MovementCard
@@ -326,10 +380,95 @@ export default function ViewMovements() {
                             </View>
                         ) : (
                             <View style={{ gap: 16 }}>
-                                {activeMovements.map((movement) =>
-                                    movement.id
-                                        ? renderMovementCard(movement)
-                                        : null
+                                {/* Renderizar grupos de movimientos */}
+                                {Array.from(activeGrouped.grouped.entries()).map(([groupId, groupMovements]) => {
+                                    const stats = activeGrouped.groupStats.get(groupId);
+                                    return (
+                                        <View key={groupId} style={{ marginBottom: 8 }}>
+                                            <View
+                                                style={{
+                                                    flexDirection: "row",
+                                                    alignItems: "center",
+                                                    justifyContent: "space-between",
+                                                    marginBottom: 8,
+                                                    paddingHorizontal: 12,
+                                                    paddingVertical: 8,
+                                                    backgroundColor: "#F0F8F0",
+                                                    borderRadius: 8,
+                                                    borderLeftWidth: 4,
+                                                    borderLeftColor: Colors.brown,
+                                                }}
+                                            >
+                                                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                                                    <Ionicons name="layers-outline" size={18} color={Colors.brown} />
+                                                    <Text
+                                                        style={{
+                                                            marginLeft: 8,
+                                                            fontSize: 15,
+                                                            fontWeight: "600",
+                                                            color: Colors.brown,
+                                                        }}
+                                                    >
+                                                        Movimiento en grupo
+                                                    </Text>
+                                                </View>
+                                                {stats && (
+                                                    <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 8 }}>
+                                                        <View
+                                                            style={{
+                                                                backgroundColor: Colors.brown,
+                                                                paddingHorizontal: 10,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 12,
+                                                            }}
+                                                        >
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 13,
+                                                                    fontWeight: "700",
+                                                                    color: Colors.cremit,
+                                                                }}
+                                                            >
+                                                                {stats.active}/{stats.total} activas
+                                                            </Text>
+                                                        </View>
+                                                        {stats.finished > 0 && (
+                                                            <View
+                                                                style={{
+                                                                    backgroundColor: Colors.green,
+                                                                    paddingHorizontal: 10,
+                                                                    paddingVertical: 4,
+                                                                    borderRadius: 12,
+                                                                    marginLeft: 6,
+                                                                }}
+                                                            >
+                                                                <Text
+                                                                    style={{
+                                                                        fontSize: 13,
+                                                                        fontWeight: "700",
+                                                                        color: Colors.cremit,
+                                                                    }}
+                                                                >
+                                                                    {stats.finished}/{stats.total} finalizadas
+                                                                </Text>
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                )}
+                                            </View>
+                                            {groupMovements.map((movement) =>
+                                                movement.id ? (
+                                                    <View key={movement.id} style={{ marginLeft: 16, marginBottom: 8 }}>
+                                                        {renderMovementCard(movement)}
+                                                    </View>
+                                                ) : null
+                                            )}
+                                        </View>
+                                    );
+                                })}
+                                {/* Renderizar movimientos individuales */}
+                                {activeGrouped.ungrouped.map((movement) =>
+                                    movement.id ? renderMovementCard(movement) : null
                                 )}
                             </View>
                         )}
@@ -394,10 +533,95 @@ export default function ViewMovements() {
                             </View>
                         ) : (
                             <View style={{ gap: 16 }}>
-                                {finishedMovements.map((movement) =>
-                                    movement.id
-                                        ? renderMovementCard(movement)
-                                        : null
+                                {/* Renderizar grupos de movimientos */}
+                                {Array.from(finishedGrouped.grouped.entries()).map(([groupId, groupMovements]) => {
+                                    const stats = finishedGrouped.groupStats.get(groupId);
+                                    return (
+                                        <View key={groupId} style={{ marginBottom: 8 }}>
+                                            <View
+                                                style={{
+                                                    flexDirection: "row",
+                                                    alignItems: "center",
+                                                    justifyContent: "space-between",
+                                                    marginBottom: 8,
+                                                    paddingHorizontal: 12,
+                                                    paddingVertical: 8,
+                                                    backgroundColor: "#F0F8F0",
+                                                    borderRadius: 8,
+                                                    borderLeftWidth: 4,
+                                                    borderLeftColor: Colors.green,
+                                                }}
+                                            >
+                                                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                                                    <Ionicons name="layers-outline" size={18} color={Colors.green} />
+                                                    <Text
+                                                        style={{
+                                                            marginLeft: 8,
+                                                            fontSize: 15,
+                                                            fontWeight: "600",
+                                                            color: Colors.green,
+                                                        }}
+                                                    >
+                                                        Movimiento en grupo
+                                                    </Text>
+                                                </View>
+                                                {stats && (
+                                                    <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 8 }}>
+                                                        {stats.active > 0 && (
+                                                            <View
+                                                                style={{
+                                                                    backgroundColor: Colors.brown,
+                                                                    paddingHorizontal: 10,
+                                                                    paddingVertical: 4,
+                                                                    borderRadius: 12,
+                                                                }}
+                                                            >
+                                                                <Text
+                                                                    style={{
+                                                                        fontSize: 13,
+                                                                        fontWeight: "700",
+                                                                        color: Colors.cremit,
+                                                                    }}
+                                                                >
+                                                                    {stats.active}/{stats.total} activas
+                                                                </Text>
+                                                            </View>
+                                                        )}
+                                                        <View
+                                                            style={{
+                                                                backgroundColor: Colors.green,
+                                                                paddingHorizontal: 10,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 12,
+                                                                marginLeft: stats.active > 0 ? 6 : 0,
+                                                            }}
+                                                        >
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 13,
+                                                                    fontWeight: "700",
+                                                                    color: Colors.cremit,
+                                                                }}
+                                                            >
+                                                                {stats.finished}/{stats.total} finalizadas
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            {groupMovements.map((movement) =>
+                                                movement.id ? (
+                                                    <View key={movement.id} style={{ marginLeft: 16, marginBottom: 8 }}>
+                                                        {renderMovementCard(movement)}
+                                                    </View>
+                                                ) : null
+                                            )}
+                                        </View>
+                                    );
+                                })}
+                                {/* Renderizar movimientos individuales */}
+                                {finishedGrouped.ungrouped.map((movement) =>
+                                    movement.id ? renderMovementCard(movement) : null
                                 )}
                             </View>
                         )}
