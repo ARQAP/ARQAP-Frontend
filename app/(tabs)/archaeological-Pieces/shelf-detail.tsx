@@ -57,10 +57,10 @@ export default function ShelfDetailScreen() {
   const { data: shelf, isLoading: shelfLoading } = useShelf(shelfIdNumber);
   const { data: allLocations, isLoading: locationsLoading } = usePhysicalLocations();
 
-  // Calcular niveles, columnas y slots ocupados desde locations
-  const { levels, columns, occupiedSlots } = useMemo(() => {
+  // Calcular niveles y columnas desde locations
+  const { levels, columns } = useMemo(() => {
     if (!allLocations) {
-      return { levels: 0, columns: 0, occupiedSlots: [] as SlotId[] };
+      return { levels: 0, columns: 0 };
     }
 
     const shelfLocations = allLocations.filter(
@@ -68,32 +68,30 @@ export default function ShelfDetailScreen() {
     );
 
     if (shelfLocations.length === 0) {
-      return { levels: 0, columns: 0, occupiedSlots: [] as SlotId[] };
+      return { levels: 0, columns: 0 };
     }
-
-    const columnToNumber = (col: string): number => {
-      const map: Record<string, number> = { A: 1, B: 2, C: 3, D: 4 };
-      return map[col.toUpperCase()] || 1;
-    };
 
     let maxLevel = 0;
     let maxColumn = 0;
-    const occupied: SlotId[] = [];
 
     shelfLocations.forEach((loc: any) => {
       const level = Number(loc.level);
-      const columnNum = columnToNumber(String(loc.column));
+      const colRaw = String(loc.column || "").toUpperCase();
+
+      let columnNum = 1;
+      if (/^[A-Z]$/.test(colRaw)) {
+        columnNum = colRaw.charCodeAt(0) - 64; // A -> 1
+      } else if (!Number.isNaN(Number(colRaw))) {
+        columnNum = Number(colRaw);
+      }
 
       if (level > maxLevel) maxLevel = level;
       if (columnNum > maxColumn) maxColumn = columnNum;
-
-      occupied.push(`L${level}-C${columnNum}`);
     });
 
     return {
       levels: maxLevel,
       columns: maxColumn,
-      occupiedSlots: occupied,
     };
   }, [allLocations, shelfIdNumber]);
 
@@ -104,26 +102,23 @@ export default function ShelfDetailScreen() {
 
   const handleSlotClick = (slotId: string) => {
 
-    const match = slotId.match(/L(\d+)-C(\d+)/);
+    // slotId normalmente tiene la forma L{nivel}-C{col}, donde {col}
+    // ahora puede ser letra (A,B,...) o número. Conservamos la parte
+    // después de la `C` tal cual para pasarla a la siguiente pantalla.
+    const match = slotId.match(/L(\d+)-C(.+)/);
     if (!match) return;
 
-    const [, levelNum, columnNum] = match;
+    const [, levelNum, columnPart] = match;
 
-    const numberToColumn = (num: number): string => {
-      const map: Record<number, string> = { 1: 'A', 2: 'B', 3: 'C', 4: 'D' };
-      return map[num] || 'A';
-    };
-
-    const columnLetter = numberToColumn(Number(columnNum));
-
-    // 🔁 CLAVE: reemplazamos el modal por la vista de piezas
+    // Navegamos a la vista de piezas pasando el valor de columna tal cual
+    // (ya no hacemos conversiones explícitas número->letra)
     router.push({
       pathname: '/(tabs)/archaeological-Pieces/View_pieces',
       params: {
         shelfId: String(shelfIdNumber),
         shelfLabel: shelfName,
         level: String(levelNum),
-        column: columnLetter,
+        column: String(columnPart),
         slotId,
       },
     });
@@ -174,7 +169,6 @@ export default function ShelfDetailScreen() {
       shelfId={shelf.id}
       levels={levels}
       columns={columns}
-      occupiedSlots={occupiedSlots}
       onSlotClick={handleSlotClick}
       onClose={() => router.back()}
     />

@@ -3,24 +3,24 @@ import { router } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
+    Platform,
+      ScrollView,
+    StyleSheet,
+    Text,
   TouchableOpacity,
-  View,
-  useWindowDimensions,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 import { useImportArtefactsFromExcel } from "../../../hooks/useArtefact";
 
 type ActionCardProps = {
-  title: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  onPress: () => void;
+    title: string;
+    description: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+    onPress: () => void;
   isLoading?: boolean;
   disabled?: boolean;
 };
@@ -446,14 +446,12 @@ export default function ArchaeologicalPiecesIndex() {
 
   // --------- UI ---------
 
-  return (
-    <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
-      <Navbar
-        title="Piezas Arqueológicas"
-        showBackArrow
-        backToHome={true}
-        redirectTo="/(tabs)/home"
-      />
+    return (
+        <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
+            <Navbar
+                title="Piezas Arqueológicas"
+                showBackArrow
+            />
 
       <ScrollView
         className="flex-1"
@@ -645,40 +643,40 @@ export default function ArchaeologicalPiecesIndex() {
 }
 
 const styles = StyleSheet.create({
-  cardShadow: {
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  iconShadow: {
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  headerTitle: {
-    fontFamily: "MateSC-Regular",
-    letterSpacing: 0.6,
-    textAlign: "center",
-  },
-  headerSubtitle: {
-    fontFamily: "CrimsonText-Regular",
-  },
-  sectionLabel: {
-    fontFamily: "CrimsonText-Regular",
-    fontSize: 20,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-    letterSpacing: 1.4,
-  },
-  titleText: {
-    fontFamily: "MateSC-Regular",
-    letterSpacing: 0.3,
-  },
-  descriptionText: {
-    fontFamily: "CrimsonText-Regular",
-  },
+    cardShadow: {
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 3 },
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    iconShadow: {
+        shadowColor: "#000",
+        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    headerTitle: {
+        fontFamily: "MateSC-Regular",
+        letterSpacing: 0.6,
+        textAlign: "center",
+    },
+    headerSubtitle: {
+        fontFamily: "CrimsonText-Regular",
+    },
+    sectionLabel: {
+        fontFamily: "CrimsonText-Regular",
+        fontSize: 20,
+        fontWeight: "bold",
+        textTransform: "uppercase",
+        letterSpacing: 1.4,
+    },
+    titleText: {
+        fontFamily: "MateSC-Regular",
+        letterSpacing: 0.3,
+    },
+    descriptionText: {
+        fontFamily: "CrimsonText-Regular",
+    },
 });

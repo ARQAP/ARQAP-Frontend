@@ -16,25 +16,25 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
 
     const handleBackPress = () => {
         if (backToHome) {
+            // Si es explícitamente para ir a home, usar replace
             router.replace("/(tabs)/home");
             return;
         }
 
         if (redirectTo) {
-            router.push(redirectTo);
+            // Si hay una ruta específica, usar replace también
+            router.replace(redirectTo as any);
             return;
         }
 
+        // Para navegación normal hacia atrás, usar back() para animación correcta
+        // Esto funciona tanto para modales como para navegación normal
         router.back();
     };
 
     const handleLogoPress = () => {
-        // Para el logo, verificar si ya estamos en home
-        const currentRoute = router.canGoBack();
-        if (currentRoute) {
-            // Si podemos ir atrás, usar replace para evitar duplicar home
-            router.replace("/(tabs)/home");
-        }
+        // Para el logo, siempre ir a home con replace
+        router.replace("/(tabs)/home");
     };
 
     return (
