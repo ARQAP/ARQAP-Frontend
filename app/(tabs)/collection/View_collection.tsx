@@ -11,12 +11,15 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import Button from "../../../components/ui/Button";
 import { CollectionCard, GenericList } from "../../../components/ui";
+import Button from "../../../components/ui/Button";
 import SimplePickerModal, {
-  type SimplePickerItem,
+    type SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
-import { useCollections, useDeleteCollection } from "../../../hooks/useCollections";
+import {
+    useCollections,
+    useDeleteCollection,
+} from "../../../hooks/useCollections";
 import { Collection } from "../../../repositories/collectionRepository";
 import Navbar from "../Navbar";
 
@@ -27,12 +30,21 @@ export default function ViewCollection() {
     });
 
     const router = useRouter();
-    const [selectedCollectionId, setSelectedCollectionId] = useState<number | string | null>(null);
+    const [selectedCollectionId, setSelectedCollectionId] = useState<
+        number | string | null
+    >(null);
     const [searchText, setSearchText] = useState("");
     const [showPicker, setShowPicker] = useState(false);
-    
+
     // Hooks de react-query
-    const { data: collections = [], isLoading, isError, error, refetch, isRefetching } = useCollections();
+    const {
+        data: collections = [],
+        isLoading,
+        isError,
+        error,
+        refetch,
+        isRefetching,
+    } = useCollections();
     const deleteMutation = useDeleteCollection();
 
     // Preparar items para el SimplePickerModal
@@ -74,7 +86,8 @@ export default function ViewCollection() {
             await deleteMutation.mutateAsync(id);
             Alert.alert("Éxito", "Colección eliminada correctamente.");
         } catch (error) {
-            const errorMessage = (error as Error).message || "Error al eliminar la colección.";
+            const errorMessage =
+                (error as Error).message || "Error al eliminar la colección.";
             Alert.alert("Error", errorMessage);
         }
     };
@@ -86,7 +99,8 @@ export default function ViewCollection() {
 
     const searchDisplayText = useMemo(() => {
         if (selectedCollectionId) {
-            return collectionItems.find((i) => i.value === selectedCollectionId)?.label;
+            return collectionItems.find((i) => i.value === selectedCollectionId)
+                ?.label;
         }
         if (searchText) {
             return `Buscando: "${searchText}"`;
@@ -113,7 +127,13 @@ export default function ViewCollection() {
                 }}
             >
                 <ActivityIndicator size="large" color="#8B5E3C" />
-                <Text style={{ marginTop: 10, color: "#8B5E3C", fontFamily: "CrimsonText-Regular" }}>
+                <Text
+                    style={{
+                        marginTop: 10,
+                        color: "#8B5E3C",
+                        fontFamily: "CrimsonText-Regular",
+                    }}
+                >
                     Cargando colecciones...
                 </Text>
             </View>
@@ -122,11 +142,7 @@ export default function ViewCollection() {
 
     return (
         <View className="flex-1 bg-[#F3E9DD] p-0">
-            <Navbar
-                title="Colecciones Arqueológicas"
-                showBackArrow
-                backToHome
-            />
+            <Navbar title="Colecciones Arqueológicas" showBackArrow />
 
             <ScrollView
                 style={{ flex: 1 }}
@@ -176,12 +192,17 @@ export default function ViewCollection() {
                                 marginBottom: 24,
                             }}
                         >
-                            Administra y consulta el registro de colecciones arqueológicas del sistema
+                            Administra y consulta el registro de colecciones
+                            arqueológicas del sistema
                         </Text>
 
                         <Button
                             title="+ Registrar nueva colección"
-                            onPress={() => router.push("/(tabs)/collection/New_collection" as any)}
+                            onPress={() =>
+                                router.push(
+                                    "/(tabs)/collection/New_collection" as any
+                                )
+                            }
                             textStyle={{
                                 fontFamily: "MateSC-Regular",
                                 fontWeight: "bold",
@@ -239,7 +260,9 @@ export default function ViewCollection() {
                                 style={{
                                     fontFamily: "CrimsonText-Regular",
                                     fontSize: 16,
-                                    color: searchDisplayText ? "#8B5E3C" : "#B8967D",
+                                    color: searchDisplayText
+                                        ? "#8B5E3C"
+                                        : "#B8967D",
                                     flex: 1,
                                 }}
                                 numberOfLines={1}
@@ -337,14 +360,23 @@ export default function ViewCollection() {
                                 <GenericList
                                     data={filteredCollections}
                                     renderItem={renderCollectionCard}
-                                    keyExtractor={(item) => item.id?.toString() || ''}
+                                    keyExtractor={(item) =>
+                                        item.id?.toString() || ""
+                                    }
                                     isLoading={false}
                                     isRefreshing={isRefetching}
                                     onRefresh={refetch}
                                     emptyStateMessage="No hay colecciones registradas"
-                                    error={isError ? (error as Error)?.message : null}
+                                    error={
+                                        isError
+                                            ? (error as Error)?.message
+                                            : null
+                                    }
                                     customStyles={{
-                                        container: { backgroundColor: 'transparent', paddingTop: 0 }
+                                        container: {
+                                            backgroundColor: "transparent",
+                                            paddingTop: 0,
+                                        },
                                     }}
                                 />
                             </View>
