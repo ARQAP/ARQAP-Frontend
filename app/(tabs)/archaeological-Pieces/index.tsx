@@ -1,17 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
+  Alert,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
+import { useImportArtefactsFromExcel } from "../../../hooks/useArtefact";
 
 type ActionCardProps = {
   title: string;
@@ -19,42 +21,78 @@ type ActionCardProps = {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   onPress: () => void;
+  isLoading?: boolean;
+  disabled?: boolean;
 };
 
-const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProps) => {
+const ActionCard = ({
+  title,
+  description,
+  icon,
+  color,
+  onPress,
+  isLoading = false,
+  disabled = false,
+}: ActionCardProps) => {
   const { width } = useWindowDimensions();
   const [isPressed, setIsPressed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isDesktop = width >= 1024;
+  const isDisabled = disabled || isLoading;
 
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      onHoverIn={() => setIsHovered(true)}
-      onHoverOut={() => setIsHovered(false)}
+    <TouchableOpacity
+      onPress={isDisabled ? undefined : onPress}
+      onPressIn={() => !isDisabled && setIsPressed(true)}
+      onPressOut={() => !isDisabled && setIsPressed(false)}
+      activeOpacity={0.8}
+      disabled={isDisabled}
       className="bg-[#fbf9f5] rounded-2xl border"
       style={[
         styles.cardShadow,
         {
-          borderColor: isHovered && isDesktop ? color : "rgba(0,0,0,0.06)",
-          borderWidth: isHovered && isDesktop ? 2 : 1,
+          borderColor:
+            isHovered && isDesktop && !isDisabled
+              ? color
+              : "rgba(0,0,0,0.06)",
+          borderWidth: isHovered && isDesktop && !isDisabled ? 2 : 1,
           paddingHorizontal: isDesktop ? 32 : 16,
           paddingVertical: isDesktop ? 24 : 20,
           minHeight: isDesktop ? 150 : 120,
           justifyContent: "center",
-          shadowRadius: isHovered && isDesktop ? 12 : 10,
-          shadowOpacity: isHovered && isDesktop ? 0.15 : 0.08,
+          shadowRadius:
+            isHovered && isDesktop && !isDisabled ? 12 : 10,
+          shadowOpacity:
+            isHovered && isDesktop && !isDisabled ? 0.15 : 0.08,
+          opacity: isDisabled ? 0.6 : 1,
         },
         {
           transform: [
-            { scale: isPressed ? 0.98 : isHovered && isDesktop ? 1.02 : 1 },
+            {
+              scale: isPressed
+                ? 0.98
+                : isHovered && isDesktop
+                ? 1.02
+                : 1,
+            },
           ],
         },
         isHovered && isDesktop && { translateY: -2 },
-        Platform.select({ web: isDesktop ? { cursor: "pointer" } : {} }),
+        Platform.select({
+          web: isDesktop ? { cursor: "pointer" } : {},
+        }),
       ]}
+      // estos onMouseEnter/Leave solo existen en web; RN los ignora en mobile
+      {...(Platform.OS === "web"
+        ? {
+            onMouseEnter: () => {
+              if (!isDisabled) setIsHovered(true);
+            },
+            onMouseLeave: () => {
+              if (!isDisabled) setIsHovered(false);
+            },
+          }
+        : {})}
     >
       <View
         className="flex-row"
@@ -75,7 +113,19 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
             },
           ]}
         >
-          <Ionicons name={icon} size={isDesktop ? 34 : 24} color="#fff" />
+          {isLoading ? (
+            <Ionicons
+              name="hourglass-outline"
+              size={isDesktop ? 34 : 24}
+              color="#fff"
+            />
+          ) : (
+            <Ionicons
+              name={icon}
+              size={isDesktop ? 34 : 24}
+              color="#fff"
+            />
+          )}
         </View>
         <View className="flex-1">
           <Text
@@ -83,13 +133,16 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
             style={[
               styles.titleText,
               {
-                color: isHovered && isDesktop ? color : Colors.black,
+                color:
+                  isHovered && isDesktop && !isDisabled
+                    ? color
+                    : Colors.black,
                 fontSize: isDesktop ? 27 : 21,
                 lineHeight: isDesktop ? 32 : 24,
               },
             ]}
           >
-            {title}
+            {isLoading ? "Importando..." : title}
           </Text>
           <Text
             style={[
@@ -120,13 +173,278 @@ const ActionCard = ({ title, description, icon, color, onPress }: ActionCardProp
           ]}
         />
       )}
-    </Pressable>
+    </TouchableOpacity>
   );
 };
 
 export default function ArchaeologicalPiecesIndex() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+  const importMutation = useImportArtefactsFromExcel();
+  const excelInputRef = useRef<HTMLInputElement | null>(null);
+
+  // --------- LÓGICA PRINCIPAL DE IMPORTACIÓN DESDE EXCEL ---------
+
+  const processImportFile = useCallback(
+    async (file: File | any) => {
+      try {
+        console.log("[IMPORT] ===== INICIO processImportFile =====");
+        console.log(
+          "[IMPORT] Archivo recibido:",
+          JSON.stringify(file, null, 2)
+        );
+        console.log("[IMPORT] Platform.OS:", Platform.OS);
+        console.log("[IMPORT] ¿Tiene URI?", !!file.uri);
+
+        let fileToUpload = file;
+
+        // En mobile, seguir el patrón de New_piece.tsx / Edit_piece.tsx
+        if (file.uri && Platform.OS !== "web") {
+          console.log(
+            "[IMPORT] Es mobile, preparando archivo con FormData..."
+          );
+
+          const fd = new FormData();
+          const fileObject = {
+            uri: file.uri,
+            name: file.name || "archivo.xlsx",
+            type:
+              file.type ||
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          };
+
+          console.log(
+            "[IMPORT] FileObject a agregar:",
+            JSON.stringify(fileObject, null, 2)
+          );
+          fd.append("file", fileObject as any);
+          console.log("[IMPORT] Archivo agregado a FormData");
+
+          fileToUpload = (fd as any).get("file");
+          console.log("[IMPORT] ===== ARCHIVO EXTRAÍDO DE FORMDATA =====");
+          console.log("[IMPORT] FileToUpload:", fileToUpload);
+          console.log(
+            "[IMPORT] ¿Tiene URI?",
+            !!fileToUpload?.uri
+          );
+        } else {
+          console.log(
+            "[IMPORT] Es web, usando archivo directamente"
+          );
+        }
+
+        console.log("[IMPORT] ===== INICIANDO MUTACIÓN =====");
+        const result = await importMutation.mutateAsync(fileToUpload);
+
+        console.log(
+          "[IMPORT] ===== RESULTADO DE LA IMPORTACIÓN ====="
+        );
+        console.log(
+          "[IMPORT] Resultado:",
+          JSON.stringify(result, null, 2)
+        );
+
+        const errorCount = result.errors?.length || 0;
+        const importedCount = result.imported || 0;
+
+        let message = `Importación completada.\n\n`;
+        message += `Piezas importadas: ${importedCount}\n`;
+
+        if (errorCount > 0) {
+          message += `Advertencias/errores: ${errorCount}\n\n`;
+          if (result.errors && result.errors.length > 0) {
+            const errorPreview = result.errors
+              .slice(0, 5)
+              .join("\n");
+            message += `Primeros errores:\n${errorPreview}`;
+            if (result.errors.length > 5) {
+              message += `\n... y ${
+                result.errors.length - 5
+              } más`;
+            }
+          }
+        }
+
+        Alert.alert("Importación completada", message);
+      } catch (error: any) {
+        console.error("Error importing Excel:", error);
+        const errorMessage =
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "No se pudo importar el archivo Excel.";
+
+        const errors = error?.response?.data?.errors;
+        let fullMessage = errorMessage;
+
+        if (errors && Array.isArray(errors) && errors.length > 0) {
+          fullMessage += `\n\nErrores encontrados:\n`;
+          const errorPreview = errors.slice(0, 5).join("\n");
+          fullMessage += errorPreview;
+          if (errors.length > 5) {
+            fullMessage += `\n... y ${errors.length - 5} más`;
+          }
+        }
+
+        Alert.alert("Error en la importación", fullMessage);
+      }
+    },
+    [importMutation]
+  );
+
+  const handleImportExcel = useCallback(async () => {
+    try {
+      // WEB: usamos input type="file" nativo
+      if (Platform.OS === "web") {
+        excelInputRef.current?.click();
+        return;
+      }
+
+      // MOBILE: expo-document-picker
+      let DocumentPicker: any;
+      try {
+        DocumentPicker = await import("expo-document-picker");
+      } catch {
+        Alert.alert(
+          "Falta dependencia",
+          "Instalá expo-document-picker para importar archivos."
+        );
+        return;
+      }
+
+      console.log(
+        "[IMPORT] Llamando getDocumentAsync con tipo Excel..."
+      );
+
+      const res: any = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        type: [
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+          "application/vnd.ms-excel", // .xls
+        ],
+      });
+
+      console.log("[IMPORT] Resultado bruto de DocumentPicker:", res);
+
+      // ---- API NUEVA: { canceled, assets } ----
+      if (typeof res.canceled === "boolean") {
+        if (res.canceled) {
+          console.log("[IMPORT] Usuario canceló (API nueva)");
+          return;
+        }
+
+        const asset = res.assets?.[0];
+        if (!asset) {
+          Alert.alert(
+            "Error",
+            "No se pudo leer el archivo seleccionado."
+          );
+          return;
+        }
+
+        console.log(
+          "[IMPORT] Archivo (API nueva):",
+          asset.name,
+          asset.uri
+        );
+
+        const fileName = asset.name || "";
+        const validExtensions = [".xlsx", ".xls"];
+        const isValidExtension = validExtensions.some((ext) =>
+          fileName.toLowerCase().endsWith(ext)
+        );
+
+        if (!isValidExtension) {
+          Alert.alert(
+            "Archivo inválido",
+            "Por favor seleccione un archivo Excel (.xlsx o .xls)"
+          );
+          return;
+        }
+
+        const fileObject = {
+          uri: asset.uri,
+          name: asset.name || "archivo.xlsx",
+          type:
+            asset.mimeType ||
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        };
+
+        await processImportFile(fileObject);
+        return;
+      }
+
+      // ---- API VIEJA: { type: "success" | "cancel", uri, name, mimeType } ----
+      console.log(
+        "[IMPORT] API vieja detectada, res.type =",
+        res.type
+      );
+
+      if (res.type === "success") {
+        const fileName = res.name || "";
+        const validExtensions = [".xlsx", ".xls"];
+        const isValidExtension = validExtensions.some((ext) =>
+          fileName.toLowerCase().endsWith(ext)
+        );
+
+        if (!isValidExtension) {
+          Alert.alert(
+            "Archivo inválido",
+            "Por favor seleccione un archivo Excel (.xlsx o .xls)"
+          );
+          return;
+        }
+
+        const fileObject = {
+          uri: res.uri,
+          name: res.name || "archivo.xlsx",
+          type:
+            res.mimeType ||
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        };
+
+        await processImportFile(fileObject);
+      } else if (res.type === "cancel") {
+        console.log("[IMPORT] Usuario canceló (API vieja)");
+      }
+    } catch (err) {
+      console.error("[IMPORT] Error:", err);
+      Alert.alert(
+        "Error",
+        "No se pudo abrir el selector de archivos."
+      );
+    }
+  }, [processImportFile]);
+
+  const handleWebFileChange = async (e: any) => {
+    const file: File | undefined = e?.target?.files?.[0];
+    if (!file) return;
+
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+    ];
+    const validExtensions = [".xlsx", ".xls"];
+
+    const isValidType = validTypes.includes(file.type);
+    const isValidExtension = validExtensions.some((ext) =>
+      file.name.toLowerCase().endsWith(ext)
+    );
+
+    if (!isValidType && !isValidExtension) {
+      Alert.alert(
+        "Archivo inválido",
+        "Por favor seleccione un archivo Excel (.xlsx o .xls)"
+      );
+      e.target.value = "";
+      return;
+    }
+
+    await processImportFile(file);
+    e.target.value = "";
+  };
+
+  // --------- UI ---------
 
   return (
     <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
@@ -142,10 +460,9 @@ export default function ArchaeologicalPiecesIndex() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: isDesktop ? 48 : 32,
-          flexGrow: 1, // clave para poder centrar en Y en mobile
+          flexGrow: 1,
         }}
       >
-        {/* Contenedor central más ancho y más arriba en escritorio */}
         <View
           className="w-full mx-auto flex-1"
           style={{
@@ -153,7 +470,7 @@ export default function ArchaeologicalPiecesIndex() {
             paddingHorizontal: isDesktop ? 35 : 16,
             paddingTop: isDesktop ? 35 : 0,
             paddingBottom: isDesktop ? 0 : 24,
-            justifyContent: isDesktop ? "flex-start" : "center", // móvil centrado en eje Y
+            justifyContent: isDesktop ? "flex-start" : "center",
           }}
         >
           {/* Header */}
@@ -189,7 +506,6 @@ export default function ArchaeologicalPiecesIndex() {
             </Text>
           </View>
 
-          {/* Pequeño subtítulo de sección en desktop, ayuda a jerarquizar */}
           {isDesktop && (
             <Text
               style={[
@@ -205,7 +521,6 @@ export default function ArchaeologicalPiecesIndex() {
             </Text>
           )}
 
-          {/* Grid de acciones */}
           <View style={{ rowGap: isDesktop ? 20 : 14 }}>
             {/* Primera fila */}
             <View
@@ -222,7 +537,9 @@ export default function ArchaeologicalPiecesIndex() {
                   icon="clipboard-outline"
                   color={Colors.lightgreen}
                   onPress={() =>
-                    router.push("/(tabs)/archaeological-Pieces/View_pieces")
+                    router.push(
+                      "/(tabs)/archaeological-Pieces/View_pieces"
+                    )
                   }
                 />
               </View>
@@ -233,13 +550,26 @@ export default function ArchaeologicalPiecesIndex() {
                   icon="add-circle-outline"
                   color={Colors.green}
                   onPress={() =>
-                    router.push("/(tabs)/archaeological-Pieces/New_piece")
+                    router.push(
+                      "/(tabs)/archaeological-Pieces/New_piece"
+                    )
                   }
                 />
               </View>
             </View>
 
-            {/* Segunda fila - destacado */}
+            {/* Input oculto para web */}
+            {Platform.OS === "web" && (
+              <input
+                ref={excelInputRef}
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                style={{ display: "none" }}
+                onChange={handleWebFileChange}
+              />
+            )}
+
+            {/* Segunda fila */}
             <View style={{ marginVertical: isDesktop ? 0 : 0 }}>
               <ActionCard
                 title="Mapa del Depósito"
@@ -247,12 +577,14 @@ export default function ArchaeologicalPiecesIndex() {
                 icon="map-outline"
                 color={Colors.darkgreen}
                 onPress={() =>
-                  router.push("/(tabs)/archaeological-Pieces/deposit-map")
+                  router.push(
+                    "/(tabs)/archaeological-Pieces/deposit-map"
+                  )
                 }
               />
             </View>
 
-            {/* Subtítulo para las herramientas */}
+            {/* Subtítulo herramientas */}
             {isDesktop && (
               <Text
                 style={[
@@ -288,6 +620,20 @@ export default function ArchaeologicalPiecesIndex() {
                       "/(tabs)/archaeological-Pieces/New_internal-classifier"
                     )
                   }
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ActionCard
+                  title={
+                    importMutation.isPending
+                      ? "Importando..."
+                      : "Importar desde Excel"
+                  }
+                  description="Importe múltiples piezas desde un archivo Excel"
+                  icon="document-text-outline"
+                  color={Colors.cremit}
+                  onPress={handleImportExcel}
+                  isLoading={importMutation.isPending}
                 />
               </View>
             </View>

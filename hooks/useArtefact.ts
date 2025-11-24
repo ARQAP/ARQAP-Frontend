@@ -136,3 +136,16 @@ export const useCreateArtefactWithMentions = () => {
     },
   });
 };
+
+// Importar artefactos desde Excel
+export const useImportArtefactsFromExcel = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File | any) => ArtefactRepository.importFromExcel(file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: SUMMARY_KEY });
+    },
+  });
+};
