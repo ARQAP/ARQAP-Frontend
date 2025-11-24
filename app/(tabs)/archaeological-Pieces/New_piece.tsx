@@ -1,19 +1,25 @@
 import React, { useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  Dimensions,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    Platform,
+    Pressable,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
-import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, {
+    ClipPath,
+    Defs,
+    G,
+    Rect,
+    Text as SvgText,
+} from "react-native-svg";
 import Button from "../../../components/ui/Button";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
@@ -21,17 +27,17 @@ import Navbar from "../Navbar";
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
 import { useArchaeologists } from "@/hooks/useArchaeologist";
 import {
-  useCreateArtefact,
-  useUploadArtefactHistoricalRecord,
-  useUploadArtefactPicture,
+    useCreateArtefact,
+    useUploadArtefactHistoricalRecord,
+    useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
 import {
-  useInternalClassifierNames,
-  useInternalClassifiers,
+    useInternalClassifierNames,
+    useInternalClassifiers,
 } from "@/hooks/useInternalClassifier";
 import {
-  useCreatePhysicalLocation,
-  usePhysicalLocations,
+    useCreatePhysicalLocation,
+    usePhysicalLocations,
 } from "@/hooks/usePhysicalLocation";
 import { ArtefactRepository } from "@/repositories/artefactRepository";
 import { useRouter } from "expo-router";
@@ -42,10 +48,10 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { apiClient } from "@/lib/api";
 import { INPLRepository } from "@/repositories/inplClassifierRepository";
-import SimplePickerModal, {
-  SimplePickerItem,
-} from "../../../components/ui/SimpleModal";
 import { getShelfLabel } from "@/utils/shelfLabels";
+import SimplePickerModal, {
+    SimplePickerItem,
+} from "../../../components/ui/SimpleModal";
 
 export default function NewPiece() {
     const router = useRouter();
@@ -69,21 +75,26 @@ export default function NewPiece() {
     const [archaeologicalSitePickerOpen, setArchaeologicalSitePickerOpen] =
         useState(false);
 
-  // -------- relaciones (IDs) ----------
-  const [collectionId, setCollectionId] = useState<number | null>(null);
-  const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
-  const [internalClassifierId, setInternalClassifierId] = useState<
-    number | null
-  >(null);
-  const [selectedInternalClassifierName, setSelectedInternalClassifierName] = useState<string | null>(null);
-  const [selectedInternalClassifierNumber, setSelectedInternalClassifierNumber] = useState<number | null>(null);
-  const [internalClassifierError, setInternalClassifierError] = useState<string>("");
-  const [shelfCode, setShelfCode] = useState<string>("");
-  const [selectedLevel, setSelectedLevel] = useState<number>(0); // 0..3 → NIVEL 1 por defecto
-  const [selectedColumn, setSelectedColumn] = useState<number>(0); // 0..3 → A por defecto
-  const [archaeologicalSiteId, setArchaeologicalSiteId] = useState<
-    number | null
-  >(null);
+    // -------- relaciones (IDs) ----------
+    const [collectionId, setCollectionId] = useState<number | null>(null);
+    const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
+    const [internalClassifierId, setInternalClassifierId] = useState<
+        number | null
+    >(null);
+    const [selectedInternalClassifierName, setSelectedInternalClassifierName] =
+        useState<string | null>(null);
+    const [
+        selectedInternalClassifierNumber,
+        setSelectedInternalClassifierNumber,
+    ] = useState<number | null>(null);
+    const [internalClassifierError, setInternalClassifierError] =
+        useState<string>("");
+    const [shelfCode, setShelfCode] = useState<string>("");
+    const [selectedLevel, setSelectedLevel] = useState<number>(0); // 0..3 → NIVEL 1 por defecto
+    const [selectedColumn, setSelectedColumn] = useState<number>(0); // 0..3 → A por defecto
+    const [archaeologicalSiteId, setArchaeologicalSiteId] = useState<
+        number | null
+    >(null);
 
     // --------    menciones     ----------
     const [mentionTitle, setMentionTitle] = useState("");
@@ -181,7 +192,7 @@ export default function NewPiece() {
 
     // Función para renderizar el SVG de la estantería (interactivo)
     const renderShelfSvg = () => {
-        const windowWidth = Dimensions.get('window').width;
+        const windowWidth = Dimensions.get("window").width;
         const isLargeScreen = windowWidth >= 768;
 
         // Lógica matemática del SVG
@@ -206,26 +217,39 @@ export default function NewPiece() {
         const outerStroke = 1.2;
 
         // Calcular slots
-        const slots = Array.from({ length: levels.length }).flatMap((_, levelIndex) =>
-            Array.from({ length: columns.length }).map((_, colIndex) => {
-                const uiLevel = levelIndex + 1;
-                const uiCol = colIndex + 1;
-                const colLetter = String.fromCharCode(64 + uiCol);
-                const id = `L${uiLevel}-C${colLetter}`;
-                const x = gridOriginX + colIndex * slotWidth;
-                const y = gridOriginY + levelIndex * levelHeight;
-                const gapX = slotWidth * 0.12;
-                const gapY = levelHeight * 0.18;
-                const slotX = x + gapX;
-                const slotY = y + gapY;
-                const slotW = slotWidth - gapX * 2;
-                const slotH = levelHeight - gapY * 2;
-                return { id, uiLevel, uiCol, x, y, levelIndex, colIndex, slotX, slotY, slotW, slotH };
-            })
+        const slots = Array.from({ length: levels.length }).flatMap(
+            (_, levelIndex) =>
+                Array.from({ length: columns.length }).map((_, colIndex) => {
+                    const uiLevel = levelIndex + 1;
+                    const uiCol = colIndex + 1;
+                    const colLetter = String.fromCharCode(64 + uiCol);
+                    const id = `L${uiLevel}-C${colLetter}`;
+                    const x = gridOriginX + colIndex * slotWidth;
+                    const y = gridOriginY + levelIndex * levelHeight;
+                    const gapX = slotWidth * 0.12;
+                    const gapY = levelHeight * 0.18;
+                    const slotX = x + gapX;
+                    const slotY = y + gapY;
+                    const slotW = slotWidth - gapX * 2;
+                    const slotH = levelHeight - gapY * 2;
+                    return {
+                        id,
+                        uiLevel,
+                        uiCol,
+                        x,
+                        y,
+                        levelIndex,
+                        colIndex,
+                        slotX,
+                        slotY,
+                        slotW,
+                        slotH,
+                    };
+                })
         );
 
         // Calcular slotId seleccionado
-        const selectedSlotId = shelfIdFromCode 
+        const selectedSlotId = shelfIdFromCode
             ? `L${levels[selectedLevel]}-C${columns[selectedColumn]}`
             : null;
 
@@ -238,7 +262,7 @@ export default function NewPiece() {
         };
 
         // Calcular posiciones absolutas para el overlay (relativas al SVG centrado)
-        const getSlotPosition = (slot: typeof slots[0]) => {
+        const getSlotPosition = (slot: (typeof slots)[0]) => {
             // El SVG está centrado, así que calculamos posiciones absolutas
             // que luego se ajustarán con el contenedor centrado
             return {
@@ -250,119 +274,276 @@ export default function NewPiece() {
         };
 
         return (
-            <View style={{ width: "100%", height: "100%", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                <View style={{ width: svgWidth, height: svgHeight, position: "relative" }}>
+            <View
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    position: "relative",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <View
+                    style={{
+                        width: svgWidth,
+                        height: svgHeight,
+                        position: "relative",
+                    }}
+                >
                     <Svg
                         width={svgWidth}
                         height={svgHeight}
                         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                         preserveAspectRatio="xMidYMid meet"
                     >
-                <Defs>
-                    <ClipPath id="gridRoundedClipNewPiece">
-                        <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} />
-                    </ClipPath>
-                </Defs>
-
-                {/* Fondo general */}
-                <Rect
-                    x={outerStroke / 2} y={outerStroke / 2}
-                    width={svgWidth - outerStroke} height={svgHeight - outerStroke}
-                    fill={Colors.cream} rx={24} stroke={Colors.cremit} strokeWidth={outerStroke}
-                />
-
-                {/* Contenedor principal */}
-                <Rect
-                    x={padding - 6} y={padding - 4}
-                    width={usableWidth + 12} height={usableHeight + 8}
-                    fill="#ffffff" rx={18} stroke={Colors.cremit} strokeWidth={1}
-                />
-
-                {/* Cabecera de columnas (A, B, C ...) */}
-                {Array.from({ length: columns.length }).map((_, colIndex) => {
-                    const colNumber = colIndex + 1;
-                    const colLetter = String.fromCharCode(64 + colNumber);
-                    const colCenterX = gridOriginX + colIndex * slotWidth + slotWidth / 2;
-                    return (
-                        <SvgText key={`col-label-${colLetter}`} x={colCenterX} y={padding + headerHeight - 6} textAnchor="middle" fontSize={colLabelFontSize} fontWeight="600" fill={Colors.brown}>
-                            {colLetter}
-                        </SvgText>
-                    );
-                })}
-
-                <SvgText x={padding + sideLabelWidth / 2} y={padding + headerHeight - 6} textAnchor="middle" fontSize={headerTagFontSize} fontWeight="600" fill={Colors.brown}>N</SvgText>
-
-                {/* Labels de niveles */}
-                {Array.from({ length: levels.length }).map((_, levelIndex) => {
-                    const levelNumber = levelIndex + 1;
-                    const rowCenterY = gridOriginY + levelIndex * levelHeight + levelHeight / 2;
-                    return (
-                        <SvgText key={`row-label-${levelNumber}`} x={padding + sideLabelWidth / 2} y={rowCenterY + 3} textAnchor="middle" fontSize={rowLabelFontSize} fontWeight="600" fill={Colors.brown}>
-                            {levelNumber}
-                        </SvgText>
-                    );
-                })}
-
-                <G clipPath="url(#gridRoundedClipNewPiece)">
-                    <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} fill={Colors.cream} opacity={0.65} />
-                    
-                    {/* Grilla */}
-                    {Array.from({ length: levels.length }).map((_, levelIndex) =>
-                        Array.from({ length: columns.length }).map((_, colIndex) => (
-                            <Rect key={`cell-${levelIndex}-${colIndex}`} x={gridOriginX + colIndex * slotWidth} y={gridOriginY + levelIndex * levelHeight} width={slotWidth} height={levelHeight} fill="transparent" stroke={Colors.cremit} strokeWidth={0.9} />
-                        ))
-                    )}
-
-                    {/* Slots */}
-                    {slots.map((slot) => {
-                        const { id, uiLevel, uiCol, levelIndex, colIndex, slotX, slotY, slotW, slotH } = slot;
-                        const selected = selectedSlotId === id && shelfIdFromCode !== null;
-                        const fill = selected ? Colors.darkgreen : '#ffffff';
-                        const stroke = selected ? Colors.green : Colors.cremit;
-                        const labelColor = selected ? '#ffffff' : Colors.brown;
-
-                        const slotLabelFontSize = selected
-                            ? isLargeScreen ? 13 : 14
-                            : isLargeScreen ? 11.5 : 12.5;
-
-                        const textX = !isLargeScreen ? slotX + slotW / 2.5 : slotX + slotW / 2;
-                        const textOffsetY = Platform.OS === 'ios' ? 5 : (!isLargeScreen ? 3.5 : slotLabelFontSize * 0.35);
-                        const textY = slotY + slotH / 2 + textOffsetY;
-                        const colLetter = String.fromCharCode(64 + uiCol);
-
-                        return (
-                            <G key={id}>
-                                <Rect x={slotX + 1.2} y={slotY + 1.6} width={slotW} height={slotH} fill="#000" opacity={0.05} rx={10} />
-                                <Rect 
-                                    x={slotX} 
-                                    y={slotY} 
-                                    width={slotW} 
-                                    height={slotH} 
-                                    fill={fill} 
-                                    stroke={stroke} 
-                                    strokeWidth={selected ? 2 : 1.4} 
-                                    rx={10}
+                        <Defs>
+                            <ClipPath id="gridRoundedClipNewPiece">
+                                <Rect
+                                    x={gridOriginX}
+                                    y={gridOriginY}
+                                    width={gridWidth}
+                                    height={gridHeight}
+                                    rx={12}
                                 />
-                                <SvgText x={textX} y={textY} textAnchor="middle" fontSize={slotLabelFontSize} fontWeight={selected ? '700' : '600'} fill={labelColor}>
-                                    {uiLevel}-{colLetter}
-                                </SvgText>
-                            </G>
-                        );
-                    })}
-                </G>
-                <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} fill="none" stroke={Colors.cremit} strokeWidth={1.2} pointerEvents="none" />
+                            </ClipPath>
+                        </Defs>
+
+                        {/* Fondo general */}
+                        <Rect
+                            x={outerStroke / 2}
+                            y={outerStroke / 2}
+                            width={svgWidth - outerStroke}
+                            height={svgHeight - outerStroke}
+                            fill={Colors.cream}
+                            rx={24}
+                            stroke={Colors.cremit}
+                            strokeWidth={outerStroke}
+                        />
+
+                        {/* Contenedor principal */}
+                        <Rect
+                            x={padding - 6}
+                            y={padding - 4}
+                            width={usableWidth + 12}
+                            height={usableHeight + 8}
+                            fill="#ffffff"
+                            rx={18}
+                            stroke={Colors.cremit}
+                            strokeWidth={1}
+                        />
+
+                        {/* Cabecera de columnas (A, B, C ...) */}
+                        {Array.from({ length: columns.length }).map(
+                            (_, colIndex) => {
+                                const colNumber = colIndex + 1;
+                                const colLetter = String.fromCharCode(
+                                    64 + colNumber
+                                );
+                                const colCenterX =
+                                    gridOriginX +
+                                    colIndex * slotWidth +
+                                    slotWidth / 2;
+                                return (
+                                    <SvgText
+                                        key={`col-label-${colLetter}`}
+                                        x={colCenterX}
+                                        y={padding + headerHeight - 6}
+                                        textAnchor="middle"
+                                        fontSize={colLabelFontSize}
+                                        fontWeight="600"
+                                        fill={Colors.brown}
+                                    >
+                                        {colLetter}
+                                    </SvgText>
+                                );
+                            }
+                        )}
+
+                        <SvgText
+                            x={padding + sideLabelWidth / 2}
+                            y={padding + headerHeight - 6}
+                            textAnchor="middle"
+                            fontSize={headerTagFontSize}
+                            fontWeight="600"
+                            fill={Colors.brown}
+                        >
+                            N
+                        </SvgText>
+
+                        {/* Labels de niveles */}
+                        {Array.from({ length: levels.length }).map(
+                            (_, levelIndex) => {
+                                const levelNumber = levelIndex + 1;
+                                const rowCenterY =
+                                    gridOriginY +
+                                    levelIndex * levelHeight +
+                                    levelHeight / 2;
+                                return (
+                                    <SvgText
+                                        key={`row-label-${levelNumber}`}
+                                        x={padding + sideLabelWidth / 2}
+                                        y={rowCenterY + 3}
+                                        textAnchor="middle"
+                                        fontSize={rowLabelFontSize}
+                                        fontWeight="600"
+                                        fill={Colors.brown}
+                                    >
+                                        {levelNumber}
+                                    </SvgText>
+                                );
+                            }
+                        )}
+
+                        <G clipPath="url(#gridRoundedClipNewPiece)">
+                            <Rect
+                                x={gridOriginX}
+                                y={gridOriginY}
+                                width={gridWidth}
+                                height={gridHeight}
+                                fill={Colors.cream}
+                                opacity={0.65}
+                            />
+
+                            {/* Grilla */}
+                            {Array.from({ length: levels.length }).map(
+                                (_, levelIndex) =>
+                                    Array.from({ length: columns.length }).map(
+                                        (_, colIndex) => (
+                                            <Rect
+                                                key={`cell-${levelIndex}-${colIndex}`}
+                                                x={
+                                                    gridOriginX +
+                                                    colIndex * slotWidth
+                                                }
+                                                y={
+                                                    gridOriginY +
+                                                    levelIndex * levelHeight
+                                                }
+                                                width={slotWidth}
+                                                height={levelHeight}
+                                                fill="transparent"
+                                                stroke={Colors.cremit}
+                                                strokeWidth={0.9}
+                                            />
+                                        )
+                                    )
+                            )}
+
+                            {/* Slots */}
+                            {slots.map((slot) => {
+                                const {
+                                    id,
+                                    uiLevel,
+                                    uiCol,
+                                    levelIndex,
+                                    colIndex,
+                                    slotX,
+                                    slotY,
+                                    slotW,
+                                    slotH,
+                                } = slot;
+                                const selected =
+                                    selectedSlotId === id &&
+                                    shelfIdFromCode !== null;
+                                const fill = selected
+                                    ? Colors.darkgreen
+                                    : "#ffffff";
+                                const stroke = selected
+                                    ? Colors.green
+                                    : Colors.cremit;
+                                const labelColor = selected
+                                    ? "#ffffff"
+                                    : Colors.brown;
+
+                                const slotLabelFontSize = selected
+                                    ? isLargeScreen
+                                        ? 13
+                                        : 14
+                                    : isLargeScreen
+                                      ? 11.5
+                                      : 12.5;
+
+                                const textX = !isLargeScreen
+                                    ? slotX + slotW / 2.5
+                                    : slotX + slotW / 2;
+                                const textOffsetY =
+                                    Platform.OS === "ios"
+                                        ? 5
+                                        : !isLargeScreen
+                                          ? 3.5
+                                          : slotLabelFontSize * 0.35;
+                                const textY = slotY + slotH / 2 + textOffsetY;
+                                const colLetter = String.fromCharCode(
+                                    64 + uiCol
+                                );
+
+                                return (
+                                    <G key={id}>
+                                        <Rect
+                                            x={slotX + 1.2}
+                                            y={slotY + 1.6}
+                                            width={slotW}
+                                            height={slotH}
+                                            fill="#000"
+                                            opacity={0.05}
+                                            rx={10}
+                                        />
+                                        <Rect
+                                            x={slotX}
+                                            y={slotY}
+                                            width={slotW}
+                                            height={slotH}
+                                            fill={fill}
+                                            stroke={stroke}
+                                            strokeWidth={selected ? 2 : 1.4}
+                                            rx={10}
+                                        />
+                                        <SvgText
+                                            x={textX}
+                                            y={textY}
+                                            textAnchor="middle"
+                                            fontSize={slotLabelFontSize}
+                                            fontWeight={
+                                                selected ? "700" : "600"
+                                            }
+                                            fill={labelColor}
+                                        >
+                                            {uiLevel}-{colLetter}
+                                        </SvgText>
+                                    </G>
+                                );
+                            })}
+                        </G>
+                        <Rect
+                            x={gridOriginX}
+                            y={gridOriginY}
+                            width={gridWidth}
+                            height={gridHeight}
+                            rx={12}
+                            fill="none"
+                            stroke={Colors.cremit}
+                            strokeWidth={1.2}
+                            pointerEvents="none"
+                        />
                     </Svg>
-                    
+
                     {/* Overlay con botones táctiles para móvil */}
                     {slots.map((slot) => {
                         const { id, levelIndex, colIndex } = slot;
                         const position = getSlotPosition(slot);
                         // Ajuste fino para nivel 4 (compensar desalineación)
-                        const topAdjustment = levelIndex === 3 ? (Platform.OS === 'ios' ? -1 : -1.5) : 0;
+                        const topAdjustment =
+                            levelIndex === 3
+                                ? Platform.OS === "ios"
+                                    ? -1
+                                    : -1.5
+                                : 0;
                         return (
                             <Pressable
                                 key={`overlay-${id}`}
-                                onPress={() => handleSlotClick(levelIndex, colIndex)}
+                                onPress={() =>
+                                    handleSlotClick(levelIndex, colIndex)
+                                }
                                 disabled={!shelfIdFromCode}
                                 style={{
                                     position: "absolute",
@@ -401,17 +582,17 @@ export default function NewPiece() {
         [collections]
     );
 
-  const { data: internalClassifierNames = [] } = useInternalClassifierNames();
+    const { data: internalClassifierNames = [] } = useInternalClassifierNames();
 
-  const intClsNameItems: SimplePickerItem<string>[] = useMemo(
-    () =>
-      (internalClassifierNames || []).map((name) => ({
-        value: name,
-        label: name,
-        raw: name,
-      })),
-    [internalClassifierNames]
-  );
+    const intClsNameItems: SimplePickerItem<string>[] = useMemo(
+        () =>
+            (internalClassifierNames || []).map((name) => ({
+                value: name,
+                label: name,
+                raw: name,
+            })),
+        [internalClassifierNames]
+    );
 
     const shelfItems: SimplePickerItem<(typeof shelfs)[number]>[] = useMemo(
         () =>
@@ -590,40 +771,40 @@ export default function NewPiece() {
         setDocName(file.name || "archivo");
     }
 
-  // -------- test de conectividad ----------
-  async function testConnectivity() {
-    try {
-      const response = await apiClient.get("/", {
-        timeout: 5000,
-      });
-      return true;
-    } catch (error: any) {
-      if (
-        error.code === "NETWORK_ERROR" ||
-        error.message === "Network Error" ||
-        error.name === "AxiosError" ||
-        !error.response
-      ) {
-        Alert.alert(
-          "Error de Conexión",
-          "No se puede conectar al servidor. Verifica:\n\n" +
-            "• Que el backend esté corriendo\n" +
-            "• Que estés conectado a la misma red WiFi\n" +
-            "• Que la IP del servidor sea correcta (10.10.20.236:8080)\n" +
-            "• Que no haya firewall bloqueando la conexión"
-        );
-      }
-      return false;
+    // -------- test de conectividad ----------
+    async function testConnectivity() {
+        try {
+            const response = await apiClient.get("/", {
+                timeout: 5000,
+            });
+            return true;
+        } catch (error: any) {
+            if (
+                error.code === "NETWORK_ERROR" ||
+                error.message === "Network Error" ||
+                error.name === "AxiosError" ||
+                !error.response
+            ) {
+                Alert.alert(
+                    "Error de Conexión",
+                    "No se puede conectar al servidor. Verifica:\n\n" +
+                        "• Que el backend esté corriendo\n" +
+                        "• Que estés conectado a la misma red WiFi\n" +
+                        "• Que la IP del servidor sea correcta (10.10.20.236:8080)\n" +
+                        "• Que no haya firewall bloqueando la conexión"
+                );
+            }
+            return false;
+        }
     }
-  }
 
-  // -------- guardar ----------
-  async function handleSave() {
-    try {
-      // Limpiar errores previos
-      setNameError("");
-      setMaterialError("");
-      setInternalClassifierError("");
+    // -------- guardar ----------
+    async function handleSave() {
+        try {
+            // Limpiar errores previos
+            setNameError("");
+            setMaterialError("");
+            setInternalClassifierError("");
 
             // Validar campos obligatorios
             let hasErrors = false;
@@ -739,29 +920,28 @@ export default function NewPiece() {
                 inplClassifierId: inplClassifierIdCreated ?? null,
             };
 
-      // ---------- Payload clasificador interno (opcional) ----------
-      const internalClassifierPayload = selectedInternalClassifierName
-        ? {
-            name: selectedInternalClassifierName,
-            number: selectedInternalClassifierNumber ?? null,
-          }
-        : null;
+            // ---------- Payload clasificador interno (opcional) ----------
+            const internalClassifierPayload = selectedInternalClassifierName
+                ? {
+                      name: selectedInternalClassifierName,
+                      number: selectedInternalClassifierNumber ?? null,
+                  }
+                : null;
 
-      // ---------- Payload menciones ----------
-      const mentionsPayload =
-        mentions?.map((m) => ({
-          title: (m.title ?? "").trim(),
-          link: norm(m.link),
-          description: (m.description ?? "").trim() || null,
-        })) ?? [];
+            // ---------- Payload menciones ----------
+            const mentionsPayload =
+                mentions?.map((m) => ({
+                    title: (m.title ?? "").trim(),
+                    link: norm(m.link),
+                    description: (m.description ?? "").trim() || null,
+                })) ?? [];
 
-
-      // ---------- Crear artefacto + clasificador interno + menciones en el backend ----------
-      const created = await ArtefactRepository.createWithMentions({
-        artefact: artefactPayload,
-        internalClassifier: internalClassifierPayload,
-        mentions: mentionsPayload,
-      });
+            // ---------- Crear artefacto + clasificador interno + menciones en el backend ----------
+            const created = await ArtefactRepository.createWithMentions({
+                artefact: artefactPayload,
+                internalClassifier: internalClassifierPayload,
+                mentions: mentionsPayload,
+            });
 
             // ---------- Subir imagen ----------
             if (Platform.OS === "web" && pictureFileRef.current) {
@@ -829,25 +1009,34 @@ export default function NewPiece() {
                     setMaterialError(errorMessage);
                     return;
                 }
-        if (errorMessage.includes("material") || errorMessage.includes("Material")) {
-          setMaterialError(errorMessage);
-          return;
-        }
+                if (
+                    errorMessage.includes("material") ||
+                    errorMessage.includes("Material")
+                ) {
+                    setMaterialError(errorMessage);
+                    return;
+                }
 
-        // Validar errores del clasificador interno
-        if (errorMessage.includes("clasificador interno") || errorMessage.includes("internal classifier")) {
-          setInternalClassifierError(errorMessage);
-          Alert.alert("Error de Clasificador Interno", errorMessage);
-          return;
-        }
+                // Validar errores del clasificador interno
+                if (
+                    errorMessage.includes("clasificador interno") ||
+                    errorMessage.includes("internal classifier")
+                ) {
+                    setInternalClassifierError(errorMessage);
+                    Alert.alert("Error de Clasificador Interno", errorMessage);
+                    return;
+                }
 
-        // Otros errores del servidor
-        Alert.alert("Error", errorMessage);
-      } else {
-        Alert.alert("Error", e?.message ?? "No se pudo crear la pieza.");
-      }
+                // Otros errores del servidor
+                Alert.alert("Error", errorMessage);
+            } else {
+                Alert.alert(
+                    "Error",
+                    e?.message ?? "No se pudo crear la pieza."
+                );
+            }
+        }
     }
-  }
 
     // -------- UI helpers de selección simple ----------
     const SimpleSelectRow = ({
@@ -1125,90 +1314,123 @@ export default function NewPiece() {
                         </View>
                     </View>
 
-          {/* Clasificador Interno */}
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 24,
-              shadowColor: "#8B5E3C",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.08,
-              shadowRadius: 12,
-              elevation: 3,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: "MateSC-Regular",
-                fontSize: 15,
-                color: "#8B5E3C",
-                marginBottom: 8,
-                fontWeight: "600",
-              }}
-            >
-              Clasificador interno
-            </Text>
-            <SimpleSelectRow
-              label="Seleccionar clasificador (por nombre)"
-              value={selectedInternalClassifierName ?? "Seleccionar clasificador"}
-              onPress={() => setIntClsPickerOpen(true)}
-            />
-            <Text style={{ fontFamily: "CrimsonText-Regular", fontSize: 14, color: "#4A3725", marginBottom: 6 }}>Número</Text>
-            <TextInput
-              keyboardType="numeric"
-              value={selectedInternalClassifierNumber == null ? "" : String(selectedInternalClassifierNumber)}
-              onChangeText={(v) => {
-                setSelectedInternalClassifierNumber(v === "" ? null : Number(v));
-                if (internalClassifierError) setInternalClassifierError("");
-              }}
-              placeholder="ej: 1"
-              style={{ 
-                backgroundColor: "#F7F5F2", 
-                borderRadius: 8, 
-                padding: 8,
-                borderWidth: 1,
-                borderColor: internalClassifierError ? "#ff4444" : "#E5D4C1"
-              }}
-            />
-            {internalClassifierError ? (
-              <Text style={{ 
-                color: "#ff4444", 
-                fontSize: 12, 
-                marginTop: 6,
-                fontFamily: "CrimsonText-Regular"
-              }}>{internalClassifierError}</Text>
-            ) : null}
-            <TouchableOpacity
-              style={{
-                paddingVertical: 8,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                marginTop: 8,
-              }}
-              onPress={() => {
-                router.push(
-                  "/(tabs)/archaeological-Pieces/New_internal-classifier"
-                );
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Crear nuevo Clasificador Interno"
-            >
-              <Text
-                style={{
-                  color: "#8B5E3C",
-                  marginRight: 6,
-                  fontFamily: "MateSC-Regular",
-                  fontSize: 14,
-                }}
-              >
-                Crear nuevo Clasificador Interno
-              </Text>
-              <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
-            </TouchableOpacity>
-          </View>
+                    {/* Clasificador Interno */}
+                    <View
+                        style={{
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 16,
+                            padding: 24,
+                            marginBottom: 24,
+                            shadowColor: "#8B5E3C",
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.08,
+                            shadowRadius: 12,
+                            elevation: 3,
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 15,
+                                color: "#8B5E3C",
+                                marginBottom: 8,
+                                fontWeight: "600",
+                            }}
+                        >
+                            Clasificador interno
+                        </Text>
+                        <SimpleSelectRow
+                            label="Seleccionar clasificador (por nombre)"
+                            value={
+                                selectedInternalClassifierName ??
+                                "Seleccionar clasificador"
+                            }
+                            onPress={() => setIntClsPickerOpen(true)}
+                        />
+                        <Text
+                            style={{
+                                marginTop: 16,
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 15,
+                                color: "#8B5E3C",
+                                marginBottom: 8,
+                                fontWeight: "600",
+                            }}
+                        >
+                            Número
+                        </Text>
+
+                        <TextInput
+                            keyboardType="numeric"
+                            value={
+                                selectedInternalClassifierNumber == null
+                                    ? ""
+                                    : String(selectedInternalClassifierNumber)
+                            }
+                            onChangeText={(v) => {
+                                setSelectedInternalClassifierNumber(
+                                    v === "" ? null : Number(v)
+                                );
+                                if (internalClassifierError)
+                                    setInternalClassifierError("");
+                            }}
+                            placeholder="1"
+                            placeholderTextColor="#B8967D"
+                            style={{
+                                backgroundColor: "#F7F5F2",
+                                borderRadius: 8,
+                                padding: 8,
+                                borderWidth: 1,
+                                borderColor: internalClassifierError
+                                    ? "#ff4444"
+                                    : "#E5D4C1",
+                            }}
+                        />
+                        {internalClassifierError ? (
+                            <Text
+                                style={{
+                                    color: "#ff4444",
+                                    fontSize: 12,
+                                    marginTop: 6,
+                                    fontFamily: "CrimsonText-Regular",
+                                }}
+                            >
+                                {internalClassifierError}
+                            </Text>
+                        ) : null}
+                        <TouchableOpacity
+                            style={{
+                                paddingVertical: 8,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                marginTop: 8,
+                            }}
+                            onPress={() => {
+                                router.push(
+                                    "/(tabs)/archaeological-Pieces/New_internal-classifier"
+                                );
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Crear nuevo Clasificador Interno"
+                        >
+                            <Text
+                                style={{
+                                    color: "#8B5E3C",
+                                    marginRight: 6,
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 14,
+                                }}
+                            >
+                                Crear nuevo Clasificador Interno
+                            </Text>
+                            <Ionicons
+                                name="arrow-forward-outline"
+                                size={16}
+                                color="#8B5E3C"
+                            />
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Archivos */}
                     <View
@@ -1444,74 +1666,34 @@ export default function NewPiece() {
                             />
                         </View>
 
-                        {/* Sitio + Estantería */}
-                        <View
-                            style={{
-                                flexDirection:
-                                    windowWidth < 520 ? "column" : "row",
-                                gap: 16,
-                                marginBottom: 16,
-                            }}
-                        >
-                            <View style={{ flex: 1 }}>
-                                <Text
-                                    style={{
-                                        fontFamily: "MateSC-Regular",
-                                        fontSize: 15,
-                                        color: "#8B5E3C",
-                                        marginBottom: 8,
-                                        fontWeight: "600",
-                                    }}
-                                >
-                                    Sitio arqueológico
-                                </Text>
-                                <SimpleSelectRow
-                                    label="Seleccionar sitio arqueológico"
-                                    value={
-                                        archaeologicalSiteId
-                                            ? (archaeologicalSites.find(
-                                                  (s) =>
-                                                      s.id ===
-                                                      archaeologicalSiteId
-                                              )?.Name ??
-                                              "Seleccionar sitio arqueológico")
-                                            : "Seleccionar sitio arqueológico"
-                                    }
-                                    onPress={() =>
-                                        setArchaeologicalSitePickerOpen(true)
-                                    }
-                                />
-                            </View>
-
-                            <View
+                        {/* Sitio arqueológico */}
+                        <View style={{ marginBottom: 16 }}>
+                            <Text
                                 style={{
-                                    width: windowWidth < 520 ? "100%" : 180,
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                    marginBottom: 8,
+                                    fontWeight: "600",
                                 }}
                             >
-                                <Text
-                                    style={{
-                                        fontFamily: "MateSC-Regular",
-                                        fontSize: 15,
-                                        color: "#8B5E3C",
-                                        marginBottom: 8,
-                                        fontWeight: "600",
-                                    }}
-                                >
-                                    Estantería
-                                </Text>
-
-                                <SimpleSelectRow
-                                    label="Seleccionar estantería"
-                                    value={
-                                        shelfIdFromCode
-                                            ? getShelfLabel(shelfCode)
-                                            : undefined
-                                    }
-                                    onPress={() => setShelfPickerOpen(true)}
-                                />
-
-                                {/* Se eliminó la opción de crear nueva estantería; solo seleccionar */}
-                            </View>
+                                Sitio arqueológico
+                            </Text>
+                            <SimpleSelectRow
+                                label="Seleccionar Sitio arqueológico"
+                                value={
+                                    archaeologicalSiteId
+                                        ? (archaeologicalSites.find(
+                                              (s) =>
+                                                  s.id === archaeologicalSiteId
+                                          )?.Name ??
+                                          "Seleccionar sitio arqueológico")
+                                        : "Seleccionar sitio arqueológico"
+                                }
+                                onPress={() =>
+                                    setArchaeologicalSitePickerOpen(true)
+                                }
+                            />
                         </View>
                     </View>
 
@@ -1530,6 +1712,38 @@ export default function NewPiece() {
                             alignItems: "center",
                         }}
                     >
+                        {/* Selector de Estantería */}
+                        <View
+                            style={{
+                                width: "100%",
+                                marginBottom: 24,
+                                alignItems: "flex-start",
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                    marginBottom: 8,
+                                    fontWeight: "600",
+                                }}
+                            >
+                                Estantería
+                            </Text>
+                            <View style={{ width: 200 }}>
+                                <SimpleSelectRow
+                                    label="Seleccionar estantería"
+                                    value={
+                                        shelfIdFromCode
+                                            ? getShelfLabel(shelfCode)
+                                            : undefined
+                                    }
+                                    onPress={() => setShelfPickerOpen(true)}
+                                />
+                            </View>
+                        </View>
+
                         <Text
                             style={{
                                 fontFamily: "MateSC-Regular",
@@ -1540,9 +1754,9 @@ export default function NewPiece() {
                                 color: "#8B5E3C",
                             }}
                         >
-                            {shelfIdFromCode 
+                            {shelfIdFromCode
                                 ? `Mapa del ${getShelfLabel(shelfCode)}`
-                                : "Ubicación Física de la Pieza"}
+                                : "Selecciona una estantería para ver su mapa"}
                         </Text>
 
                         {!shelfIdFromCode ? (
@@ -1556,13 +1770,14 @@ export default function NewPiece() {
                                     marginBottom: 20,
                                 }}
                             >
-                                Selecciona una estantería para ver la ubicación física.
+                                Selecciona una estantería para ver la ubicación
+                                física.
                             </Text>
                         ) : (
                             <View
                                 style={{
                                     width: "100%",
-                                    height: Platform.OS === 'web' ? 300 : 380,
+                                    height: Platform.OS === "web" ? 300 : 380,
                                     alignItems: "center",
                                     justifyContent: "center",
                                 }}
@@ -2029,18 +2244,18 @@ export default function NewPiece() {
                 onClose={() => setCollPickerOpen(false)}
             />
 
-      {/* Modal Clasificador Interno */}
-      <SimplePickerModal
-        visible={intClsPickerOpen}
-        title="Seleccionar clasificador interno"
-        items={intClsNameItems}
-        selectedValue={selectedInternalClassifierName ?? null}
-        onSelect={(value) => {
-          setSelectedInternalClassifierName(String(value));
-          setIntClsPickerOpen(false);
-        }}
-        onClose={() => setIntClsPickerOpen(false)}
-      />
+            {/* Modal Clasificador Interno */}
+            <SimplePickerModal
+                visible={intClsPickerOpen}
+                title="Seleccionar clasificador interno"
+                items={intClsNameItems}
+                selectedValue={selectedInternalClassifierName ?? null}
+                onSelect={(value) => {
+                    setSelectedInternalClassifierName(String(value));
+                    setIntClsPickerOpen(false);
+                }}
+                onClose={() => setIntClsPickerOpen(false)}
+            />
 
             <SimplePickerModal
                 visible={archaeologicalSitePickerOpen}
