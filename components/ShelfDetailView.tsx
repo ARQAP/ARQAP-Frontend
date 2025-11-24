@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   Platform,
@@ -21,6 +21,7 @@ type ShelfDetailViewProps = {
   columns: number;
   onSlotClick?: (slotId: SlotId) => void;
   onClose?: () => void;
+  initialSelectedSlot?: SlotId | null;
 };
 
 const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
@@ -29,8 +30,15 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   columns,
   onSlotClick,
   onClose,
+  initialSelectedSlot,
 }) => {
-  const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(initialSelectedSlot ?? null);
+  
+  // Sincronizar con initialSelectedSlot cuando cambie
+  useEffect(() => {
+    setSelectedSlot(initialSelectedSlot ?? null);
+  }, [initialSelectedSlot]);
+  
   const windowWidth = Dimensions.get('window').width;
   const windowHeight = Dimensions.get('window').height;
   

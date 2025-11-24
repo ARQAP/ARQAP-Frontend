@@ -26,6 +26,8 @@ import Badge from "../../../components/ui/Badge";
 import InfoRow from "../../../components/ui/InfoRow";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
+import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
+import { Dimensions } from 'react-native';
 
 type Piece = {
     id: number;
@@ -46,6 +48,8 @@ type Piece = {
     mentions?: { id: number; title: string; url?: string }[];
     selectedLevel?: number;
     selectedColumn?: number;
+    shelfId?: number;
+    slotId?: string;
 };
 
 type InplFichaView = { id: number; url: string; filename?: string };
@@ -58,24 +62,6 @@ export default function ViewPiece() {
 
     const [previewUri, setPreviewUri] = useState<string | null>(null);
     const [inplFichas, setInplFichas] = useState<InplFichaView[]>([]);
-
-    // grilla ubicación
-    const columns = ["A", "B", "C", "D"];
-    const levels = [1, 2, 3, 4];
-    const containerMaxWidth = 720;
-    const leftLabelWidth = 64;
-    const gap = 8;
-    const horizontalPadding = 48;
-    const containerWidth = Math.min(
-        windowWidth - horizontalPadding,
-        containerMaxWidth
-    );
-    const availableWidthForCells = Math.max(
-        0,
-        containerWidth - leftLabelWidth - gap * (columns.length - 1)
-    );
-    const rawCellSize = Math.floor(availableWidthForCells / columns.length);
-    const cellSize = Math.max(56, Math.min(rawCellSize, 110));
 
     // fetch pieza
     const { data, isLoading, isError, refetch } = useArtefact(id ?? undefined);
@@ -123,6 +109,11 @@ export default function ViewPiece() {
             typeof shelfObj === "object"
                 ? (shelfObj?.code ?? shelfObj?.codigo)
                 : shelfObj;
+        
+        const shelfId =
+            typeof shelfObj === "object" && shelfObj
+                ? (shelfObj?.id ?? shelfObj?.ID ?? phys?.shelfId ?? null)
+                : (phys?.shelfId ?? null);
 
         const levelRaw =
             phys?.level ?? phys?.nivel ?? (a as any)?.level ?? null;
@@ -162,6 +153,17 @@ export default function ViewPiece() {
                     : colLetter === "D"
                       ? 3
                       : undefined;
+
+        // Calcular slotId para ShelfDetailView (formato: L{nivel}-C{columna})
+        let slotId: string | undefined = undefined;
+        if (levelRaw != null && columnRaw != null) {
+            const levelNum = Number(levelRaw);
+            const colStr = String(columnRaw).toUpperCase();
+            const colLetterOnly = colStr.replace(/[^A-Z]/g, "").charAt(0) || colStr.charAt(0);
+            if (!Number.isNaN(levelNum) && colLetterOnly) {
+                slotId = `L${levelNum}-C${colLetterOnly}`;
+            }
+        }
 
         const pictures = (a as any)?.picture ?? [];
         const images = Array.isArray(pictures)
@@ -227,6 +229,8 @@ export default function ViewPiece() {
             selectedLevel,
             selectedColumn: columnIndex,
             internalClassifier: internalClassifierLabel,
+            shelfId: shelfId != null ? Number(shelfId) : undefined,
+            slotId,
         };
     }, [data, base, mentionsData]);
 
@@ -374,6 +378,148 @@ export default function ViewPiece() {
             </View>
         );
     }
+
+    // Función para renderizar el SVG de la estantería
+    const renderShelfSvg = (selectedSlotId: string | null | undefined) => {
+        const levels = 4;
+        const columns = 4;
+        const windowWidth = Dimensions.get('window').width;
+        const isLargeScreen = windowWidth >= 768;
+
+        // Lógica matemática del SVG
+        const svgWidth = 360;
+        const svgHeight = 230;
+        const padding = 20;
+        const usableWidth = svgWidth - padding * 2;
+        const usableHeight = svgHeight - padding * 2;
+        const headerHeight = 24;
+        const sideLabelWidth = 26;
+        const gridWidth = usableWidth - sideLabelWidth - 8;
+        const gridHeight = usableHeight - headerHeight - 8;
+        const safeLevels = Math.max(levels, 1);
+        const safeColumns = Math.max(columns, 1);
+        const levelHeight = gridHeight / safeLevels;
+        const slotWidth = gridWidth / safeColumns;
+        const gridOriginX = padding + sideLabelWidth + 4;
+        const gridOriginY = padding + headerHeight + 4;
+        const colLabelFontSize = isLargeScreen ? 11 : 12;
+        const rowLabelFontSize = isLargeScreen ? 11 : 12;
+        const headerTagFontSize = isLargeScreen ? 9 : 10;
+        const outerStroke = 1.2;
+
+        // Calcular slots
+        const slots = Array.from({ length: levels }).flatMap((_, levelIndex) =>
+            Array.from({ length: columns }).map((_, colIndex) => {
+                const uiLevel = levelIndex + 1;
+                const uiCol = colIndex + 1;
+                const colLetter = String.fromCharCode(64 + uiCol);
+                const id = `L${uiLevel}-C${colLetter}`;
+                const x = gridOriginX + colIndex * slotWidth;
+                const y = gridOriginY + levelIndex * levelHeight;
+                return { id, uiLevel, uiCol, x, y };
+            })
+        );
+
+        return (
+            <Svg
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                preserveAspectRatio="xMidYMid meet"
+            >
+                <Defs>
+                    <ClipPath id="gridRoundedClip">
+                        <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} />
+                    </ClipPath>
+                </Defs>
+
+                {/* Fondo general */}
+                <Rect
+                    x={outerStroke / 2} y={outerStroke / 2}
+                    width={svgWidth - outerStroke} height={svgHeight - outerStroke}
+                    fill={Colors.cream} rx={24} stroke={Colors.cremit} strokeWidth={outerStroke}
+                />
+
+                {/* Contenedor principal */}
+                <Rect
+                    x={padding - 6} y={padding - 4}
+                    width={usableWidth + 12} height={usableHeight + 8}
+                    fill="#ffffff" rx={18} stroke={Colors.cremit} strokeWidth={1}
+                />
+
+                {/* Cabecera de columnas (A, B, C ...) */}
+                {Array.from({ length: columns }).map((_, colIndex) => {
+                    const colNumber = colIndex + 1;
+                    const colLetter = String.fromCharCode(64 + colNumber);
+                    const colCenterX = gridOriginX + colIndex * slotWidth + slotWidth / 2;
+                    return (
+                        <SvgText key={`col-label-${colLetter}`} x={colCenterX} y={padding + headerHeight - 6} textAnchor="middle" fontSize={colLabelFontSize} fontWeight="600" fill={Colors.brown}>
+                            {colLetter}
+                        </SvgText>
+                    );
+                })}
+
+                <SvgText x={padding + sideLabelWidth / 2} y={padding + headerHeight - 6} textAnchor="middle" fontSize={headerTagFontSize} fontWeight="600" fill={Colors.brown}>N</SvgText>
+
+                {/* Labels de niveles */}
+                {Array.from({ length: levels }).map((_, levelIndex) => {
+                    const levelNumber = levelIndex + 1;
+                    const rowCenterY = gridOriginY + levelIndex * levelHeight + levelHeight / 2;
+                    return (
+                        <SvgText key={`row-label-${levelNumber}`} x={padding + sideLabelWidth / 2} y={rowCenterY + 3} textAnchor="middle" fontSize={rowLabelFontSize} fontWeight="600" fill={Colors.brown}>
+                            {levelNumber}
+                        </SvgText>
+                    );
+                })}
+
+                <G clipPath="url(#gridRoundedClip)">
+                    <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} fill={Colors.cream} opacity={0.65} />
+                    
+                    {/* Grilla */}
+                    {Array.from({ length: levels }).map((_, levelIndex) =>
+                        Array.from({ length: columns }).map((_, colIndex) => (
+                            <Rect key={`cell-${levelIndex}-${colIndex}`} x={gridOriginX + colIndex * slotWidth} y={gridOriginY + levelIndex * levelHeight} width={slotWidth} height={levelHeight} fill="transparent" stroke={Colors.cremit} strokeWidth={0.9} />
+                        ))
+                    )}
+
+                    {/* Slots */}
+                    {slots.map(({ id, uiLevel, uiCol, x, y }) => {
+                        const selected = selectedSlotId === id;
+                        const fill = selected ? Colors.darkgreen : '#ffffff';
+                        const stroke = selected ? Colors.green : Colors.cremit;
+                        const labelColor = selected ? '#ffffff' : Colors.brown;
+                        
+                        const gapX = slotWidth * 0.12;
+                        const gapY = levelHeight * 0.18;
+                        const slotX = x + gapX;
+                        const slotY = y + gapY;
+                        const slotW = slotWidth - gapX * 2;
+                        const slotH = levelHeight - gapY * 2;
+
+                        const slotLabelFontSize = selected
+                            ? isLargeScreen ? 13 : 14
+                            : isLargeScreen ? 11.5 : 12.5;
+
+                        const textX = !isLargeScreen ? slotX + slotW / 2.5 : slotX + slotW / 2;
+                        const textOffsetY = Platform.OS === 'ios' ? 5 : (!isLargeScreen ? 3.5 : slotLabelFontSize * 0.35);
+                        const textY = slotY + slotH / 2 + textOffsetY;
+                        const colLetter = String.fromCharCode(64 + uiCol);
+
+                        return (
+                            <G key={id}>
+                                <Rect x={slotX + 1.2} y={slotY + 1.6} width={slotW} height={slotH} fill="#000" opacity={0.05} rx={10} />
+                                <Rect x={slotX} y={slotY} width={slotW} height={slotH} fill={fill} stroke={stroke} strokeWidth={selected ? 2 : 1.4} rx={10} />
+                                <SvgText x={textX} y={textY} textAnchor="middle" fontSize={slotLabelFontSize} fontWeight={selected ? '700' : '600'} fill={labelColor}>
+                                    {uiLevel}-{colLetter}
+                                </SvgText>
+                            </G>
+                        );
+                    })}
+                </G>
+                <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} fill="none" stroke={Colors.cremit} strokeWidth={1.2} pointerEvents="none" />
+            </Svg>
+        );
+    };
 
     if (isError || !piece) {
         return (
@@ -849,7 +995,6 @@ export default function ViewPiece() {
                             shadowOpacity: 0.08,
                             shadowRadius: 12,
                             elevation: 3,
-                            alignItems: "center",
                         }}
                     >
                         <Text
@@ -865,9 +1010,7 @@ export default function ViewPiece() {
                             Ubicación Física de la Pieza
                         </Text>
 
-                        {!piece.shelf ||
-                        piece.selectedLevel == null ||
-                        piece.selectedColumn == null ? (
+                        {!piece.shelf || !piece.shelfId ? (
                             <Text
                                 style={{
                                     fontFamily: "CrimsonText-Regular",
@@ -879,298 +1022,16 @@ export default function ViewPiece() {
                                 Ubicación física no definida.
                             </Text>
                         ) : (
-                            <>
-                                <View
-                                    style={{
-                                        marginBottom: 16,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <View
-                                        style={{
-                                            backgroundColor: Colors.green,
-                                            paddingHorizontal: 16,
-                                            paddingVertical: 8,
-                                            borderRadius: 12,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                color: Colors.cremit,
-                                                fontFamily:
-                                                    "CrimsonText-Regular",
-                                                fontSize: 14,
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            {piece.shelf}
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                {/* Labels superiores: Columna y Nivel */}
-                                <View
-                                    style={{
-                                        width: containerWidth * 0.85,
-                                        flexDirection: "row",
-                                        marginBottom: 12,
-                                        justifyContent: "space-between",
-                                        paddingHorizontal:
-                                            leftLabelWidth * 0.9 + 8,
-                                    }}
-                                >
-                                    <View
-                                        style={{
-                                            flex: 1,
-                                            alignItems: "center",
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontFamily: "MateSC-Regular",
-                                                fontSize: 14,
-                                                fontWeight: "600",
-                                                color: "#8B5E3C",
-                                            }}
-                                        >
-                                            Columna y Nivel:
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                {/* Grid container con padding para no pegarse a los bordes */}
-                                <View
-                                    style={{
-                                        paddingHorizontal: 16,
-                                        paddingVertical: 12,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    {/* encabezado columnas */}
-                                    <View
-                                        style={{
-                                            width: containerWidth * 0.85,
-                                            marginBottom: 12,
-                                        }}
-                                    >
-                                        <View
-                                            style={{
-                                                flexDirection: "row",
-                                                alignItems: "center",
-                                                width: "100%",
-                                            }}
-                                        >
-                                            <View
-                                                style={{
-                                                    width: leftLabelWidth * 0.9,
-                                                }}
-                                            />
-                                            <View
-                                                style={{
-                                                    flexDirection: "row",
-                                                    flex: 1,
-                                                }}
-                                            >
-                                                {columns.map((c, ci) => (
-                                                    <View
-                                                        key={c}
-                                                        style={{
-                                                            flex: 1,
-                                                            paddingHorizontal: 4,
-                                                            alignItems:
-                                                                "center",
-                                                        }}
-                                                    >
-                                                        <View
-                                                            style={{
-                                                                backgroundColor:
-                                                                    "#8B5E3C",
-                                                                width: 50,
-                                                                height: 50,
-                                                                borderRadius: 10,
-                                                                justifyContent:
-                                                                    "center",
-                                                                alignItems:
-                                                                    "center",
-                                                                shadowColor:
-                                                                    "#8B5E3C",
-                                                                shadowOffset: {
-                                                                    width: 0,
-                                                                    height: 2,
-                                                                },
-                                                                shadowOpacity: 0.2,
-                                                                shadowRadius: 4,
-                                                                elevation: 2,
-                                                            }}
-                                                        >
-                                                            <Text
-                                                                style={{
-                                                                    color: "#FFFFFF",
-                                                                    fontFamily:
-                                                                        "MateSC-Regular",
-                                                                    fontSize: 18,
-                                                                    fontWeight:
-                                                                        "700",
-                                                                }}
-                                                            >
-                                                                {c}
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-                                                ))}
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    {/* filas niveles */}
-                                    <View
-                                        style={{ width: containerWidth * 0.85 }}
-                                    >
-                                        {levels.map((lvl, li) => (
-                                            <View
-                                                key={lvl}
-                                                style={{
-                                                    flexDirection: "row",
-                                                    alignItems: "center",
-                                                    marginBottom: 10,
-                                                }}
-                                            >
-                                                <View
-                                                    style={{
-                                                        width:
-                                                            leftLabelWidth *
-                                                            0.9,
-                                                        height: cellSize * 0.9,
-                                                        justifyContent:
-                                                            "center",
-                                                        paddingRight: 8,
-                                                    }}
-                                                >
-                                                    <View
-                                                        style={{
-                                                            backgroundColor:
-                                                                Colors.brown,
-                                                            width: 50,
-                                                            height: 50,
-                                                            borderRadius: 10,
-                                                            justifyContent:
-                                                                "center",
-                                                            alignItems:
-                                                                "center",
-                                                            shadowColor:
-                                                                "#8B5E3C",
-                                                            shadowOffset: {
-                                                                width: 0,
-                                                                height: 2,
-                                                            },
-                                                            shadowOpacity: 0.2,
-                                                            shadowRadius: 4,
-                                                            elevation: 2,
-                                                        }}
-                                                    >
-                                                        <Text
-                                                            style={{
-                                                                color: Colors.cremit,
-                                                                fontFamily:
-                                                                    "MateSC-Regular",
-                                                                fontSize: 18,
-                                                                fontWeight:
-                                                                    "700",
-                                                            }}
-                                                        >
-                                                            {lvl}
-                                                        </Text>
-                                                    </View>
-                                                </View>
-
-                                                <View
-                                                    style={{
-                                                        flexDirection: "row",
-                                                        flex: 1,
-                                                        gap: 8,
-                                                    }}
-                                                >
-                                                    {columns.map((c, ci) => {
-                                                        const isSelected =
-                                                            piece.selectedLevel ===
-                                                                li &&
-                                                            piece.selectedColumn ===
-                                                                ci;
-                                                        return (
-                                                            <View
-                                                                key={c}
-                                                                style={{
-                                                                    flex: 1,
-                                                                    paddingHorizontal: 2,
-                                                                }}
-                                                            >
-                                                                <View
-                                                                    style={{
-                                                                        width: "100%",
-                                                                        aspectRatio: 1,
-                                                                        borderRadius: 10,
-                                                                        backgroundColor:
-                                                                            isSelected
-                                                                                ? Colors.brown
-                                                                                : "#F7F5F2",
-                                                                        borderWidth:
-                                                                            isSelected
-                                                                                ? 3
-                                                                                : 2,
-                                                                        borderColor:
-                                                                            isSelected
-                                                                                ? Colors.brown
-                                                                                : "#E5D4C1",
-                                                                        shadowColor:
-                                                                            isSelected
-                                                                                ? "#8B5E3C"
-                                                                                : "transparent",
-                                                                        shadowOffset:
-                                                                            {
-                                                                                width: 0,
-                                                                                height: isSelected
-                                                                                    ? 3
-                                                                                    : 0,
-                                                                            },
-                                                                        shadowOpacity:
-                                                                            isSelected
-                                                                                ? 0.3
-                                                                                : 0,
-                                                                        shadowRadius:
-                                                                            isSelected
-                                                                                ? 6
-                                                                                : 0,
-                                                                        elevation:
-                                                                            isSelected
-                                                                                ? 4
-                                                                                : 0,
-                                                                        justifyContent:
-                                                                            "center",
-                                                                        alignItems:
-                                                                            "center",
-                                                                    }}
-                                                                >
-                                                                    {isSelected && (
-                                                                        <View
-                                                                            style={{
-                                                                                width: 12,
-                                                                                height: 12,
-                                                                                borderRadius: 6,
-                                                                                backgroundColor:
-                                                                                    Colors.cremit,
-                                                                            }}
-                                                                        />
-                                                                    )}
-                                                                </View>
-                                                            </View>
-                                                        );
-                                                    })}
-                                                </View>
-                                            </View>
-                                        ))}
-                                    </View>
-                                </View>
-                            </>
+                            <View
+                                style={{
+                                    width: "100%",
+                                    height: 300,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {renderShelfSvg(piece.slotId ?? null)}
+                            </View>
                         )}
                     </View>
 
