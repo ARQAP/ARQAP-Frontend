@@ -75,7 +75,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
         Array.from({ length: columns }).map((_, colIndex) => {
           const uiLevel = levelIndex + 1; 
           const uiCol = colIndex + 1; 
-          const id = `L${uiLevel}-C${uiCol}`;
+          const colLetter = String.fromCharCode(64 + uiCol);
+          const id = `L${uiLevel}-C${colLetter}`;
 
           const x = gridOriginX + colIndex * slotWidth;
           const y = gridOriginY + levelIndex * levelHeight;
@@ -92,12 +93,10 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
 
   const selectedSlotInfo = useMemo(() => {
     if (!selectedSlot) return null;
-    const match = selectedSlot.match(/L(\d+)-C(\d+)/);
+    const match = selectedSlot.match(/L(\d+)-C(.+)/);
     if (!match) return null;
-    const [, level, column] = match;
-    const colNum = Number(column);
-    const colLetter = String.fromCharCode(64 + colNum);
-    return { level: Number(level), column: colLetter };
+    const [, level, columnPart] = match;
+    return { level: Number(level), column: String(columnPart).toUpperCase() };
   }, [selectedSlot]);
 
   const outerStroke = 1.2;
