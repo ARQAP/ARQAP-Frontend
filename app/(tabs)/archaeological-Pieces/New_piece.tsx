@@ -45,6 +45,7 @@ import { INPLRepository } from "@/repositories/inplClassifierRepository";
 import SimplePickerModal, {
   SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
+import { getShelfLabel } from "@/utils/shelfLabels";
 
 export default function NewPiece() {
     const router = useRouter();
@@ -416,7 +417,7 @@ export default function NewPiece() {
         () =>
             shelfs.map((s) => ({
                 value: s.id!,
-                label: `Estantería ${s.code}`,
+                label: getShelfLabel(s.code),
                 raw: s,
             })),
         [shelfs]
@@ -1503,7 +1504,7 @@ export default function NewPiece() {
                                     label="Seleccionar estantería"
                                     value={
                                         shelfIdFromCode
-                                            ? `Estantería ${shelfCode}`
+                                            ? getShelfLabel(shelfCode)
                                             : undefined
                                     }
                                     onPress={() => setShelfPickerOpen(true)}
@@ -1539,7 +1540,9 @@ export default function NewPiece() {
                                 color: "#8B5E3C",
                             }}
                         >
-                            Ubicación Física de la Pieza
+                            {shelfIdFromCode 
+                                ? `Mapa de el ${getShelfLabel(shelfCode)}`
+                                : "Ubicación Física de la Pieza"}
                         </Text>
 
                         {!shelfIdFromCode ? (
@@ -1567,19 +1570,6 @@ export default function NewPiece() {
                                 {renderShelfSvg()}
                             </View>
                         )}
-
-                        <Text
-                            style={{
-                                marginTop: 12,
-                                fontFamily: "CrimsonText-Regular",
-                                fontSize: 14,
-                                color: "#4A3725",
-                                textAlign: "center",
-                            }}
-                        >
-                            Ubicación física ID seleccionado:{" "}
-                            {physicalLocationId ?? "—"}
-                        </Text>
                     </View>
 
                     {/* Menciones: formulario para agregar + lista */}

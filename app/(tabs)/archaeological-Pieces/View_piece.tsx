@@ -28,6 +28,7 @@ import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
 import { Dimensions } from 'react-native';
+import { getShelfLabel } from "@/utils/shelfLabels";
 
 type Piece = {
     id: number;
@@ -49,6 +50,7 @@ type Piece = {
     selectedLevel?: number;
     selectedColumn?: number;
     shelfId?: number;
+    shelfCode?: number;
     slotId?: string;
 };
 
@@ -230,6 +232,7 @@ export default function ViewPiece() {
             selectedColumn: columnIndex,
             internalClassifier: internalClassifierLabel,
             shelfId: shelfId != null ? Number(shelfId) : undefined,
+            shelfCode: shelfCode != null ? Number(shelfCode) : undefined,
             slotId,
         };
     }, [data, base, mentionsData]);
@@ -1007,7 +1010,9 @@ export default function ViewPiece() {
                                 color: "#8B5E3C",
                             }}
                         >
-                            Ubicación Física de la Pieza
+                            {piece.shelfCode 
+                                ? `Mapa de el ${getShelfLabel(piece.shelfCode)}`
+                                : "Ubicación Física de la Pieza"}
                         </Text>
 
                         {!piece.shelf || !piece.shelfId ? (

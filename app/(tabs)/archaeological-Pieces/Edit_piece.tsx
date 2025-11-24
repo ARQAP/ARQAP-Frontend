@@ -46,6 +46,7 @@ import {
   useInternalClassifiers,
 } from "@/hooks/useInternalClassifier";
 import { ArtefactRepository } from "@/repositories/artefactRepository";
+import { getShelfLabel } from "@/utils/shelfLabels";
 
 // ---- Tipos locales ----
 type MentionUI = {
@@ -474,7 +475,7 @@ export default function EditPiece() {
         () =>
             shelfs.map((s) => ({
                 value: s.id!,
-                label: `Estantería ${s.code}`,
+                label: getShelfLabel(s.code),
                 raw: s,
             })),
         [shelfs]
@@ -1593,7 +1594,7 @@ export default function EditPiece() {
                                     label="Seleccionar estantería"
                                     value={
                                         shelfCode
-                                            ? `Estantería ${shelfCode}`
+                                            ? getShelfLabel(shelfCode)
                                             : undefined
                                     }
                                     onPress={() => setShelfPickerOpen(true)}
@@ -1996,7 +1997,9 @@ export default function EditPiece() {
                                 color: "#8B5E3C",
                             }}
                         >
-                            Ubicación Física de la Pieza
+                            {shelfIdFromCode 
+                                ? `Mapa de el ${getShelfLabel(shelfCode)}`
+                                : "Ubicación Física de la Pieza"}
                         </Text>
 
                         {!shelfIdFromCode ? (
@@ -2024,19 +2027,6 @@ export default function EditPiece() {
                                 {renderShelfSvg()}
                             </View>
                         )}
-
-                        <Text
-                            style={{
-                                marginTop: 12,
-                                fontFamily: "CrimsonText-Regular",
-                                fontSize: 14,
-                                color: "#4A3725",
-                                textAlign: "center",
-                            }}
-                        >
-                            Ubicación física ID seleccionado:{" "}
-                            {physicalLocationId ?? "—"}
-                        </Text>
                     </View>
 
                     {/* Menciones: formulario para agregar + lista */}
