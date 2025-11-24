@@ -22,7 +22,10 @@ import {
   useUploadArtefactHistoricalRecord,
   useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
-import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
+import {
+  useInternalClassifierNames,
+  useInternalClassifiers,
+} from "@/hooks/useInternalClassifier";
 import {
   useCreatePhysicalLocation,
   usePhysicalLocations,
@@ -68,6 +71,9 @@ export default function NewPiece() {
   const [internalClassifierId, setInternalClassifierId] = useState<
     number | null
   >(null);
+  const [selectedInternalClassifierName, setSelectedInternalClassifierName] = useState<string | null>(null);
+  const [selectedInternalClassifierNumber, setSelectedInternalClassifierNumber] = useState<number | null>(null);
+  const [internalClassifierError, setInternalClassifierError] = useState<string>("");
   const [shelfCode, setShelfCode] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<number>(0); // 0..3 → NIVEL 1 por defecto
   const [selectedColumn, setSelectedColumn] = useState<number>(0); // 0..3 → A por defecto
@@ -191,16 +197,17 @@ export default function NewPiece() {
     [collections]
   );
 
-  const intClsItems: SimplePickerItem<(typeof internalClassifiers)[number]>[] =
-    useMemo(
-      () =>
-        internalClassifiers.map((ic) => ({
-          value: ic.id!,
-          label: `#${ic.number} (${ic.color})`,
-          raw: ic,
-        })),
-      [internalClassifiers]
-    );
+  const { data: internalClassifierNames = [] } = useInternalClassifierNames();
+
+  const intClsNameItems: SimplePickerItem<string>[] = useMemo(
+    () =>
+      (internalClassifierNames || []).map((name) => ({
+        value: name,
+        label: name,
+        raw: name,
+      })),
+    [internalClassifierNames]
+  );
 
   const shelfItems: SimplePickerItem<(typeof shelfs)[number]>[] = useMemo(
     () =>
@@ -265,7 +272,6 @@ export default function NewPiece() {
         };
       }
     } catch (e) {
-      console.warn("pickImage error", e);
       Alert.alert("Error", "No se pudo abrir el selector de imágenes.");
     }
   }
@@ -309,7 +315,6 @@ export default function NewPiece() {
         };
       }
     } catch (e) {
-      console.warn("pickInplFicha error", e);
       Alert.alert("Error", "No se pudo abrir el selector de imágenes (INPL).");
     }
   }
@@ -362,7 +367,6 @@ export default function NewPiece() {
         };
       }
     } catch (e) {
-      console.warn("pickFile error", e);
       Alert.alert("Error", "No se pudo abrir el selector de archivos.");
     }
   }
@@ -377,16 +381,11 @@ export default function NewPiece() {
   // -------- test de conectividad ----------
   async function testConnectivity() {
     try {
-      console.log("Testing connectivity to backend...");
-      // Usamos el endpoint raíz que no requiere autenticación
       const response = await apiClient.get("/", {
         timeout: 5000,
       });
-      console.log("Connectivity test successful:", response.status);
-      console.log("Server response:", response.data);
       return true;
     } catch (error: any) {
-      console.error("Connectivity test failed:", error);
       if (
         error.code === "NETWORK_ERROR" ||
         error.message === "Network Error" ||
@@ -412,6 +411,7 @@ export default function NewPiece() {
       // Limpiar errores previos
       setNameError("");
       setMaterialError("");
+      setInternalClassifierError("");
 
       // Validar campos obligatorios
       let hasErrors = false;
@@ -467,39 +467,24 @@ export default function NewPiece() {
         }
 
         try {
-          console.log("Platform:", Platform.OS);
-          console.log(
-            "INPL File Reference:",
-            Platform.OS === "web"
-              ? inplFileWebRef.current
-              : inplFileNativeRef.current
-          );
-
           const files =
             Platform.OS === "web"
               ? [inplFileWebRef.current as File]
               : [inplFileNativeRef.current as any];
 
-          console.log("Files to send:", files);
           const dto = await INPLRepository.create(files);
-          console.log("INPL Created:", dto);
           inplClassifierIdCreated = dto?.id ?? null;
 
           if (!inplClassifierIdCreated) {
             throw new Error("No se obtuvo el id del INPLClassifier");
           }
         } catch (err: any) {
-          console.error("INPL Creation Error:", err);
-          console.error("Error details:", err.message);
-          if (err.response) {
-            console.error("Server response:", err.response.data);
-            console.error("Server status:", err.response.status);
-          }
+          const errorMsg = err?.response?.data?.error || err?.message || "Error desconocido";
           Alert.alert(
             "Error",
-            `No se pudo crear la Ficha INPL: ${err.message}`
+            `No se pudo crear la Ficha INPL: ${errorMsg}`
           );
-          return; // abortar el guardado si falla la creación del INPL
+          return;
         }
       }
 
@@ -516,11 +501,20 @@ export default function NewPiece() {
         description: description.trim() || null,
         collectionId: collectionId ?? null,
         archaeologistId: archaeologistId ?? null,
-        internalClassifierId: internalClassifierId ?? null,
+        // ⚠️ NO incluir internalClassifierId cuando se provee internalClassifierPayload
+        // El servicio se encarga de crear/asignar el clasificador
         physicalLocationId: ensuredPhysicalLocationId ?? null,
         archaeologicalSiteId,
         inplClassifierId: inplClassifierIdCreated ?? null,
       };
+
+      // ---------- Payload clasificador interno (opcional) ----------
+      const internalClassifierPayload = selectedInternalClassifierName
+        ? {
+            name: selectedInternalClassifierName,
+            number: selectedInternalClassifierNumber ?? null,
+          }
+        : null;
 
       // ---------- Payload menciones ----------
       const mentionsPayload =
@@ -530,9 +524,10 @@ export default function NewPiece() {
           description: (m.description ?? "").trim() || null,
         })) ?? [];
 
-      // ---------- Crear artefacto + menciones en el backend ----------
+      // ---------- Crear artefacto + clasificador interno + menciones en el backend ----------
       const created = await ArtefactRepository.createWithMentions({
         artefact: artefactPayload,
+        internalClassifier: internalClassifierPayload,
         mentions: mentionsPayload,
       });
 
@@ -582,24 +577,28 @@ export default function NewPiece() {
       Alert.alert("OK", "Pieza creada correctamente.");
       router.push("/(tabs)/archaeological-Pieces/View_pieces");
     } catch (e: any) {
-      console.warn(e);
-
       if (e?.response?.data?.error) {
         const errorMessage = e.response.data.error;
 
+        // Validar errores específicos de campos
         if (errorMessage.includes("nombre") || errorMessage.includes("Name")) {
           setNameError(errorMessage);
           return;
         }
 
-        if (
-          errorMessage.includes("material") ||
-          errorMessage.includes("Material")
-        ) {
+        if (errorMessage.includes("material") || errorMessage.includes("Material")) {
           setMaterialError(errorMessage);
           return;
         }
 
+        // Validar errores del clasificador interno
+        if (errorMessage.includes("clasificador interno") || errorMessage.includes("internal classifier")) {
+          setInternalClassifierError(errorMessage);
+          Alert.alert("Error de Clasificador Interno", errorMessage);
+          return;
+        }
+
+        // Otros errores del servidor
         Alert.alert("Error", errorMessage);
       } else {
         Alert.alert("Error", e?.message ?? "No se pudo crear la pieza.");
@@ -895,21 +894,35 @@ export default function NewPiece() {
               Clasificador interno
             </Text>
             <SimpleSelectRow
-              label="Seleccionar clasificador"
-              value={
-                internalClassifierId
-                  ? (() => {
-                      const ic = internalClassifiers.find(
-                        (x) => x.id === internalClassifierId
-                      );
-                      return ic
-                        ? `#${ic.number} (${ic.color})`
-                        : "Seleccionar clasificador";
-                    })()
-                  : "Seleccionar clasificador"
-              }
+              label="Seleccionar clasificador (por nombre)"
+              value={selectedInternalClassifierName ?? "Seleccionar clasificador"}
               onPress={() => setIntClsPickerOpen(true)}
             />
+            <Text style={{ fontFamily: "CrimsonText-Regular", fontSize: 14, color: "#4A3725", marginBottom: 6 }}>Número</Text>
+            <TextInput
+              keyboardType="numeric"
+              value={selectedInternalClassifierNumber == null ? "" : String(selectedInternalClassifierNumber)}
+              onChangeText={(v) => {
+                setSelectedInternalClassifierNumber(v === "" ? null : Number(v));
+                if (internalClassifierError) setInternalClassifierError("");
+              }}
+              placeholder="ej: 1"
+              style={{ 
+                backgroundColor: "#F7F5F2", 
+                borderRadius: 8, 
+                padding: 8,
+                borderWidth: 1,
+                borderColor: internalClassifierError ? "#ff4444" : "#E5D4C1"
+              }}
+            />
+            {internalClassifierError ? (
+              <Text style={{ 
+                color: "#ff4444", 
+                fontSize: 12, 
+                marginTop: 6,
+                fontFamily: "CrimsonText-Regular"
+              }}>{internalClassifierError}</Text>
+            ) : null}
             <TouchableOpacity
               style={{
                 paddingVertical: 8,
@@ -1872,10 +1885,10 @@ export default function NewPiece() {
       <SimplePickerModal
         visible={intClsPickerOpen}
         title="Seleccionar clasificador interno"
-        items={intClsItems}
-        selectedValue={internalClassifierId ?? null}
+        items={intClsNameItems}
+        selectedValue={selectedInternalClassifierName ?? null}
         onSelect={(value) => {
-          setInternalClassifierId(Number(value));
+          setSelectedInternalClassifierName(String(value));
           setIntClsPickerOpen(false);
         }}
         onClose={() => setIntClsPickerOpen(false)}

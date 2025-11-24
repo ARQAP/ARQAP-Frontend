@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -8,56 +9,54 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
 import Button from "../../../components/ui/Button";
+import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 
 import { useCreateInternalClassifier } from "../../../hooks/useInternalClassifier";
 
 type CreatePayload = {
-  number: number;
-  color: string;
+  number: number | null;
+  name: string;
 };
 
 export default function New_internal_classifier() {
   const router = useRouter();
-  const [numberStr, setNumberStr] = useState("");
-  const [color, setColor] = useState("");
+  const [name, setName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const createIC = useCreateInternalClassifier();
   const isBusy = createIC.isPending;
 
-  const cleanColor = (s: string) => s.trim();
+  const cleanName = (s: string) => s.trim();
 
   const handleCrear = async () => {
-    const n = Number(String(numberStr).trim());
-    const c = cleanColor(color);
+    setNameError(null);
+    setServerError(null);
+    const n = null; // when creating only names, number should be null
+    const nm = cleanName(name);
 
-    if (!numberStr.trim()) {
-      Alert.alert("Falta el número", "Ingresá el número del clasificador.");
+    // client-side validation
+    if (!nm) {
+      setNameError("El nombre es requerido");
       return;
     }
-    if (Number.isNaN(n) || n <= 0) {
-      Alert.alert("Número inválido", "El número debe ser mayor a 0.");
-      return;
-    }
-    if (!c) {
-      Alert.alert("Falta el color", "Ingresá el color del clasificador.");
+    if (nm.length < 2) {
+      setNameError("El nombre debe tener al menos 2 caracteres");
       return;
     }
 
     try {
-      const payload: CreatePayload = { number: n, color: c };
-      const created = await createIC.mutateAsync(payload as any);
+      const payload: CreatePayload = { number: n, name: nm };
+      await createIC.mutateAsync(payload as any);
 
-      Alert.alert("Éxito", "Clasificador interno creado correctamente.");
+      Alert.alert("Éxito", "Nombre de clasificador creado correctamente.");
       router.back();
     } catch (e: any) {
-      console.warn(e);
-      Alert.alert(
-        "Error",
-        e?.message ?? "No se pudo crear el clasificador interno."
-      );
+      const message = e?.response?.data?.error ?? e?.message ?? "No se pudo crear el clasificador interno.";
+      setServerError(typeof message === 'string' ? message : String(message));
+      Alert.alert("Error", message);
     }
   };
 
@@ -66,7 +65,7 @@ export default function New_internal_classifier() {
     router.back();
   };
 
-  const isButtonDisabled = isBusy || !numberStr.trim() || !color.trim();
+  const isButtonDisabled = isBusy || !name.trim();
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
@@ -139,72 +138,48 @@ export default function New_internal_classifier() {
                 elevation: 3,
               }}
             >
-              <View style={{ marginBottom: 24 }}>
-                <Text
-                  style={{
-                    fontFamily: "MateSC-Regular",
-                    fontSize: 15,
-                    color: "#8B5E3C",
-                    marginBottom: 8,
-                    fontWeight: "600",
-                  }}
-                >
-                  Número *
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: "#F7F5F2",
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    borderWidth: 1,
-                    borderColor: "#E5D4C1",
-                    fontFamily: "CrimsonText-Regular",
-                    fontSize: 16,
-                    color: "#4A3725",
-                  }}
-                  placeholder="Número (ej: 12)"
-                  value={numberStr}
-                  onChangeText={setNumberStr}
-                  placeholderTextColor="#B8967D"
-                  selectionColor="#8B5E3C"
-                  keyboardType="number-pad"
-                  editable={!isBusy}
-                />
-              </View>
-
               <View style={{ marginBottom: 8 }}>
                 <Text
                   style={{
                     fontFamily: "MateSC-Regular",
                     fontSize: 15,
-                    color: "#8B5E3C",
+                    color: Colors.brown,
                     marginBottom: 8,
                     fontWeight: "600",
                   }}
                 >
-                  Color *
+                  Nombre del Clasificador *
                 </Text>
                 <TextInput
                   style={{
-                    backgroundColor: "#F7F5F2",
+                    backgroundColor: Colors.cremitLight,
                     borderRadius: 12,
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     borderWidth: 1,
-                    borderColor: "#E5D4C1",
+                    borderColor: nameError ? "#ff6b6b" : Colors.cremitLight,
                     fontFamily: "CrimsonText-Regular",
                     fontSize: 16,
-                    color: "#4A3725",
+                    color: Colors.darkText,
                   }}
-                  placeholder='Color (ej: "Rojo" o "#A67C52")'
-                  value={color}
-                  onChangeText={setColor}
+                  placeholder='Nombre (ej: "Verde")'
+                  value={name}
+                  onChangeText={(v) => {
+                    setName(v);
+                    setNameError(null);
+                    setServerError(null);
+                  }}
                   placeholderTextColor="#B8967D"
-                  selectionColor="#8B5E3C"
+                  selectionColor={Colors.brown}
                   autoCapitalize="none"
                   editable={!isBusy}
                 />
+                {nameError ? (
+                  <Text style={{ color: "#ff6b6b", marginTop: 8 }}>{nameError}</Text>
+                ) : null}
+                {serverError ? (
+                  <Text style={{ color: "#8B5E3C", marginTop: 8 }}>{serverError}</Text>
+                ) : null}
               </View>
             </View>
 

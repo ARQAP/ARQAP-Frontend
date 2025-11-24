@@ -40,7 +40,10 @@ import {
   useUploadArtefactHistoricalRecord,
   useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
-import { useInternalClassifiers } from "@/hooks/useInternalClassifier";
+import {
+  useInternalClassifierNames,
+  useInternalClassifiers,
+} from "@/hooks/useInternalClassifier";
 import { ArtefactRepository } from "@/repositories/artefactRepository";
 
 // ---- Tipos locales ----
@@ -87,6 +90,7 @@ export default function EditPiece() {
   // Estados para validaciones
   const [nameError, setNameError] = useState("");
   const [materialError, setMaterialError] = useState("");
+  const [internalClassifierError, setInternalClassifierError] = useState("");
 
   // -------- pickers (modales) ----------
   const [archPickerOpen, setArchPickerOpen] = useState(false);
@@ -106,6 +110,8 @@ export default function EditPiece() {
   const [internalClassifierId, setInternalClassifierId] = useState<
     number | null
   >(null);
+  const [selectedInternalClassifierName, setSelectedInternalClassifierName] = useState<string | null>(null);
+  const [selectedInternalClassifierNumber, setSelectedInternalClassifierNumber] = useState<number | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(0); // 0..3 → NIVEL 1 por defecto
   const [selectedColumn, setSelectedColumn] = useState<number | null>(0); // 0..3 → A por defecto
 
@@ -132,13 +138,13 @@ export default function EditPiece() {
   const { data: internalClassifiers = [] } = useInternalClassifiers();
 
   // Etiqueta del clasificador interno seleccionado
-  const selectedInternalClassifierLabel = internalClassifierId
+  const selectedInternalClassifierLabel = selectedInternalClassifierName
+    ? `${selectedInternalClassifierName}${selectedInternalClassifierNumber ? ` - ${selectedInternalClassifierNumber}` : ""}`
+    : internalClassifierId
     ? (() => {
-        const c = internalClassifiers.find(
-          (s) => s.id === internalClassifierId
-        );
+        const c = internalClassifiers.find((s) => s.id === internalClassifierId);
         if (!c) return "Seleccionar clasificador";
-        return `${c.number}-${c.color}`; // o lo que quieras mostrar
+        return `${c.number}${c.name ? ` - ${c.name}` : ""}`;
       })()
     : "Seleccionar clasificador";
 
@@ -239,16 +245,16 @@ export default function EditPiece() {
     [archaeologicalSites]
   );
 
-  const internalClassifierItems: SimplePickerItem<
-    (typeof internalClassifiers)[number]
-  >[] = useMemo(
+  const { data: internalClassifierNames = [] } = useInternalClassifierNames();
+
+  const internalClassifierNameItems: SimplePickerItem<string>[] = useMemo(
     () =>
-      internalClassifiers.map((c) => ({
-        value: c.id!,
-        label: `${c.number}-${c.color}`,
-        raw: c,
+      (internalClassifierNames || []).map((name) => ({
+        value: name,
+        label: name,
+        raw: name,
       })),
-    [internalClassifiers]
+    [internalClassifierNames]
   );
 
   const collItems: SimplePickerItem<(typeof collections)[number]>[] = useMemo(
@@ -397,7 +403,11 @@ export default function EditPiece() {
     setDescription(a?.description ?? "");
     setAvailable(!!a?.available);
     setClassifier("INAPL");
-    setColor(a?.internalClassifier?.color ?? "");
+    // internal classifier in backend now has `name` and `number`
+    setSelectedInternalClassifierName(a?.internalClassifier?.name ?? null);
+    setSelectedInternalClassifierNumber(a?.internalClassifier?.number ?? null);
+    // legacy `color` state used in UI elsewhere — keep it populated for compatibility
+    setColor(a?.internalClassifier?.name ?? "");
 
     // Imagen existente
     if (a?.picture && a.picture.length > 0) {
@@ -555,7 +565,6 @@ export default function EditPiece() {
       // Refrescar thumbnails
       await refreshInplThumbs(clsId!);
     } catch (err) {
-      console.warn(err);
       Alert.alert("Error", "No se pudieron cargar las fichas históricas INPL.");
     }
   }
@@ -573,7 +582,6 @@ export default function EditPiece() {
         await refreshInplThumbs(inplClassifierId);
       }
     } catch (err) {
-      console.warn(err);
       Alert.alert("Error", "No se pudo reemplazar la ficha INPL.");
     }
   }
@@ -624,7 +632,7 @@ export default function EditPiece() {
         };
       }
     } catch (err) {
-      console.warn("Error picking image", err);
+      Alert.alert("Error", "No se pudo abrir el selector de imágenes.");
     }
   }
 
@@ -650,9 +658,6 @@ export default function EditPiece() {
         // @ts-ignore
         DocumentPicker = await import("expo-document-picker");
       } catch (e) {
-        console.warn(
-          "expo-document-picker no está instalado, abriendo selector de imagen"
-        );
         await pickImage();
         return;
       }
@@ -673,7 +678,7 @@ export default function EditPiece() {
         };
       }
     } catch (err) {
-      console.warn("Error picking file", err);
+      Alert.alert("Error", "No se pudo abrir el selector de archivos.");
     }
   }
 
@@ -753,7 +758,16 @@ export default function EditPiece() {
         }
       }
 
-      const payload: any = {
+      // Resolver internalClassifierId desde nombre+numero (si corresponde)
+      let internalClassifierPayload: { name: string; number?: number | null } | null = null;
+      if (selectedInternalClassifierName) {
+        internalClassifierPayload = {
+          name: selectedInternalClassifierName,
+          number: selectedInternalClassifierNumber ?? null,
+        };
+      }
+
+      const artefactPayload: any = {
         name: name.trim(),
         material: material.trim(), // Ya no permitimos null porque es obligatorio
         observation: observation.trim() || null,
@@ -763,12 +777,22 @@ export default function EditPiece() {
         archaeologistId: archaeologistId ?? null,
         physicalLocationId: finalPhysicalLocationId, // <- garantizado o null si no hay selección
         archaeologicalSiteId: archaeologicalSiteId ?? null,
-        internalClassifierId: internalClassifierId ?? null,
+        // ⚠️ NO incluir internalClassifierId cuando se usa el endpoint transaccional
+        // El servicio se encarga de asignarlo basándose en internalClassifier
+        ...(!internalClassifierPayload && { internalClassifierId: internalClassifierId ?? null }),
         // ⚠️ NO forzamos a null el INPL acá, se mantiene lo que ya tenga la pieza.
         // inplClassifierId: null,
       };
 
-      await ArtefactRepository.update(artefactId, payload);
+      // Usar el endpoint transaccional si hay clasificador interno
+      if (internalClassifierPayload) {
+        await ArtefactRepository.updateWithInternalClassifier(artefactId, {
+          artefact: artefactPayload,
+          internalClassifier: internalClassifierPayload,
+        });
+      } else {
+        await ArtefactRepository.update(artefactId, artefactPayload);
+      }
 
       if (Platform.OS === "web" && pictureFileRef.current) {
         await uploadPicture.mutateAsync({
@@ -854,8 +878,6 @@ export default function EditPiece() {
       Alert.alert("OK", "Pieza actualizada correctamente.");
       router.push("/(tabs)/archaeological-Pieces/View_pieces");
     } catch (e: any) {
-      console.warn(e);
-
       // Manejar errores específicos del backend
       if (e?.response?.data?.error) {
         const errorMessage = e.response.data.error;
@@ -866,11 +888,15 @@ export default function EditPiece() {
           return;
         }
 
-        if (
-          errorMessage.includes("material") ||
-          errorMessage.includes("Material")
-        ) {
+        if (errorMessage.includes("material") || errorMessage.includes("Material")) {
           setMaterialError(errorMessage);
+          return;
+        }
+
+        // Validar errores del clasificador interno
+        if (errorMessage.includes("clasificador interno") || errorMessage.includes("internal classifier")) {
+          setInternalClassifierError(errorMessage);
+          Alert.alert("Error de Clasificador Interno", errorMessage);
           return;
         }
 
@@ -1265,6 +1291,33 @@ export default function EditPiece() {
                   value={selectedInternalClassifierLabel}
                   onPress={() => setInternalClassifierPickerOpen(true)}
                 />
+                <View style={{ marginTop: 8 }}>
+                  <Text style={{ fontFamily: "CrimsonText-Regular", fontSize: 14, color: "#4A3725", marginBottom: 6 }}>Número</Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={selectedInternalClassifierNumber == null ? "" : String(selectedInternalClassifierNumber)}
+                    onChangeText={(v) => {
+                      setSelectedInternalClassifierNumber(v === "" ? null : Number(v));
+                      if (internalClassifierError) setInternalClassifierError("");
+                    }}
+                    placeholder="ej: 1"
+                    style={{ 
+                      backgroundColor: "#F7F5F2", 
+                      borderRadius: 8, 
+                      padding: 8,
+                      borderWidth: internalClassifierError ? 1 : 1,
+                      borderColor: internalClassifierError ? "#ff4444" : "#E5D4C1"
+                    }}
+                  />
+                  {internalClassifierError ? (
+                    <Text style={{ 
+                      color: "#ff4444", 
+                      fontSize: 12, 
+                      marginTop: 6,
+                      fontFamily: "CrimsonText-Regular"
+                    }}>{internalClassifierError}</Text>
+                  ) : null}
+                </View>
               </View>
 
               <View style={{ width: windowWidth < 520 ? "100%" : 180 }}>
@@ -2270,10 +2323,10 @@ export default function EditPiece() {
       <SimplePickerModal
         visible={internalClassifierPickerOpen}
         title="Seleccionar clasificador interno"
-        items={internalClassifierItems}
-        selectedValue={internalClassifierId ?? null}
+        items={internalClassifierNameItems}
+        selectedValue={selectedInternalClassifierName ?? null}
         onSelect={(value) => {
-          setInternalClassifierId(Number(value)); // ← solo esto
+          setSelectedInternalClassifierName(String(value));
           setInternalClassifierPickerOpen(false);
         }}
         onClose={() => setInternalClassifierPickerOpen(false)}

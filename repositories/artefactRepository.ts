@@ -62,6 +62,10 @@ export type ArtefactSummary = {
 
 export type CreateArtefactWithMentionsPayload = {
   artefact: Artefact;
+  internalClassifier?: {
+    name: string;
+    number?: number | null;
+  } | null;
   mentions: Array<{
     title: string;
     link?: string | null;
@@ -113,6 +117,20 @@ export const ArtefactRepository = {
   update: async (id: number, payload: Artefact) => {
     const { data } = await apiClient.put(`/artefacts/${id}`, payload);
     return data as Artefact | { message: string };
+  },
+
+  updateWithInternalClassifier: async (
+    id: number,
+    payload: {
+      artefact: Artefact;
+      internalClassifier?: {
+        name: string;
+        number?: number | null;
+      } | null;
+    }
+  ) => {
+    const { data } = await apiClient.put(`/artefacts/${id}/with-classifier`, payload);
+    return data as Artefact;
   },
 
   remove: async (id: number) => {

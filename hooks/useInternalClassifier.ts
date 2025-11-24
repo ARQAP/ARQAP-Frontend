@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsAuthenticated } from "./useUserAuth";
 import {
   InternalClassifier,
   InternalClassifierRepository,
 } from "@/repositories/internalClassifierRepository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["internalClassifiers"];
 
@@ -17,12 +17,12 @@ export const useInternalClassifiers = () => {
   });
 };
 
-export const useInternalClassifier = (id?: number) => {
+export const useInternalClassifier = (name?: string) => {
   const { data: token } = useIsAuthenticated();
   return useQuery({
-    queryKey: [...KEY, id],
-    queryFn: () => InternalClassifierRepository.getById(id as number),
-    enabled: !!token && !!id,
+    queryKey: [...KEY, "name", name],
+    queryFn: () => InternalClassifierRepository.getByName(name as string),
+    enabled: !!token && !!name,
     staleTime: 60_000,
   });
 };
@@ -58,5 +58,15 @@ export const useDeleteInternalClassifier = () => {
       qc.invalidateQueries({ queryKey: KEY });
       qc.invalidateQueries({ queryKey: [...KEY, id] });
     },
+  });
+};
+
+export const useInternalClassifierNames = () => {
+  const { data: token } = useIsAuthenticated();
+  return useQuery({
+    queryKey: [...KEY, "names"],
+    queryFn: InternalClassifierRepository.getAllNames,
+    enabled: !!token,
+    staleTime: 60_000,
   });
 };
