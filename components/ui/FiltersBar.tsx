@@ -184,12 +184,11 @@ export default function FiltersBar({
         onOpenChange={setOpenSelectId}
       />
 
-      {/* Filtrar por número de estante */}
+      {/* Filtrar por estante (código o etiqueta: ej. "1", "A1", "MT-1") */}
       <TextInput
-        placeholder="Filtrar por número de estante"
+        placeholder="Filtrar por estante (ej: 1, A1, MT-1)"
         value={filters.shelf}
-        onChangeText={(text) => updateFilter("shelf", text.replace(/[^0-9]/g, ""))}
-        keyboardType="numeric"
+        onChangeText={(text) => updateFilter("shelf", text)}
         style={inputStyle}
       />
 
@@ -302,7 +301,7 @@ export default function FiltersBar({
       active.push({ key: "site", label: "Sitio arqueológico", value: filters.site });
     }
     if (filters.shelf.trim()) {
-      active.push({ key: "shelf", label: "Número de estante", value: filters.shelf });
+      active.push({ key: "shelf", label: "Estante", value: filters.shelf });
     }
     if (filters.shelfLevel.trim()) {
       active.push({ key: "shelfLevel", label: "Nivel", value: filters.shelfLevel });
@@ -547,12 +546,11 @@ export default function FiltersBar({
                 onOpenChange={setOpenSelectId}
               />
 
-              {/* Filtrar por número de estante */}
+              {/* Filtrar por estante (código o etiqueta: ej. "1", "A1", "MT-1") */}
               <TextInput
-                placeholder="Filtrar por número de estante"
+                placeholder="Filtrar por estante (ej: 1, A1, MT-1)"
                 value={filters.shelf}
-                onChangeText={(text) => updateFilter("shelf", text.replace(/[^0-9]/g, ""))}
-                keyboardType="numeric"
+                onChangeText={(text) => updateFilter("shelf", text)}
                 style={inputStyle}
               />
 

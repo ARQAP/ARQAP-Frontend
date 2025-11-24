@@ -1,5 +1,6 @@
 import { useArtefact } from "@/hooks/useArtefact";
 import { useMentionsByArtefactId } from "@/hooks/useMentions";
+import { useInternalMovementsByArtefactId } from "@/hooks/useInternalMovement";
 import { apiClient } from "@/lib/api";
 import type { Artefact } from "@/repositories/artefactRepository";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/repositories/inplClassifierRepository";
 import { getToken } from "@/services/authStorage";
 import { useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -29,6 +31,7 @@ import Navbar from "../Navbar";
 import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
 import { Dimensions } from 'react-native';
 import { getShelfLabel } from "@/utils/shelfLabels";
+import { Ionicons } from "@expo/vector-icons";
 
 type Piece = {
     id: number;
@@ -68,6 +71,9 @@ export default function ViewPiece() {
     // fetch pieza
     const { data, isLoading, isError, refetch } = useArtefact(id ?? undefined);
     const { data: mentionsData = [] } = useMentionsByArtefactId(
+        id ?? undefined
+    );
+    const { data: movementsData = [] } = useInternalMovementsByArtefactId(
         id ?? undefined
     );
 
@@ -258,36 +264,26 @@ export default function ViewPiece() {
                         filename: f.filename,
                     });
                 } else {
+                    // En mobile, guardar la URL del servidor con token para abrir directamente
                     const token = await getToken();
                     const baseUrl = apiClient.defaults.baseURL || "";
-                    const fullUrl = `${baseUrl}/inplFichas/${f.id}/download`;
-
-                    const response = await fetch(fullUrl, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
-
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        // Asegurar que el blob tenga el Content-Type correcto
-                        const typedBlob = new Blob([blob], {
-                            type: "application/pdf",
-                        });
-                        const url = URL.createObjectURL(typedBlob);
-                        out.push({
-                            id: Number(f.id),
-                            url: url,
-                            filename: f.filename,
-                        });
-                    } else {
+                    
+                    if (!token) {
                         console.warn(
-                            `Failed to fetch INPL ficha ${f.id}:`,
-                            response.status
+                            `No token available for INPL ficha ${f.id}`
                         );
                         out.push({
                             id: Number(f.id),
                             url: f.url,
+                            filename: f.filename,
+                        });
+                    } else {
+                        // Guardar la URL del servidor con token en query parameter
+                        // Esta URL se usará directamente con Linking.openURL o expo-web-browser
+                        const fullUrl = `${baseUrl}/inplFichas/${f.id}/download?token=${encodeURIComponent(token)}`;
+                        out.push({
+                            id: Number(f.id),
+                            url: fullUrl,
                             filename: f.filename,
                         });
                     }
@@ -939,16 +935,32 @@ export default function ViewPiece() {
                                                             );
                                                         }
                                                     } else {
-                                                        // En móvil, usar la URL del blob que ya tenemos
+                                                        // En móvil, abrir la URL del servidor con token usando expo-web-browser
                                                         if (f.url) {
-                                                            Linking.openURL(
-                                                                f.url
-                                                            ).catch((err) =>
+                                                            try {
+                                                                await WebBrowser.openBrowserAsync(
+                                                                    f.url,
+                                                                    {
+                                                                        enableBarCollapsing: true,
+                                                                        showInRecents: true,
+                                                                    }
+                                                                );
+                                                            } catch (err) {
                                                                 console.warn(
-                                                                    "No se pudo abrir el PDF",
+                                                                    "No se pudo abrir el PDF con WebBrowser, intentando con Linking",
                                                                     err
-                                                                )
-                                                            );
+                                                                );
+                                                                // Fallback a Linking si WebBrowser falla
+                                                                Linking.openURL(
+                                                                    f.url
+                                                                ).catch(
+                                                                    (linkErr) =>
+                                                                        console.warn(
+                                                                            "No se pudo abrir el PDF",
+                                                                            linkErr
+                                                                        )
+                                                                );
+                                                            }
                                                         }
                                                     }
                                                 } catch (err) {
@@ -1163,6 +1175,160 @@ export default function ViewPiece() {
                                 }}
                             >
                                 —
+                            </Text>
+                        )}
+                    </View>
+
+                    {/* MOVIMIENTOS INTERNOS */}
+                    <View
+                        style={{
+                            marginTop: 4,
+                            marginBottom: 16,
+                            backgroundColor: "#FFF",
+                            padding: 12,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: "#E6DAC4",
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontFamily: "MateSC-Regular",
+                                fontWeight: "700",
+                                marginBottom: 8,
+                                color: Colors.black,
+                            }}
+                        >
+                            HISTORIAL DE MOVIMIENTOS INTERNOS
+                        </Text>
+
+                        {movementsData && movementsData.length > 0 ? (
+                            movementsData.map((movement) => {
+                                const formatDateTime = (dateTimeString: string | undefined) => {
+                                    if (!dateTimeString) return "No definida";
+                                    try {
+                                        const date = new Date(dateTimeString);
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, "0");
+                                        const day = String(date.getDate()).padStart(2, "0");
+                                        const hours = String(date.getHours()).padStart(2, "0");
+                                        const minutes = String(date.getMinutes()).padStart(2, "0");
+                                        return `${day}/${month}/${year} ${hours}:${minutes}`;
+                                    } catch (error) {
+                                        return "Fecha inválida";
+                                    }
+                                };
+
+                                const formatLocation = (location: any) => {
+                                    if (!location) return "No especificada";
+                                    const shelfLabel = location.shelf ? getShelfLabel(location.shelf.code) : "Estantería";
+                                    return `${shelfLabel} - Nivel ${location.level}, Columna ${location.column}`;
+                                };
+
+                                const isActive = !movement.returnTime;
+                                
+                                return (
+                                    <View
+                                        key={movement.id}
+                                        style={{
+                                            backgroundColor: isActive ? "#F7F5F2" : "#E8E8E8",
+                                            padding: 12,
+                                            borderRadius: 6,
+                                            marginBottom: 8,
+                                            borderLeftWidth: 4,
+                                            borderLeftColor: isActive ? Colors.brown : Colors.green,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+                                            <Ionicons 
+                                                name={isActive ? "move-outline" : "checkmark-circle-outline"} 
+                                                size={16} 
+                                                color={isActive ? Colors.brown : Colors.green} 
+                                                style={{ marginRight: 6 }} 
+                                            />
+                                            <Text
+                                                style={{
+                                                    fontFamily: "CrimsonText-Regular",
+                                                    fontWeight: "600",
+                                                    color: isActive ? Colors.brown : Colors.green,
+                                                    fontSize: 14,
+                                                }}
+                                            >
+                                                {formatDateTime(movement.movementTime)} {isActive ? "(Activo)" : "(Finalizado)"}
+                                            </Text>
+                                        </View>
+                                        <Text
+                                            style={{
+                                                fontFamily: "CrimsonText-Regular",
+                                                color: Colors.black,
+                                                fontSize: 13,
+                                                marginBottom: 4,
+                                            }}
+                                        >
+                                            <Text style={{ fontWeight: "600" }}>Desde: </Text>
+                                            {formatLocation(movement.fromPhysicalLocation)}
+                                        </Text>
+                                        <Text
+                                            style={{
+                                                fontFamily: "CrimsonText-Regular",
+                                                color: Colors.black,
+                                                fontSize: 13,
+                                                marginBottom: 4,
+                                            }}
+                                        >
+                                            <Text style={{ fontWeight: "600" }}>Hacia: </Text>
+                                            {formatLocation(movement.toPhysicalLocation)}
+                                        </Text>
+                                        {movement.returnTime && (
+                                            <Text
+                                                style={{
+                                                    fontFamily: "CrimsonText-Regular",
+                                                    color: Colors.black,
+                                                    fontSize: 12,
+                                                    marginBottom: 4,
+                                                }}
+                                            >
+                                                <Text style={{ fontWeight: "600" }}>Finalizado: </Text>
+                                                {formatDateTime(movement.returnTime)}
+                                            </Text>
+                                        )}
+                                        {movement.reason && (
+                                            <Text
+                                                style={{
+                                                    fontFamily: "CrimsonText-Regular",
+                                                    color: Colors.black,
+                                                    fontSize: 12,
+                                                    fontStyle: "italic",
+                                                    marginTop: 4,
+                                                }}
+                                            >
+                                                Motivo: {movement.reason}
+                                            </Text>
+                                        )}
+                                        {movement.observations && (
+                                            <Text
+                                                style={{
+                                                    fontFamily: "CrimsonText-Regular",
+                                                    color: Colors.black,
+                                                    fontSize: 12,
+                                                    fontStyle: "italic",
+                                                    marginTop: 4,
+                                                }}
+                                            >
+                                                Observaciones: {movement.observations}
+                                            </Text>
+                                        )}
+                                    </View>
+                                );
+                            })
+                        ) : (
+                            <Text
+                                style={{
+                                    fontFamily: "CrimsonText-Regular",
+                                    color: Colors.black,
+                                }}
+                            >
+                                No hay movimientos registrados para esta pieza.
                             </Text>
                         )}
                     </View>
