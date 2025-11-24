@@ -45,3 +45,21 @@ export const removeToken = async (): Promise<void> => {
     console.error("Error removing token:", error);
   }
 };
+
+/**
+ * Limpia todo el AsyncStorage (útil para desarrollo o resetear la app)
+ */
+export const clearAllStorage = async (): Promise<void> => {
+  try {
+    if (Platform.OS === "web") {
+      // En web usamos localStorage
+      localStorage.clear();
+    } else {
+      // En mobile usamos AsyncStorage
+      await AsyncStorage.clear();
+    }
+    console.log("AsyncStorage cleared successfully");
+  } catch (error) {
+    console.error("Error clearing storage:", error);
+  }
+};

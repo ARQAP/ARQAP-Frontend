@@ -935,31 +935,43 @@ export default function ViewPiece() {
                                                             );
                                                         }
                                                     } else {
-                                                        // En móvil, abrir la URL del servidor con token usando expo-web-browser
+                                                        // En móvil, abrir la URL del servidor con token
                                                         if (f.url) {
-                                                            try {
-                                                                await WebBrowser.openBrowserAsync(
-                                                                    f.url,
-                                                                    {
-                                                                        enableBarCollapsing: true,
-                                                                        showInRecents: true,
-                                                                    }
-                                                                );
-                                                            } catch (err) {
-                                                                console.warn(
-                                                                    "No se pudo abrir el PDF con WebBrowser, intentando con Linking",
-                                                                    err
-                                                                );
-                                                                // Fallback a Linking si WebBrowser falla
-                                                                Linking.openURL(
-                                                                    f.url
-                                                                ).catch(
-                                                                    (linkErr) =>
+                                                            if (Platform.OS === "ios") {
+                                                                // En iOS, usar Linking directamente (más confiable)
+                                                                Linking.openURL(f.url).catch(
+                                                                    (err) =>
                                                                         console.warn(
-                                                                            "No se pudo abrir el PDF",
-                                                                            linkErr
+                                                                            "No se pudo abrir el PDF en iOS",
+                                                                            err
                                                                         )
                                                                 );
+                                                            } else {
+                                                                // En Android, intentar con WebBrowser primero
+                                                                try {
+                                                                    await WebBrowser.openBrowserAsync(
+                                                                        f.url,
+                                                                        {
+                                                                            enableBarCollapsing: true,
+                                                                            showInRecents: true,
+                                                                        }
+                                                                    );
+                                                                } catch (err) {
+                                                                    console.warn(
+                                                                        "No se pudo abrir el PDF con WebBrowser, intentando con Linking",
+                                                                        err
+                                                                    );
+                                                                    // Fallback a Linking si WebBrowser falla
+                                                                    Linking.openURL(
+                                                                        f.url
+                                                                    ).catch(
+                                                                        (linkErr) =>
+                                                                            console.warn(
+                                                                                "No se pudo abrir el PDF",
+                                                                                linkErr
+                                                                            )
+                                                                    );
+                                                                }
                                                             }
                                                         }
                                                     }

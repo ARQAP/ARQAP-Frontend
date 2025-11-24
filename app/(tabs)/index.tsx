@@ -28,10 +28,15 @@ export default function IndexScreen() {
     const [password, setPassword] = useState("");
     const loginMutation = useLoginMutation();
 
-    // Si ya está autenticado, redirigir inmediatamente
+    // Si ya está autenticado, redirigir a home
+    // Esperar un poco para asegurar que el router esté listo
     useEffect(() => {
         if (!isLoading && token) {
-            router.replace("/(tabs)/home");
+            // Pequeño delay para asegurar que el router esté completamente inicializado
+            const timer = setTimeout(() => {
+                router.replace("/(tabs)/home");
+            }, 100);
+            return () => clearTimeout(timer);
         }
     }, [token, isLoading, router]);
 

@@ -21,31 +21,39 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     useEffect(() => {
         // Esperar a que el componente esté montado y el router esté listo
-        if (!isLoading && isMounted && segments.length > 0) {
-            const inAuthGroup = segments[0] === "(tabs)";
+        if (!isLoading && isMounted) {
+            // Si aún no hay segments, esperar un poco más
+            if (segments.length === 0) {
+                // Si no hay token, asegurarse de ir a login
+                if (!token) {
+                    setTimeout(() => {
+                        router.replace("/(tabs)");
+                    }, 100);
+                }
+                return;
+            }
 
-            if (!token && inAuthGroup) {
+            const inAuthGroup = segments[0] === "(tabs)";
+            const currentPath = `/${segments.join("/")}`;
+            const isLoginPage =
+                currentPath === "/(tabs)" ||
+                currentPath === "/(tabs)/index";
+
+            if (!token) {
                 // Si no hay token, ir al login
-                const currentPath = `/${segments.join("/")}`;
-                const isLoginPage =
-                    currentPath === "/(tabs)" ||
-                    currentPath === "/(tabs)/index";
-                if (!isLoginPage) {
-                    // Usar setTimeout para asegurar que el router esté listo
+                if (inAuthGroup && !isLoginPage) {
+                    setTimeout(() => {
+                        router.replace("/(tabs)");
+                    }, 0);
+                } else if (!inAuthGroup) {
                     setTimeout(() => {
                         router.replace("/(tabs)");
                     }, 0);
                 }
             } else if (token && inAuthGroup) {
-                // Si hay token, verificar si está en login
-                const currentPath = `/${segments.join("/")}`;
-                const isLoginPage =
-                    currentPath === "/(tabs)" ||
-                    currentPath === "/(tabs)/index" ||
-                    segments.length === 1;
-
+                // Si hay token y está en login, redirigir a home
+                // Solo redirigir si realmente está en la página de login exacta
                 if (isLoginPage) {
-                    // Usar setTimeout para asegurar que el router esté listo
                     setTimeout(() => {
                         router.replace("/(tabs)/home");
                     }, 0);
