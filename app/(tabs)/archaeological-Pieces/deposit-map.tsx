@@ -8,9 +8,7 @@ export default function DepositMapScreen() {
     <View className="flex-1 bg-[#F3E9DD]">
       <Navbar 
         title="Mapa del Depósito" 
-        showBackArrow 
-        backToHome={false}
-        redirectTo="/(tabs)/archaeological-Pieces"
+        showBackArrow
       />
       <View className="flex-1 px-2 sm:px-5 pt-5 pb-5">
         <Text 
