@@ -75,6 +75,8 @@ export default function ViewPieces() {
         shelf: "",
         shelfLevel: "",
         shelfColumn: "",
+        internalClassifierName: "",
+        internalClassifierNumber: "",
     });
 
     // Estado para el menú desplegable
@@ -269,6 +271,8 @@ export default function ViewPieces() {
             shelf: "",
             shelfLevel: "",
             shelfColumn: "",
+            internalClassifierName: "",
+            internalClassifierNumber: "",
         });
     };
 

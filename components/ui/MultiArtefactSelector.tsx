@@ -2,18 +2,20 @@ import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Modal,
-  ScrollView,
-  TextInput,
   FlatList,
   StyleSheet,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
 import type { Artefact } from "@/repositories/artefactRepository";
-import { useCollections } from "@/hooks/useCollections";
-import { useInternalClassifierNames } from "@/hooks/useInternalClassifier";
+import FiltersBar, { FilterValues } from "./FiltersBar";
+import SearchableSelect from "./SearchableSelect";
+import { getShelfLabel, getShelfShortLabel } from "@/utils/shelfLabels";
 
 interface MultiArtefactSelectorProps {
   visible: boolean;
@@ -30,83 +32,117 @@ export default function MultiArtefactSelector({
   onSelect,
   onClose,
 }: MultiArtefactSelectorProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterCollection, setFilterCollection] = useState<string>("");
-  const [filterMaterial, setFilterMaterial] = useState<string>("");
-  const [filterInternalClassifierName, setFilterInternalClassifierName] = useState<string>("");
-  const [filterInternalClassifierNumber, setFilterInternalClassifierNumber] = useState<string>("");
-  const [filterSite, setFilterSite] = useState<string>("");
+  const [filters, setFilters] = useState<FilterValues>({
+    name: "",
+    material: "",
+    collection: "",
+    site: "",
+    shelf: "",
+    shelfLevel: "",
+    shelfColumn: "",
+    internalClassifierName: "",
+    internalClassifierNumber: "",
+  });
+  const [openSelectId, setOpenSelectId] = useState<string | null>(null);
 
-  const { data: collections = [] } = useCollections();
-  const { data: internalClassifierNames = [] } = useInternalClassifierNames();
-
-  // Obtener valores únicos para filtros
-  const uniqueMaterials = useMemo(() => {
-    const materials = new Set<string>();
-    artefacts.forEach((a) => {
-      if (a.material) materials.add(a.material);
+  // Preparar datos para FiltersBar (incluyendo shelf y clasificador interno)
+  const piecesForFilters = useMemo(() => {
+    return artefacts.map((a) => {
+      // Extraer shelf code de physicalLocation
+      const phys = (a as any)?.physicalLocation ?? {};
+      const shelfObj = phys?.shelf ?? phys?.estanteria ?? null;
+      const shelfCode = typeof shelfObj === "object" && shelfObj
+        ? (shelfObj?.code ?? shelfObj?.codigo)
+        : null;
+      
+      // Extraer clasificador interno
+      const classifier = a.internalClassifier as any;
+      const classifierName = classifier?.name || "";
+      
+      return {
+        material: a.material,
+        collection: (a.collection as any)?.name || "",
+        site: (a.archaeologicalSite as any)?.Name || (a.archaeologicalSite as any)?.name || "",
+        shelf: shelfCode != null ? String(shelfCode) : "",
+        internalClassifierName: classifierName,
+      };
     });
-    return Array.from(materials).sort();
   }, [artefacts]);
 
-  const uniqueSites = useMemo(() => {
-    const sites = new Set<string>();
+  // Obtener valores únicos para clasificador interno
+  const uniqueInternalClassifierNames = useMemo(() => {
+    const names = new Set<string>();
     artefacts.forEach((a) => {
-      const site = (a.archaeologicalSite as any)?.Name;
-      if (site) sites.add(site);
+      const classifier = a.internalClassifier as any;
+      if (classifier?.name) names.add(classifier.name);
     });
-    return Array.from(sites).sort();
+    return Array.from(names).sort();
   }, [artefacts]);
 
   // Filtrar artefactos
   const filteredArtefacts = useMemo(() => {
     return artefacts.filter((artefact) => {
-      // Búsqueda por nombre
-      if (searchQuery.trim() !== "") {
-        const query = searchQuery.toLowerCase();
+      // Filtros de FiltersBar
+      if (filters.name.trim() !== "") {
+        const query = filters.name.toLowerCase();
         if (!artefact.name.toLowerCase().includes(query)) return false;
       }
 
-      // Filtro por colección
-      if (filterCollection.trim() !== "") {
+      if (filters.material.trim() !== "") {
+        if (!artefact.material.toLowerCase().includes(filters.material.toLowerCase())) return false;
+      }
+
+      if (filters.collection.trim() !== "") {
         const collectionName = (artefact.collection as any)?.name || "";
-        if (!collectionName.toLowerCase().includes(filterCollection.toLowerCase())) return false;
+        if (!collectionName.toLowerCase().includes(filters.collection.toLowerCase())) return false;
       }
 
-      // Filtro por material
-      if (filterMaterial.trim() !== "") {
-        if (!artefact.material.toLowerCase().includes(filterMaterial.toLowerCase())) return false;
+      if (filters.site.trim() !== "") {
+        const siteName = (artefact.archaeologicalSite as any)?.Name || (artefact.archaeologicalSite as any)?.name || "";
+        if (!siteName.toLowerCase().includes(filters.site.toLowerCase())) return false;
       }
 
-      // Filtro por clasificador interno (nombre)
-      if (filterInternalClassifierName.trim() !== "") {
+      // Filtro por estante
+      if (filters.shelf.trim() !== "") {
+        const phys = (artefact as any)?.physicalLocation ?? {};
+        const shelfObj = phys?.shelf ?? phys?.estanteria ?? null;
+        const shelfCode = typeof shelfObj === "object" && shelfObj
+          ? (shelfObj?.code ?? shelfObj?.codigo)
+          : null;
+
+        if (shelfCode == null) return false;
+
+        const shelfQuery = filters.shelf.trim().toUpperCase();
+        const pieceLabel = getShelfLabel(shelfCode).toUpperCase();
+        const pieceShortLabel = getShelfShortLabel(shelfCode).toUpperCase();
+        const pieceCode = String(shelfCode);
+
+        if (
+          !pieceLabel.includes(shelfQuery) &&
+          !pieceShortLabel.includes(shelfQuery) &&
+          !pieceCode.includes(shelfQuery)
+        ) {
+          return false;
+        }
+      }
+
+      // Filtros para clasificador interno
+      if (filters.internalClassifierName.trim() !== "") {
         const classifierName = (artefact.internalClassifier as any)?.name || "";
-        if (!classifierName.toLowerCase().includes(filterInternalClassifierName.toLowerCase())) return false;
+        if (!classifierName.toLowerCase().includes(filters.internalClassifierName.toLowerCase())) return false;
       }
 
-      // Filtro por clasificador interno (número)
-      if (filterInternalClassifierNumber.trim() !== "") {
+      if (filters.internalClassifierNumber.trim() !== "") {
         const classifierNumber = (artefact.internalClassifier as any)?.number;
         if (classifierNumber == null) return false;
-        if (String(classifierNumber) !== filterInternalClassifierNumber.trim()) return false;
-      }
-
-      // Filtro por sitio arqueológico
-      if (filterSite.trim() !== "") {
-        const siteName = (artefact.archaeologicalSite as any)?.Name || "";
-        if (!siteName.toLowerCase().includes(filterSite.toLowerCase())) return false;
+        if (String(classifierNumber) !== filters.internalClassifierNumber.trim()) return false;
       }
 
       return true;
     });
   }, [
     artefacts,
-    searchQuery,
-    filterCollection,
-    filterMaterial,
-    filterInternalClassifierName,
-    filterInternalClassifierNumber,
-    filterSite,
+    filters,
   ]);
 
   const toggleArtefactSelection = (artefactId: number) => {
@@ -125,14 +161,31 @@ export default function MultiArtefactSelector({
     onSelect([]);
   };
 
+  const handleClearFilters = () => {
+    setFilters({
+      name: "",
+      material: "",
+      collection: "",
+      site: "",
+      shelf: "",
+      shelfLevel: "",
+      shelfColumn: "",
+      internalClassifierName: "",
+      internalClassifierNumber: "",
+    });
+  };
+
   const handleConfirm = () => {
     onClose();
   };
 
+  const windowHeight = Dimensions.get("window").height;
+  const modalHeight = Math.min(windowHeight * 0.9, 800);
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { maxHeight: modalHeight }]}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Seleccionar Piezas Arqueológicas</Text>
@@ -142,62 +195,23 @@ export default function MultiArtefactSelector({
           </View>
 
           {/* Filtros */}
-          <ScrollView style={styles.filtersContainer} showsVerticalScrollIndicator={false}>
-            <Text style={styles.filterLabel}>Búsqueda por nombre:</Text>
-            <TextInput
-              style={styles.filterInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Buscar por nombre..."
-              placeholderTextColor="#B8967D"
+          <View style={styles.filtersSection}>
+            <FiltersBar
+              filters={filters}
+              onFilterChange={setFilters}
+              pieces={piecesForFilters}
+              onClear={handleClearFilters}
+              internalClassifierNames={uniqueInternalClassifierNames}
+              defaultExpanded={true}
+              onDropdownOpenChange={(isOpen) => {
+                if (isOpen) {
+                  setOpenSelectId("filters");
+                } else {
+                  setOpenSelectId(null);
+                }
+              }}
             />
-
-            <Text style={styles.filterLabel}>Filtrar por colección:</Text>
-            <TextInput
-              style={styles.filterInput}
-              value={filterCollection}
-              onChangeText={setFilterCollection}
-              placeholder="Filtrar por colección..."
-              placeholderTextColor="#B8967D"
-            />
-
-            <Text style={styles.filterLabel}>Filtrar por material:</Text>
-            <TextInput
-              style={styles.filterInput}
-              value={filterMaterial}
-              onChangeText={setFilterMaterial}
-              placeholder="Filtrar por material..."
-              placeholderTextColor="#B8967D"
-            />
-
-            <Text style={styles.filterLabel}>Filtrar por clasificador interno (nombre):</Text>
-            <TextInput
-              style={styles.filterInput}
-              value={filterInternalClassifierName}
-              onChangeText={setFilterInternalClassifierName}
-              placeholder="Ej: Verde, Rojo..."
-              placeholderTextColor="#B8967D"
-            />
-
-            <Text style={styles.filterLabel}>Filtrar por clasificador interno (número):</Text>
-            <TextInput
-              style={styles.filterInput}
-              value={filterInternalClassifierNumber}
-              onChangeText={setFilterInternalClassifierNumber}
-              placeholder="Ej: 1, 2, 3..."
-              keyboardType="numeric"
-              placeholderTextColor="#B8967D"
-            />
-
-            <Text style={styles.filterLabel}>Filtrar por sitio arqueológico:</Text>
-            <TextInput
-              style={styles.filterInput}
-              value={filterSite}
-              onChangeText={setFilterSite}
-              placeholder="Filtrar por sitio..."
-              placeholderTextColor="#B8967D"
-            />
-          </ScrollView>
+          </View>
 
           {/* Contador y acciones */}
           <View style={styles.actionsBar}>
@@ -224,6 +238,17 @@ export default function MultiArtefactSelector({
               const classifierLabel = classifier
                 ? `${classifier.name}${classifier.number ? ` #${classifier.number}` : ""}`
                 : "Sin clasificador";
+              
+              // Extraer sitio arqueológico
+              const siteName = (item.archaeologicalSite as any)?.Name || (item.archaeologicalSite as any)?.name || "Sin sitio";
+              
+              // Extraer shelf label
+              const phys = (item as any)?.physicalLocation ?? {};
+              const shelfObj = phys?.shelf ?? phys?.estanteria ?? null;
+              const shelfCode = typeof shelfObj === "object" && shelfObj
+                ? (shelfObj?.code ?? shelfObj?.codigo)
+                : null;
+              const shelfLabel = shelfCode != null ? getShelfLabel(shelfCode) : "Sin estante";
 
               return (
                 <TouchableOpacity
@@ -236,13 +261,14 @@ export default function MultiArtefactSelector({
                   <View style={styles.artefactInfo}>
                     <Text style={styles.artefactName}>{item.name}</Text>
                     <Text style={styles.artefactDetails}>
-                      {item.material} • {(item.collection as any)?.name || "Sin colección"} • {classifierLabel}
+                      {item.material} • {(item.collection as any)?.name || "Sin colección"} • {classifierLabel} • {siteName} • {shelfLabel}
                     </Text>
                   </View>
                 </TouchableOpacity>
               );
             }}
             style={styles.list}
+            contentContainerStyle={styles.listContent}
           />
 
           {/* Botón confirmar */}
@@ -270,14 +296,26 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Platform.OS === "web" ? 20 : 16,
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "90%",
-    paddingBottom: 20,
+    borderRadius: 20,
+    width: Platform.OS === "web" ? "90%" : "100%",
+    maxWidth: 1200,
+    flex: Platform.OS === "web" ? undefined : 1,
+    display: "flex",
+    flexDirection: "column",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    position: "relative" as any,
+    // @ts-ignore - Web-only style
+    overflow: "visible" as any,
   },
   header: {
     flexDirection: "row",
@@ -288,7 +326,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5D4C1",
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "600",
     color: Colors.black,
     fontFamily: "MateSC-Regular",
@@ -296,30 +334,15 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
-  filtersContainer: {
-    maxHeight: 200,
-    padding: 16,
+  filtersSection: {
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E5D4C1",
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.brown,
-    marginTop: 8,
-    marginBottom: 4,
-    fontFamily: "CrimsonText-Regular",
-  },
-  filterInput: {
-    backgroundColor: "#F7F5F2",
-    borderRadius: 8,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#E5D4C1",
-    fontSize: 14,
-    fontFamily: "CrimsonText-Regular",
-    color: Colors.black,
-    marginBottom: 8,
+    backgroundColor: "#FAFAF8",
+    position: "relative" as any,
+    zIndex: 1000,
+    // @ts-ignore - Web-only style
+    overflow: "visible" as any,
   },
   actionsBar: {
     flexDirection: "row",
@@ -328,6 +351,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E5D4C1",
+    backgroundColor: "#FFFFFF",
   },
   counter: {
     fontSize: 14,
@@ -352,7 +376,9 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-    maxHeight: 300,
+  },
+  listContent: {
+    paddingBottom: 8,
   },
   artefactItem: {
     flexDirection: "row",
@@ -393,6 +419,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#E5D4C1",
+    backgroundColor: "#FFFFFF",
   },
   confirmButton: {
     backgroundColor: Colors.green,
@@ -411,4 +438,3 @@ const styles = StyleSheet.create({
     fontFamily: "MateSC-Regular",
   },
 });
-

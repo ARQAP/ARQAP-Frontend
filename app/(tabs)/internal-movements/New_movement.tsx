@@ -528,6 +528,36 @@ export default function NewMovement() {
                   </Text>
                   <Ionicons name="chevron-down-outline" size={20} color="#8B5E3C" />
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 8,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    marginTop: 8,
+                  }}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/(tabs)/loan/New_requester",
+                      params: { fromInternalMovement: "true" },
+                    });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Crear nuevo Solicitante"
+                >
+                  <Text
+                    style={{
+                      color: "#8B5E3C",
+                      marginRight: 6,
+                      fontFamily: "MateSC-Regular",
+                      fontSize: 14,
+                    }}
+                  >
+                    Crear nuevo Solicitante
+                  </Text>
+                  <Ionicons name="arrow-forward-outline" size={16} color="#8B5E3C" />
+                </TouchableOpacity>
               </View>
 
               {/* Selección de Ubicación Destino */}

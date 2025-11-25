@@ -9,7 +9,7 @@ import type {
     RequesterType,
 } from "@/repositories/requesterRepository";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     Alert,
@@ -24,7 +24,11 @@ import {
 
 export default function NewRequester() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const createRequesterMutation = useCreateRequester();
+
+    // Verificar si viene desde movimientos internos
+    const fromInternalMovement = params.fromInternalMovement === "true";
 
     // Estados para el formulario
     const [type, setType] = useState<RequesterType>("Investigador");
@@ -106,7 +110,12 @@ export default function NewRequester() {
 
         try {
             await createRequesterMutation.mutateAsync(requesterData);
-            router.replace("/(tabs)/loan/New_loan");
+            // Si viene desde movimientos internos, volver a New_movement; si no, ir a New_loan
+            if (fromInternalMovement) {
+                router.replace("/(tabs)/internal-movements/New_movement");
+            } else {
+                router.replace("/(tabs)/loan/New_loan");
+            }
         } catch (error) {
             const errorMessage =
                 (error as Error).message || "Error al crear el solicitante";
@@ -209,9 +218,14 @@ export default function NewRequester() {
                                 </Text>
 
                                 <TouchableOpacity
-                                    onPress={() => setTypeModalVisible(true)}
+                                    onPress={() => {
+                                        if (!fromInternalMovement) {
+                                            setTypeModalVisible(true);
+                                        }
+                                    }}
+                                    disabled={fromInternalMovement}
                                     style={{
-                                        backgroundColor: "#F7F5F2",
+                                        backgroundColor: fromInternalMovement ? "#F3F3F3" : "#F7F5F2",
                                         borderRadius: 12,
                                         paddingHorizontal: 16,
                                         paddingVertical: 12,
@@ -222,6 +236,7 @@ export default function NewRequester() {
                                         flexDirection: "row",
                                         justifyContent: "space-between",
                                         alignItems: "center",
+                                        opacity: fromInternalMovement ? 0.6 : 1,
                                     }}
                                 >
                                     <Text
@@ -234,12 +249,27 @@ export default function NewRequester() {
                                     >
                                         {type || "Seleccionar tipo"}
                                     </Text>
-                                    <Ionicons
-                                        name="chevron-down-outline"
-                                        size={20}
-                                        color="#8B5E3C"
-                                    />
+                                    {!fromInternalMovement && (
+                                        <Ionicons
+                                            name="chevron-down-outline"
+                                            size={20}
+                                            color="#8B5E3C"
+                                        />
+                                    )}
                                 </TouchableOpacity>
+                                {fromInternalMovement && (
+                                    <Text
+                                        style={{
+                                            fontFamily: "CrimsonText-Regular",
+                                            fontSize: 12,
+                                            color: "#A0785D",
+                                            marginTop: 4,
+                                            fontStyle: "italic",
+                                        }}
+                                    >
+                                        El tipo está bloqueado en "Investigador" para movimientos internos
+                                    </Text>
+                                )}
 
                                 {errors.type && (
                                     <Text

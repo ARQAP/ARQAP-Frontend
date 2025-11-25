@@ -290,12 +290,14 @@ export default function SearchableSelect({
       <View
         ref={containerRef}
         style={{ 
-          position: "relative", // Contenedor con posición relativa para que el dropdown se posicione relativo a él
+          position: "relative" as any, // Contenedor con posición relativa para que el dropdown se posicione relativo a él
           // Asegurar que el contenedor no bloquee eventos
           // @ts-ignore - Web-only style
           pointerEvents: "auto" as any,
-          // NO establecer z-index aquí para evitar crear un nuevo stacking context
-          // que limite el z-index del dropdown hijo
+          // @ts-ignore - Web-only style
+          overflow: "visible" as any,
+          // @ts-ignore - Web-only style
+          zIndex: isOpen ? 10001 : "auto" as any,
         }}
       >
         {/* Input principal que muestra el valor seleccionado o permite buscar */}
@@ -381,11 +383,9 @@ export default function SearchableSelect({
               borderColor: "#E8DFD0",
               marginTop: 4, // Pequeño espacio entre input y dropdown
               maxHeight: 180, // Altura para mostrar ~4 opciones visibles (cada opción ~40px)
-              // Z-index alto para estar por encima de otros elementos dentro del mismo stacking context
-              // El contenedor padre (FiltersBar) tiene z-index: 10, así que este dropdown estará por encima
-              // del div de "PIEZAS ENCONTRADAS" que tiene z-index: 1
+              // Z-index muy alto para estar por encima de otros elementos, especialmente en modales
               // @ts-ignore - Web-only style
-              zIndex: 100 as any,
+              zIndex: 10000 as any,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15, // Sombra suave

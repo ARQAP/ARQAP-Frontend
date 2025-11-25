@@ -22,6 +22,8 @@ export interface FilterValues {
   shelf: string;
   shelfLevel: string;
   shelfColumn: string;
+  internalClassifierName: string;
+  internalClassifierNumber: string;
 }
 
 interface FiltersBarProps {
@@ -34,13 +36,18 @@ interface FiltersBarProps {
     material?: string;
     collection?: string;
     site?: string;
+    internalClassifierName?: string;
   }>;
+  // Opciones para clasificador interno (si se proporcionan desde fuera)
+  internalClassifierNames?: string[];
   // Callback para aplicar filtros (opcional, para modo manual)
   onApply?: () => void;
   // Callback para limpiar filtros
   onClear: () => void;
   // Callback opcional para notificar cuando un dropdown está abierto
   onDropdownOpenChange?: (isOpen: boolean) => void;
+  // Si es true, los filtros avanzados estarán expandidos por defecto (útil para modales)
+  defaultExpanded?: boolean;
 }
 
 
@@ -51,10 +58,13 @@ export default function FiltersBar({
   onApply,
   onClear,
   onDropdownOpenChange,
+  internalClassifierNames = [],
+  defaultExpanded = false,
 }: FiltersBarProps) {
   const isWeb = Platform.OS === "web";
   const isMobile = Platform.OS === "android" || Platform.OS === "ios";
-  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(defaultExpanded);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(defaultExpanded);
   const [openSelectId, setOpenSelectId] = useState<string | null>(null);
 
   // Notificar cuando el estado del dropdown cambia
@@ -93,6 +103,20 @@ export default function FiltersBar({
     return Array.from(sites).sort();
   }, [pieces]);
 
+  // Extraer valores únicos para clasificador interno (si no se proporcionan)
+  const uniqueInternalClassifierNames = useMemo(() => {
+    if (internalClassifierNames && internalClassifierNames.length > 0) {
+      return internalClassifierNames;
+    }
+    const names = new Set<string>();
+    pieces.forEach((p) => {
+      if (p.internalClassifierName && p.internalClassifierName.trim()) {
+        names.add(p.internalClassifierName.trim());
+      }
+    });
+    return Array.from(names).sort();
+  }, [pieces, internalClassifierNames]);
+
   // Contar filtros activos
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -103,6 +127,8 @@ export default function FiltersBar({
     if (filters.shelf.trim()) count++;
     if (filters.shelfLevel.trim()) count++;
     if (filters.shelfColumn.trim()) count++;
+    if (filters.internalClassifierName.trim()) count++;
+    if (filters.internalClassifierNumber.trim()) count++;
     return count;
   }, [filters]);
 
@@ -192,7 +218,7 @@ export default function FiltersBar({
         style={inputStyle}
       />
 
-      {/* Filtros condicionales de ubicación */}
+      {/* Filtros condicionales de ubicación - aparecen al lado del estante cuando tiene valor */}
       {filters.shelf !== "" && (
         <>
           <TextInput
@@ -214,6 +240,54 @@ export default function FiltersBar({
               )
             }
             autoCapitalize="characters"
+            style={inputStyle}
+          />
+        </>
+      )}
+
+      {/* Dropdown buscable para clasificador interno (nombre) - se desplaza cuando hay filtro de estante */}
+      {filters.shelf === "" && (
+        <SearchableSelect
+          value={filters.internalClassifierName}
+          onChange={(value) => updateFilter("internalClassifierName", value)}
+          options={uniqueInternalClassifierNames}
+          placeholder="Filtrar por clasificador interno (nombre)"
+          style={selectStyle}
+          selectId="internalClassifierName"
+          openSelectId={openSelectId}
+          onOpenChange={setOpenSelectId}
+        />
+      )}
+
+      {/* Filtrar por clasificador interno (número) - se desplaza cuando hay filtro de estante */}
+      {filters.shelf === "" && (
+        <TextInput
+          placeholder="Filtrar por clasificador interno (número)"
+          value={filters.internalClassifierNumber}
+          onChangeText={(text) => updateFilter("internalClassifierNumber", text.replace(/[^0-9]/g, ""))}
+          keyboardType="numeric"
+          style={inputStyle}
+        />
+      )}
+
+      {/* Clasificadores internos cuando hay filtro de estante - aparecen en la siguiente fila */}
+      {filters.shelf !== "" && (
+        <>
+          <SearchableSelect
+            value={filters.internalClassifierName}
+            onChange={(value) => updateFilter("internalClassifierName", value)}
+            options={uniqueInternalClassifierNames}
+            placeholder="Filtrar por clasificador interno (nombre)"
+            style={selectStyle}
+            selectId="internalClassifierName"
+            openSelectId={openSelectId}
+            onOpenChange={setOpenSelectId}
+          />
+          <TextInput
+            placeholder="Filtrar por clasificador interno (número)"
+            value={filters.internalClassifierNumber}
+            onChangeText={(text) => updateFilter("internalClassifierNumber", text.replace(/[^0-9]/g, ""))}
+            keyboardType="numeric"
             style={inputStyle}
           />
         </>
@@ -285,8 +359,6 @@ export default function FiltersBar({
     </View>
   );
 
-  // Estado para controlar el panel de filtros avanzados
-  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
 
   // Obtener filtros activos para mostrar en chips
   const activeFilters = useMemo(() => {
@@ -309,6 +381,12 @@ export default function FiltersBar({
     if (filters.shelfColumn.trim()) {
       active.push({ key: "shelfColumn", label: "Columna", value: filters.shelfColumn });
     }
+    if (filters.internalClassifierName.trim()) {
+      active.push({ key: "internalClassifierName", label: "Clasificador interno (nombre)", value: filters.internalClassifierName });
+    }
+    if (filters.internalClassifierNumber.trim()) {
+      active.push({ key: "internalClassifierNumber", label: "Clasificador interno (número)", value: filters.internalClassifierNumber });
+    }
     return active;
   }, [filters]);
 
@@ -323,12 +401,13 @@ export default function FiltersBar({
       <View
         style={{
           marginBottom: 32,
-          position: "relative", // Asegurar contexto de posicionamiento para dropdowns absolutos
-          overflow: "visible", // Permitir que el dropdown se salga del contenedor
+          position: "relative" as any, // Asegurar contexto de posicionamiento para dropdowns absolutos
+          // @ts-ignore - Web-only style
+          overflow: "visible" as any, // Permitir que el dropdown se salga del contenedor
           // Z-index alto para que el contenedor (y sus hijos como el dropdown) estén por encima
           // del div de "PIEZAS ENCONTRADAS" que tiene z-index: 1
           // @ts-ignore - Web-only style
-          zIndex: 10,
+          zIndex: 1000,
         }}
       >
         {/* Barra principal de filtros */}
@@ -501,6 +580,11 @@ export default function FiltersBar({
               shadowOpacity: 0.04,
               shadowRadius: 8,
               elevation: 1,
+              position: "relative" as any,
+              // @ts-ignore - Web-only style
+              zIndex: 1001,
+              // @ts-ignore - Web-only style
+              overflow: "visible" as any,
             }}
           >
             <View
@@ -554,7 +638,7 @@ export default function FiltersBar({
                 style={inputStyle}
               />
 
-              {/* Filtros condicionales de ubicación */}
+              {/* Filtros condicionales de ubicación - aparecen al lado del estante cuando tiene valor */}
               {filters.shelf !== "" && (
                 <>
                   <TextInput
@@ -576,6 +660,54 @@ export default function FiltersBar({
                       )
                     }
                     autoCapitalize="characters"
+                    style={inputStyle}
+                  />
+                </>
+              )}
+
+              {/* Dropdown buscable para clasificador interno (nombre) - se desplaza cuando hay filtro de estante */}
+              {filters.shelf === "" && (
+                <SearchableSelect
+                  value={filters.internalClassifierName}
+                  onChange={(value) => updateFilter("internalClassifierName", value)}
+                  options={uniqueInternalClassifierNames}
+                  placeholder="Filtrar por clasificador interno (nombre)"
+                  style={selectStyle}
+                  selectId="internalClassifierName"
+                  openSelectId={openSelectId}
+                  onOpenChange={setOpenSelectId}
+                />
+              )}
+
+              {/* Filtrar por clasificador interno (número) - se desplaza cuando hay filtro de estante */}
+              {filters.shelf === "" && (
+                <TextInput
+                  placeholder="Filtrar por clasificador interno (número)"
+                  value={filters.internalClassifierNumber}
+                  onChangeText={(text) => updateFilter("internalClassifierNumber", text.replace(/[^0-9]/g, ""))}
+                  keyboardType="numeric"
+                  style={inputStyle}
+                />
+              )}
+
+              {/* Clasificadores internos cuando hay filtro de estante - aparecen en la siguiente fila */}
+              {filters.shelf !== "" && (
+                <>
+                  <SearchableSelect
+                    value={filters.internalClassifierName}
+                    onChange={(value) => updateFilter("internalClassifierName", value)}
+                    options={uniqueInternalClassifierNames}
+                    placeholder="Filtrar por clasificador interno (nombre)"
+                    style={selectStyle}
+                    selectId="internalClassifierName"
+                    openSelectId={openSelectId}
+                    onOpenChange={setOpenSelectId}
+                  />
+                  <TextInput
+                    placeholder="Filtrar por clasificador interno (número)"
+                    value={filters.internalClassifierNumber}
+                    onChangeText={(text) => updateFilter("internalClassifierNumber", text.replace(/[^0-9]/g, ""))}
+                    keyboardType="numeric"
                     style={inputStyle}
                   />
                 </>
