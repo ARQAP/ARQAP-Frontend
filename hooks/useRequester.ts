@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsAuthenticated } from "./useUserAuth";
 import {
   Requester,
   RequesterRepository,
 } from "@/repositories/requesterRepository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["requesters"];
 
@@ -13,7 +13,7 @@ export const useRequesters = () => {
     queryKey: KEY,
     queryFn: RequesterRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

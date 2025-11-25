@@ -1,6 +1,6 @@
+import { Loan, LoanRepository } from "@/repositories/loanRepository";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAuthenticated } from "./useUserAuth";
-import { Loan, LoanRepository } from "@/repositories/loanRepository";
 
 const KEY = ["loans"];
 
@@ -10,7 +10,7 @@ export const useLoans = () => {
     queryKey: KEY,
     queryFn: LoanRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

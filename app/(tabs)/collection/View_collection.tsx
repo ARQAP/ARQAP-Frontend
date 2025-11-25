@@ -22,6 +22,7 @@ import {
 } from "../../../hooks/useCollections";
 import { Collection } from "../../../repositories/collectionRepository";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function ViewCollection() {
     const [fontsLoaded] = useFonts({
@@ -314,7 +315,7 @@ export default function ViewCollection() {
     );
 
     return (
-        <View className="flex-1 bg-[#F3E9DD] p-0">
+        <View className="flex-1 p-0" style={{ backgroundColor: Colors.cream }}>
             <Navbar title="Colecciones Arqueológicas" showBackArrow />
 
             <ScrollView

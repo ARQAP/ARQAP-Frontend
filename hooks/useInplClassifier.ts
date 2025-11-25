@@ -1,10 +1,8 @@
+import {
+  INPLRepository
+} from "@/repositories/inplClassifierRepository";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAuthenticated } from "./useUserAuth";
-import {
-  INPLRepository,
-  INPLClassifierDTO,
-  INPLFichaDTO,
-} from "@/repositories/inplClassifierRepository";
 
 const KEY_CLASSIFIERS = ["inplClassifiers"];
 const KEY_CLASSIFIER = (id?: number) => [...KEY_CLASSIFIERS, id];
@@ -16,7 +14,7 @@ export const useINPLClassifiers = (preload: boolean = true) => {
     queryKey: [...KEY_CLASSIFIERS, { preload }],
     queryFn: () => INPLRepository.getAll(preload),
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 
@@ -26,7 +24,7 @@ export const useINPLClassifier = (id?: number) => {
     queryKey: KEY_CLASSIFIER(id),
     queryFn: () => INPLRepository.getById(id as number),
     enabled: !!token && !!id,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

@@ -39,9 +39,9 @@ export default function ArchaeologicalPiecesLayout() {
             <Stack.Screen
                 name="shelf-detail"
                 options={{
-                    // Modal desde abajo para detalles de estantería
-                    animation: "slide_from_bottom",
-                    presentation: "modal",
+                    // Card en lugar de modal para permitir navegación fluida
+                    animation: "slide_from_right",
+                    presentation: "card",
                 }}
             />
             <Stack.Screen

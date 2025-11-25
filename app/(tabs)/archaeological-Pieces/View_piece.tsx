@@ -9,6 +9,7 @@ import {
 } from "@/repositories/inplClassifierRepository";
 import { getToken } from "@/services/authStorage";
 import { useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -263,36 +264,26 @@ export default function ViewPiece() {
                         filename: f.filename,
                     });
                 } else {
+                    // En mobile, guardar la URL del servidor con token para abrir directamente
                     const token = await getToken();
                     const baseUrl = apiClient.defaults.baseURL || "";
-                    const fullUrl = `${baseUrl}/inplFichas/${f.id}/download`;
-
-                    const response = await fetch(fullUrl, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
-
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        // Asegurar que el blob tenga el Content-Type correcto
-                        const typedBlob = new Blob([blob], {
-                            type: "application/pdf",
-                        });
-                        const url = URL.createObjectURL(typedBlob);
-                        out.push({
-                            id: Number(f.id),
-                            url: url,
-                            filename: f.filename,
-                        });
-                    } else {
+                    
+                    if (!token) {
                         console.warn(
-                            `Failed to fetch INPL ficha ${f.id}:`,
-                            response.status
+                            `No token available for INPL ficha ${f.id}`
                         );
                         out.push({
                             id: Number(f.id),
                             url: f.url,
+                            filename: f.filename,
+                        });
+                    } else {
+                        // Guardar la URL del servidor con token en query parameter
+                        // Esta URL se usará directamente con Linking.openURL o expo-web-browser
+                        const fullUrl = `${baseUrl}/inplFichas/${f.id}/download?token=${encodeURIComponent(token)}`;
+                        out.push({
+                            id: Number(f.id),
+                            url: fullUrl,
                             filename: f.filename,
                         });
                     }
@@ -559,7 +550,7 @@ export default function ViewPiece() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Ficha de la pieza" showBackArrow />
             <ScrollView
                 contentContainerStyle={{
@@ -944,16 +935,32 @@ export default function ViewPiece() {
                                                             );
                                                         }
                                                     } else {
-                                                        // En móvil, usar la URL del blob que ya tenemos
+                                                        // En móvil, abrir la URL del servidor con token usando expo-web-browser
                                                         if (f.url) {
-                                                            Linking.openURL(
-                                                                f.url
-                                                            ).catch((err) =>
+                                                            try {
+                                                                await WebBrowser.openBrowserAsync(
+                                                                    f.url,
+                                                                    {
+                                                                        enableBarCollapsing: true,
+                                                                        showInRecents: true,
+                                                                    }
+                                                                );
+                                                            } catch (err) {
                                                                 console.warn(
-                                                                    "No se pudo abrir el PDF",
+                                                                    "No se pudo abrir el PDF con WebBrowser, intentando con Linking",
                                                                     err
-                                                                )
-                                                            );
+                                                                );
+                                                                // Fallback a Linking si WebBrowser falla
+                                                                Linking.openURL(
+                                                                    f.url
+                                                                ).catch(
+                                                                    (linkErr) =>
+                                                                        console.warn(
+                                                                            "No se pudo abrir el PDF",
+                                                                            linkErr
+                                                                        )
+                                                                );
+                                                            }
                                                         }
                                                     }
                                                 } catch (err) {

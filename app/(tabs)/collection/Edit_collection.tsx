@@ -15,6 +15,7 @@ import {
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 import { useUpdateCollection, useCollections } from "../../../hooks/useCollections";
+import Colors from "@/constants/Colors";
 
 export default function EditCollection() {
     const router = useRouter();
@@ -93,7 +94,7 @@ export default function EditCollection() {
     const isButtonDisabled = updateMutation.isPending || !nombre.trim();
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar
                 title="Editar Colección Arqueológica"
                 showBackArrow

@@ -2,20 +2,26 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  Dimensions,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    Platform,
+    Pressable,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
-import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, {
+    ClipPath,
+    Defs,
+    G,
+    Rect,
+    Text as SvgText,
+} from "react-native-svg";
 import Button from "../../../components/ui/Button";
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
@@ -25,28 +31,29 @@ import { INPLRepository } from "@/repositories/inplClassifierRepository";
 import { useArchaeologists } from "../../../hooks/useArchaeologist";
 import { useCollections } from "../../../hooks/useCollections";
 import {
-  indexToColumn,
-  indexToLevel,
-  useCreatePhysicalLocation,
-  usePhysicalLocations,
+    indexToColumn,
+    indexToLevel,
+    useCreatePhysicalLocation,
+    usePhysicalLocations,
 } from "../../../hooks/usePhysicalLocation";
 import { useShelves } from "../../../hooks/useShelf";
 
 import SimplePickerModal, {
-  SimplePickerItem,
+    SimplePickerItem,
 } from "../../../components/ui/SimpleModal";
 
 import { useAllArchaeologicalSites } from "@/hooks/useArchaeologicalsite";
 import {
-  useUploadArtefactHistoricalRecord,
-  useUploadArtefactPicture,
+    useUploadArtefactHistoricalRecord,
+    useUploadArtefactPicture,
 } from "@/hooks/useArtefact";
 import {
-  useInternalClassifierNames,
-  useInternalClassifiers,
+    useInternalClassifierNames,
+    useInternalClassifiers,
 } from "@/hooks/useInternalClassifier";
 import { ArtefactRepository } from "@/repositories/artefactRepository";
 import { getShelfLabel } from "@/utils/shelfLabels";
+import { Ionicons } from "@expo/vector-icons";
 
 // ---- Tipos locales ----
 type MentionUI = {
@@ -89,33 +96,37 @@ export default function EditPiece() {
 
     const [shelf, setShelf] = useState(""); // string con el code (p.ej. "07")
 
-  // Estados para validaciones
-  const [nameError, setNameError] = useState("");
-  const [materialError, setMaterialError] = useState("");
-  const [internalClassifierError, setInternalClassifierError] = useState("");
+    // Estados para validaciones
+    const [nameError, setNameError] = useState("");
+    const [materialError, setMaterialError] = useState("");
+    const [internalClassifierError, setInternalClassifierError] = useState("");
 
-  // -------- pickers (modales) ----------
-  const [archPickerOpen, setArchPickerOpen] = useState(false);
-  const [collPickerOpen, setCollPickerOpen] = useState(false);
-  const [shelfPickerOpen, setShelfPickerOpen] = useState(false);
-  const [archaeologicalSitePickerOpen, setArchaeologicalSitePickerOpen] =
-    useState(false);
-  const [internalClassifierPickerOpen, setInternalClassifierPickerOpen] =
-    useState(false);
-  // -------- relaciones (IDs) ----------
-  const [collectionId, setCollectionId] = useState<number | null>(null);
-  const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
-  const [shelfCode, setShelfCode] = useState<string>("");
-  const [archaeologicalSiteId, setArchaeologicalSiteId] = useState<
-    number | null
-  >(null);
-  const [internalClassifierId, setInternalClassifierId] = useState<
-    number | null
-  >(null);
-  const [selectedInternalClassifierName, setSelectedInternalClassifierName] = useState<string | null>(null);
-  const [selectedInternalClassifierNumber, setSelectedInternalClassifierNumber] = useState<number | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(0); // 0..3 → NIVEL 1 por defecto
-  const [selectedColumn, setSelectedColumn] = useState<number | null>(0); // 0..3 → A por defecto
+    // -------- pickers (modales) ----------
+    const [archPickerOpen, setArchPickerOpen] = useState(false);
+    const [collPickerOpen, setCollPickerOpen] = useState(false);
+    const [shelfPickerOpen, setShelfPickerOpen] = useState(false);
+    const [archaeologicalSitePickerOpen, setArchaeologicalSitePickerOpen] =
+        useState(false);
+    const [internalClassifierPickerOpen, setInternalClassifierPickerOpen] =
+        useState(false);
+    // -------- relaciones (IDs) ----------
+    const [collectionId, setCollectionId] = useState<number | null>(null);
+    const [archaeologistId, setArchaeologistId] = useState<number | null>(null);
+    const [shelfCode, setShelfCode] = useState<string>("");
+    const [archaeologicalSiteId, setArchaeologicalSiteId] = useState<
+        number | null
+    >(null);
+    const [internalClassifierId, setInternalClassifierId] = useState<
+        number | null
+    >(null);
+    const [selectedInternalClassifierName, setSelectedInternalClassifierName] =
+        useState<string | null>(null);
+    const [
+        selectedInternalClassifierNumber,
+        setSelectedInternalClassifierNumber,
+    ] = useState<number | null>(null);
+    const [selectedLevel, setSelectedLevel] = useState<number | null>(0); // 0..3 → NIVEL 1 por defecto
+    const [selectedColumn, setSelectedColumn] = useState<number | null>(0); // 0..3 → A por defecto
 
     // INPL
     const [inplClassifierId, setInplClassifierId] = useState<number | null>(
@@ -141,16 +152,18 @@ export default function EditPiece() {
     const { data: archaeologicalSites = [] } = useAllArchaeologicalSites();
     const { data: internalClassifiers = [] } = useInternalClassifiers();
 
-  // Etiqueta del clasificador interno seleccionado
-  const selectedInternalClassifierLabel = selectedInternalClassifierName
-    ? `${selectedInternalClassifierName}${selectedInternalClassifierNumber ? ` - ${selectedInternalClassifierNumber}` : ""}`
-    : internalClassifierId
-    ? (() => {
-        const c = internalClassifiers.find((s) => s.id === internalClassifierId);
-        if (!c) return "Seleccionar clasificador";
-        return `${c.number}${c.name ? ` - ${c.name}` : ""}`;
-      })()
-    : "Seleccionar clasificador";
+    // Etiqueta del clasificador interno seleccionado
+    const selectedInternalClassifierLabel = selectedInternalClassifierName
+        ? `${selectedInternalClassifierName}${selectedInternalClassifierNumber ? ` - ${selectedInternalClassifierNumber}` : ""}`
+        : internalClassifierId
+          ? (() => {
+                const c = internalClassifiers.find(
+                    (s) => s.id === internalClassifierId
+                );
+                if (!c) return "Seleccionar clasificador";
+                return `${c.number}${c.name ? ` - ${c.name}` : ""}`;
+            })()
+          : "Seleccionar clasificador";
 
     // -------- uploads (opcional como New_piece) ----------
     const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -225,7 +238,7 @@ export default function EditPiece() {
 
     // Función para renderizar el SVG de la estantería (interactivo)
     const renderShelfSvg = () => {
-        const windowWidth = Dimensions.get('window').width;
+        const windowWidth = Dimensions.get("window").width;
         const isLargeScreen = windowWidth >= 768;
 
         // Lógica matemática del SVG
@@ -250,28 +263,42 @@ export default function EditPiece() {
         const outerStroke = 1.2;
 
         // Calcular slots
-        const slots = Array.from({ length: levels.length }).flatMap((_, levelIndex) =>
-            Array.from({ length: columns.length }).map((_, colIndex) => {
-                const uiLevel = levelIndex + 1;
-                const uiCol = colIndex + 1;
-                const colLetter = String.fromCharCode(64 + uiCol);
-                const id = `L${uiLevel}-C${colLetter}`;
-                const x = gridOriginX + colIndex * slotWidth;
-                const y = gridOriginY + levelIndex * levelHeight;
-                const gapX = slotWidth * 0.12;
-                const gapY = levelHeight * 0.18;
-                const slotX = x + gapX;
-                const slotY = y + gapY;
-                const slotW = slotWidth - gapX * 2;
-                const slotH = levelHeight - gapY * 2;
-                return { id, uiLevel, uiCol, x, y, levelIndex, colIndex, slotX, slotY, slotW, slotH };
-            })
+        const slots = Array.from({ length: levels.length }).flatMap(
+            (_, levelIndex) =>
+                Array.from({ length: columns.length }).map((_, colIndex) => {
+                    const uiLevel = levelIndex + 1;
+                    const uiCol = colIndex + 1;
+                    const colLetter = String.fromCharCode(64 + uiCol);
+                    const id = `L${uiLevel}-C${colLetter}`;
+                    const x = gridOriginX + colIndex * slotWidth;
+                    const y = gridOriginY + levelIndex * levelHeight;
+                    const gapX = slotWidth * 0.12;
+                    const gapY = levelHeight * 0.18;
+                    const slotX = x + gapX;
+                    const slotY = y + gapY;
+                    const slotW = slotWidth - gapX * 2;
+                    const slotH = levelHeight - gapY * 2;
+                    return {
+                        id,
+                        uiLevel,
+                        uiCol,
+                        x,
+                        y,
+                        levelIndex,
+                        colIndex,
+                        slotX,
+                        slotY,
+                        slotW,
+                        slotH,
+                    };
+                })
         );
 
         // Calcular slotId seleccionado
-        const selectedSlotId = shelfIdFromCode && selectedLevel != null && selectedColumn != null
-            ? `L${levels[selectedLevel]}-C${columns[selectedColumn]}`
-            : null;
+        const selectedSlotId =
+            shelfIdFromCode && selectedLevel != null && selectedColumn != null
+                ? `L${levels[selectedLevel]}-C${columns[selectedColumn]}`
+                : null;
 
         // Handler para clic en slot
         const handleSlotClick = (levelIdx: number, colIdx: number) => {
@@ -282,7 +309,7 @@ export default function EditPiece() {
         };
 
         // Calcular posiciones absolutas para el overlay (relativas al SVG centrado)
-        const getSlotPosition = (slot: typeof slots[0]) => {
+        const getSlotPosition = (slot: (typeof slots)[0]) => {
             // El SVG está centrado, así que calculamos posiciones absolutas
             // que luego se ajustarán con el contenedor centrado
             return {
@@ -294,8 +321,22 @@ export default function EditPiece() {
         };
 
         return (
-            <View style={{ width: "100%", height: "100%", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                <View style={{ width: svgWidth, height: svgHeight, position: "relative" }}>
+            <View
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    position: "relative",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <View
+                    style={{
+                        width: svgWidth,
+                        height: svgHeight,
+                        position: "relative",
+                    }}
+                >
                     <Svg
                         width={svgWidth}
                         height={svgHeight}
@@ -304,109 +345,252 @@ export default function EditPiece() {
                     >
                         <Defs>
                             <ClipPath id="gridRoundedClipEditPiece">
-                                <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} />
+                                <Rect
+                                    x={gridOriginX}
+                                    y={gridOriginY}
+                                    width={gridWidth}
+                                    height={gridHeight}
+                                    rx={12}
+                                />
                             </ClipPath>
                         </Defs>
 
                         {/* Fondo general */}
                         <Rect
-                            x={outerStroke / 2} y={outerStroke / 2}
-                            width={svgWidth - outerStroke} height={svgHeight - outerStroke}
-                            fill={Colors.cream} rx={24} stroke={Colors.cremit} strokeWidth={outerStroke}
+                            x={outerStroke / 2}
+                            y={outerStroke / 2}
+                            width={svgWidth - outerStroke}
+                            height={svgHeight - outerStroke}
+                            fill={Colors.cream}
+                            rx={24}
+                            stroke={Colors.cremit}
+                            strokeWidth={outerStroke}
                         />
 
                         {/* Contenedor principal */}
                         <Rect
-                            x={padding - 6} y={padding - 4}
-                            width={usableWidth + 12} height={usableHeight + 8}
-                            fill="#ffffff" rx={18} stroke={Colors.cremit} strokeWidth={1}
+                            x={padding - 6}
+                            y={padding - 4}
+                            width={usableWidth + 12}
+                            height={usableHeight + 8}
+                            fill="#ffffff"
+                            rx={18}
+                            stroke={Colors.cremit}
+                            strokeWidth={1}
                         />
 
                         {/* Cabecera de columnas (A, B, C ...) */}
-                        {Array.from({ length: columns.length }).map((_, colIndex) => {
-                            const colNumber = colIndex + 1;
-                            const colLetter = String.fromCharCode(64 + colNumber);
-                            const colCenterX = gridOriginX + colIndex * slotWidth + slotWidth / 2;
-                            return (
-                                <SvgText key={`col-label-${colLetter}`} x={colCenterX} y={padding + headerHeight - 6} textAnchor="middle" fontSize={colLabelFontSize} fontWeight="600" fill={Colors.brown}>
-                                    {colLetter}
-                                </SvgText>
-                            );
-                        })}
+                        {Array.from({ length: columns.length }).map(
+                            (_, colIndex) => {
+                                const colNumber = colIndex + 1;
+                                const colLetter = String.fromCharCode(
+                                    64 + colNumber
+                                );
+                                const colCenterX =
+                                    gridOriginX +
+                                    colIndex * slotWidth +
+                                    slotWidth / 2;
+                                return (
+                                    <SvgText
+                                        key={`col-label-${colLetter}`}
+                                        x={colCenterX}
+                                        y={padding + headerHeight - 6}
+                                        textAnchor="middle"
+                                        fontSize={colLabelFontSize}
+                                        fontWeight="600"
+                                        fill={Colors.brown}
+                                    >
+                                        {colLetter}
+                                    </SvgText>
+                                );
+                            }
+                        )}
 
-                        <SvgText x={padding + sideLabelWidth / 2} y={padding + headerHeight - 6} textAnchor="middle" fontSize={headerTagFontSize} fontWeight="600" fill={Colors.brown}>N</SvgText>
+                        <SvgText
+                            x={padding + sideLabelWidth / 2}
+                            y={padding + headerHeight - 6}
+                            textAnchor="middle"
+                            fontSize={headerTagFontSize}
+                            fontWeight="600"
+                            fill={Colors.brown}
+                        >
+                            N
+                        </SvgText>
 
                         {/* Labels de niveles */}
-                        {Array.from({ length: levels.length }).map((_, levelIndex) => {
-                            const levelNumber = levelIndex + 1;
-                            const rowCenterY = gridOriginY + levelIndex * levelHeight + levelHeight / 2;
-                            return (
-                                <SvgText key={`row-label-${levelNumber}`} x={padding + sideLabelWidth / 2} y={rowCenterY + 3} textAnchor="middle" fontSize={rowLabelFontSize} fontWeight="600" fill={Colors.brown}>
-                                    {levelNumber}
-                                </SvgText>
-                            );
-                        })}
+                        {Array.from({ length: levels.length }).map(
+                            (_, levelIndex) => {
+                                const levelNumber = levelIndex + 1;
+                                const rowCenterY =
+                                    gridOriginY +
+                                    levelIndex * levelHeight +
+                                    levelHeight / 2;
+                                return (
+                                    <SvgText
+                                        key={`row-label-${levelNumber}`}
+                                        x={padding + sideLabelWidth / 2}
+                                        y={rowCenterY + 3}
+                                        textAnchor="middle"
+                                        fontSize={rowLabelFontSize}
+                                        fontWeight="600"
+                                        fill={Colors.brown}
+                                    >
+                                        {levelNumber}
+                                    </SvgText>
+                                );
+                            }
+                        )}
 
                         <G clipPath="url(#gridRoundedClipEditPiece)">
-                            <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} fill={Colors.cream} opacity={0.65} />
-                            
+                            <Rect
+                                x={gridOriginX}
+                                y={gridOriginY}
+                                width={gridWidth}
+                                height={gridHeight}
+                                fill={Colors.cream}
+                                opacity={0.65}
+                            />
+
                             {/* Grilla */}
-                            {Array.from({ length: levels.length }).map((_, levelIndex) =>
-                                Array.from({ length: columns.length }).map((_, colIndex) => (
-                                    <Rect key={`cell-${levelIndex}-${colIndex}`} x={gridOriginX + colIndex * slotWidth} y={gridOriginY + levelIndex * levelHeight} width={slotWidth} height={levelHeight} fill="transparent" stroke={Colors.cremit} strokeWidth={0.9} />
-                                ))
+                            {Array.from({ length: levels.length }).map(
+                                (_, levelIndex) =>
+                                    Array.from({ length: columns.length }).map(
+                                        (_, colIndex) => (
+                                            <Rect
+                                                key={`cell-${levelIndex}-${colIndex}`}
+                                                x={
+                                                    gridOriginX +
+                                                    colIndex * slotWidth
+                                                }
+                                                y={
+                                                    gridOriginY +
+                                                    levelIndex * levelHeight
+                                                }
+                                                width={slotWidth}
+                                                height={levelHeight}
+                                                fill="transparent"
+                                                stroke={Colors.cremit}
+                                                strokeWidth={0.9}
+                                            />
+                                        )
+                                    )
                             )}
 
                             {/* Slots */}
                             {slots.map((slot) => {
-                                const { id, uiLevel, uiCol, levelIndex, colIndex, slotX, slotY, slotW, slotH } = slot;
-                                const selected = selectedSlotId === id && shelfIdFromCode !== null;
-                                const fill = selected ? Colors.darkgreen : '#ffffff';
-                                const stroke = selected ? Colors.green : Colors.cremit;
-                                const labelColor = selected ? '#ffffff' : Colors.brown;
+                                const {
+                                    id,
+                                    uiLevel,
+                                    uiCol,
+                                    levelIndex,
+                                    colIndex,
+                                    slotX,
+                                    slotY,
+                                    slotW,
+                                    slotH,
+                                } = slot;
+                                const selected =
+                                    selectedSlotId === id &&
+                                    shelfIdFromCode !== null;
+                                const fill = selected
+                                    ? Colors.darkgreen
+                                    : "#ffffff";
+                                const stroke = selected
+                                    ? Colors.green
+                                    : Colors.cremit;
+                                const labelColor = selected
+                                    ? "#ffffff"
+                                    : Colors.brown;
 
                                 const slotLabelFontSize = selected
-                                    ? isLargeScreen ? 13 : 14
-                                    : isLargeScreen ? 11.5 : 12.5;
+                                    ? isLargeScreen
+                                        ? 13
+                                        : 14
+                                    : isLargeScreen
+                                      ? 11.5
+                                      : 12.5;
 
-                                const textX = !isLargeScreen ? slotX + slotW / 2.5 : slotX + slotW / 2;
-                                const textOffsetY = Platform.OS === 'ios' ? 5 : (!isLargeScreen ? 3.5 : slotLabelFontSize * 0.35);
+                                const textX = !isLargeScreen
+                                    ? slotX + slotW / 2.5
+                                    : slotX + slotW / 2;
+                                const textOffsetY =
+                                    Platform.OS === "ios"
+                                        ? 5
+                                        : !isLargeScreen
+                                          ? 3.5
+                                          : slotLabelFontSize * 0.35;
                                 const textY = slotY + slotH / 2 + textOffsetY;
-                                const colLetter = String.fromCharCode(64 + uiCol);
+                                const colLetter = String.fromCharCode(
+                                    64 + uiCol
+                                );
 
                                 return (
                                     <G key={id}>
-                                        <Rect x={slotX + 1.2} y={slotY + 1.6} width={slotW} height={slotH} fill="#000" opacity={0.05} rx={10} />
-                                        <Rect 
-                                            x={slotX} 
-                                            y={slotY} 
-                                            width={slotW} 
-                                            height={slotH} 
-                                            fill={fill} 
-                                            stroke={stroke} 
-                                            strokeWidth={selected ? 2 : 1.4} 
+                                        <Rect
+                                            x={slotX + 1.2}
+                                            y={slotY + 1.6}
+                                            width={slotW}
+                                            height={slotH}
+                                            fill="#000"
+                                            opacity={0.05}
                                             rx={10}
                                         />
-                                        <SvgText x={textX} y={textY} textAnchor="middle" fontSize={slotLabelFontSize} fontWeight={selected ? '700' : '600'} fill={labelColor}>
+                                        <Rect
+                                            x={slotX}
+                                            y={slotY}
+                                            width={slotW}
+                                            height={slotH}
+                                            fill={fill}
+                                            stroke={stroke}
+                                            strokeWidth={selected ? 2 : 1.4}
+                                            rx={10}
+                                        />
+                                        <SvgText
+                                            x={textX}
+                                            y={textY}
+                                            textAnchor="middle"
+                                            fontSize={slotLabelFontSize}
+                                            fontWeight={
+                                                selected ? "700" : "600"
+                                            }
+                                            fill={labelColor}
+                                        >
                                             {uiLevel}-{colLetter}
                                         </SvgText>
                                     </G>
                                 );
                             })}
                         </G>
-                        <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} fill="none" stroke={Colors.cremit} strokeWidth={1.2} pointerEvents="none" />
+                        <Rect
+                            x={gridOriginX}
+                            y={gridOriginY}
+                            width={gridWidth}
+                            height={gridHeight}
+                            rx={12}
+                            fill="none"
+                            stroke={Colors.cremit}
+                            strokeWidth={1.2}
+                            pointerEvents="none"
+                        />
                     </Svg>
-                    
+
                     {/* Overlay con botones táctiles para móvil */}
                     {slots.map((slot) => {
                         const { id, levelIndex, colIndex } = slot;
                         const position = getSlotPosition(slot);
                         // Ajuste fino para nivel 4 (compensar desalineación)
-                        const topAdjustment = levelIndex === 3 ? (Platform.OS === 'ios' ? -1 : -1.5) : 0;
+                        const topAdjustment =
+                            levelIndex === 3
+                                ? Platform.OS === "ios"
+                                    ? -1
+                                    : -1.5
+                                : 0;
                         return (
                             <Pressable
                                 key={`overlay-${id}`}
-                                onPress={() => handleSlotClick(levelIndex, colIndex)}
+                                onPress={() =>
+                                    handleSlotClick(levelIndex, colIndex)
+                                }
                                 disabled={!shelfIdFromCode}
                                 style={{
                                     position: "absolute",
@@ -449,17 +633,17 @@ export default function EditPiece() {
         [archaeologicalSites]
     );
 
-  const { data: internalClassifierNames = [] } = useInternalClassifierNames();
+    const { data: internalClassifierNames = [] } = useInternalClassifierNames();
 
-  const internalClassifierNameItems: SimplePickerItem<string>[] = useMemo(
-    () =>
-      (internalClassifierNames || []).map((name) => ({
-        value: name,
-        label: name,
-        raw: name,
-      })),
-    [internalClassifierNames]
-  );
+    const internalClassifierNameItems: SimplePickerItem<string>[] = useMemo(
+        () =>
+            (internalClassifierNames || []).map((name) => ({
+                value: name,
+                label: name,
+                raw: name,
+            })),
+        [internalClassifierNames]
+    );
 
     const collItems: SimplePickerItem<(typeof collections)[number]>[] = useMemo(
         () =>
@@ -602,18 +786,20 @@ export default function EditPiece() {
         if (!data) return;
         const a = data as any;
 
-    // ----- Campos base del artefacto -----
-    setName(a?.name ?? "");
-    setMaterial(a?.material ?? "");
-    setObservation(a?.observation ?? "");
-    setDescription(a?.description ?? "");
-    setAvailable(!!a?.available);
-    setClassifier("INAPL");
-    // internal classifier in backend now has `name` and `number`
-    setSelectedInternalClassifierName(a?.internalClassifier?.name ?? null);
-    setSelectedInternalClassifierNumber(a?.internalClassifier?.number ?? null);
-    // legacy `color` state used in UI elsewhere — keep it populated for compatibility
-    setColor(a?.internalClassifier?.name ?? "");
+        // ----- Campos base del artefacto -----
+        setName(a?.name ?? "");
+        setMaterial(a?.material ?? "");
+        setObservation(a?.observation ?? "");
+        setDescription(a?.description ?? "");
+        setAvailable(!!a?.available);
+        setClassifier("INAPL");
+        // internal classifier in backend now has `name` and `number`
+        setSelectedInternalClassifierName(a?.internalClassifier?.name ?? null);
+        setSelectedInternalClassifierNumber(
+            a?.internalClassifier?.number ?? null
+        );
+        // legacy `color` state used in UI elsewhere — keep it populated for compatibility
+        setColor(a?.internalClassifier?.name ?? "");
 
         // Imagen existente
         if (a?.picture && a.picture.length > 0) {
@@ -982,41 +1168,49 @@ export default function EditPiece() {
                 }
             }
 
-      // Resolver internalClassifierId desde nombre+numero (si corresponde)
-      let internalClassifierPayload: { name: string; number?: number | null } | null = null;
-      if (selectedInternalClassifierName) {
-        internalClassifierPayload = {
-          name: selectedInternalClassifierName,
-          number: selectedInternalClassifierNumber ?? null,
-        };
-      }
+            // Resolver internalClassifierId desde nombre+numero (si corresponde)
+            let internalClassifierPayload: {
+                name: string;
+                number?: number | null;
+            } | null = null;
+            if (selectedInternalClassifierName) {
+                internalClassifierPayload = {
+                    name: selectedInternalClassifierName,
+                    number: selectedInternalClassifierNumber ?? null,
+                };
+            }
 
-      const artefactPayload: any = {
-        name: name.trim(),
-        material: material.trim(), // Ya no permitimos null porque es obligatorio
-        observation: observation.trim() || null,
-        available,
-        description: description.trim() || null,
-        collectionId: collectionId ?? null,
-        archaeologistId: archaeologistId ?? null,
-        physicalLocationId: finalPhysicalLocationId, // <- garantizado o null si no hay selección
-        archaeologicalSiteId: archaeologicalSiteId ?? null,
-        // ⚠️ NO incluir internalClassifierId cuando se usa el endpoint transaccional
-        // El servicio se encarga de asignarlo basándose en internalClassifier
-        ...(!internalClassifierPayload && { internalClassifierId: internalClassifierId ?? null }),
-        // ⚠️ NO forzamos a null el INPL acá, se mantiene lo que ya tenga la pieza.
-        // inplClassifierId: null,
-      };
+            const artefactPayload: any = {
+                name: name.trim(),
+                material: material.trim(), // Ya no permitimos null porque es obligatorio
+                observation: observation.trim() || null,
+                available,
+                description: description.trim() || null,
+                collectionId: collectionId ?? null,
+                archaeologistId: archaeologistId ?? null,
+                physicalLocationId: finalPhysicalLocationId, // <- garantizado o null si no hay selección
+                archaeologicalSiteId: archaeologicalSiteId ?? null,
+                // ⚠️ NO incluir internalClassifierId cuando se usa el endpoint transaccional
+                // El servicio se encarga de asignarlo basándose en internalClassifier
+                ...(!internalClassifierPayload && {
+                    internalClassifierId: internalClassifierId ?? null,
+                }),
+                // ⚠️ NO forzamos a null el INPL acá, se mantiene lo que ya tenga la pieza.
+                // inplClassifierId: null,
+            };
 
-      // Usar el endpoint transaccional si hay clasificador interno
-      if (internalClassifierPayload) {
-        await ArtefactRepository.updateWithInternalClassifier(artefactId, {
-          artefact: artefactPayload,
-          internalClassifier: internalClassifierPayload,
-        });
-      } else {
-        await ArtefactRepository.update(artefactId, artefactPayload);
-      }
+            // Usar el endpoint transaccional si hay clasificador interno
+            if (internalClassifierPayload) {
+                await ArtefactRepository.updateWithInternalClassifier(
+                    artefactId,
+                    {
+                        artefact: artefactPayload,
+                        internalClassifier: internalClassifierPayload,
+                    }
+                );
+            } else {
+                await ArtefactRepository.update(artefactId, artefactPayload);
+            }
 
             if (Platform.OS === "web" && pictureFileRef.current) {
                 await uploadPicture.mutateAsync({
@@ -1117,17 +1311,23 @@ export default function EditPiece() {
                     return;
                 }
 
-        if (errorMessage.includes("material") || errorMessage.includes("Material")) {
-          setMaterialError(errorMessage);
-          return;
-        }
+                if (
+                    errorMessage.includes("material") ||
+                    errorMessage.includes("Material")
+                ) {
+                    setMaterialError(errorMessage);
+                    return;
+                }
 
-        // Validar errores del clasificador interno
-        if (errorMessage.includes("clasificador interno") || errorMessage.includes("internal classifier")) {
-          setInternalClassifierError(errorMessage);
-          Alert.alert("Error de Clasificador Interno", errorMessage);
-          return;
-        }
+                // Validar errores del clasificador interno
+                if (
+                    errorMessage.includes("clasificador interno") ||
+                    errorMessage.includes("internal classifier")
+                ) {
+                    setInternalClassifierError(errorMessage);
+                    Alert.alert("Error de Clasificador Interno", errorMessage);
+                    return;
+                }
 
                 // Mostrar otros errores del servidor
                 Alert.alert("Error", errorMessage);
@@ -1177,7 +1377,7 @@ export default function EditPiece() {
     );
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar
                 title="Editar pieza arqueologica"
                 showBackArrow
@@ -1417,7 +1617,7 @@ export default function EditPiece() {
                         </View>
                     </View>
 
-                    {/* Relaciones */}
+                    {/* Clasificador Interno */}
                     <View
                         style={{
                             backgroundColor: "#FFFFFF",
@@ -1431,178 +1631,110 @@ export default function EditPiece() {
                             elevation: 3,
                         }}
                     >
-                        {/* Colección */}
-                        <View style={{ marginBottom: 24 }}>
-                            <Text
-                                style={{
-                                    fontFamily: "MateSC-Regular",
-                                    fontSize: 15,
-                                    color: "#8B5E3C",
-                                    marginBottom: 8,
-                                    fontWeight: "600",
-                                }}
-                            >
-                                Asociar pieza a una colección
-                            </Text>
-                            <SimpleSelectRow
-                                label="Sin colección"
-                                value={
-                                    collectionId
-                                        ? (collections.find(
-                                              (c) => c.id === collectionId
-                                          )?.name ?? "Sin colección")
-                                        : "Sin colección"
-                                }
-                                onPress={() => setCollPickerOpen(true)}
-                            />
-                        </View>
-
-                        {/* Arqueólogo */}
-                        <View style={{ marginBottom: 24 }}>
-                            <Text
-                                style={{
-                                    fontFamily: "MateSC-Regular",
-                                    fontSize: 15,
-                                    color: "#8B5E3C",
-                                    marginBottom: 8,
-                                    fontWeight: "600",
-                                }}
-                            >
-                                Asociar pieza a un arqueólogo
-                            </Text>
-                            <SimpleSelectRow
-                                label="Seleccionar arqueólogo"
-                                value={
-                                    archaeologistId
-                                        ? (() => {
-                                              const a = archaeologists.find(
-                                                  (x) =>
-                                                      x.id === archaeologistId
-                                              );
-                                              return a
-                                                  ? `${a.firstname} ${a.lastname}`
-                                                  : "Seleccionar arqueólogo";
-                                          })()
-                                        : "Seleccionar arqueólogo"
-                                }
-                                onPress={() => setArchPickerOpen(true)}
-                            />
-                        </View>
-
-                        {/* Sitio + Clasificador + Estantería */}
-                        <View
+                        <Text
                             style={{
-                                flexDirection:
-                                    windowWidth < 520 ? "column" : "row",
-                                gap: 16,
-                                marginBottom: 16,
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 15,
+                                color: "#8B5E3C",
+                                marginBottom: 8,
+                                fontWeight: "600",
                             }}
                         >
-                            <View style={{ flex: 1 }}>
-                                <Text
-                                    style={{
-                                        fontFamily: "MateSC-Regular",
-                                        fontSize: 15,
-                                        color: "#8B5E3C",
-                                        marginBottom: 8,
-                                        fontWeight: "600",
-                                    }}
-                                >
-                                    Asociar pieza a un sitio arqueológico
-                                </Text>
-                                <SimpleSelectRow
-                                    label="Seleccionar sitio"
-                                    value={
-                                        archaeologicalSiteId
-                                            ? (archaeologicalSites.find(
-                                                  (s) =>
-                                                      s.id ===
-                                                      archaeologicalSiteId
-                                              )?.Name ?? "Seleccionar sitio")
-                                            : "Seleccionar sitio"
-                                    }
-                                    onPress={() =>
-                                        setArchaeologicalSitePickerOpen(true)
-                                    }
-                                />
-                            </View>
+                            Clasificador interno
+                        </Text>
+                        <SimpleSelectRow
+                            label="Seleccionar clasificador (por nombre)"
+                            value={
+                                selectedInternalClassifierName ??
+                                "Seleccionar clasificador"
+                            }
+                            onPress={() =>
+                                setInternalClassifierPickerOpen(true)
+                            }
+                        />
+                        <Text
+                            style={{
+                                marginTop: 16,
+                                fontFamily: "MateSC-Regular",
+                                fontSize: 15,
+                                color: "#8B5E3C",
+                                marginBottom: 8,
+                                fontWeight: "600",
+                            }}
+                        >
+                            Número
+                        </Text>
 
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontFamily: "MateSC-Regular",
-                    fontSize: 15,
-                    color: "#8B5E3C",
-                    marginBottom: 8,
-                    fontWeight: "600",
-                  }}
-                >
-                  Asociar pieza a un clasificador interno
-                </Text>
-                <SimpleSelectRow
-                  label="Seleccionar clasificador"
-                  value={selectedInternalClassifierLabel}
-                  onPress={() => setInternalClassifierPickerOpen(true)}
-                />
-                <View style={{ marginTop: 8 }}>
-                  <Text style={{ fontFamily: "CrimsonText-Regular", fontSize: 14, color: "#4A3725", marginBottom: 6 }}>Número</Text>
-                  <TextInput
-                    keyboardType="numeric"
-                    value={selectedInternalClassifierNumber == null ? "" : String(selectedInternalClassifierNumber)}
-                    onChangeText={(v) => {
-                      setSelectedInternalClassifierNumber(v === "" ? null : Number(v));
-                      if (internalClassifierError) setInternalClassifierError("");
-                    }}
-                    placeholder="ej: 1"
-                    style={{ 
-                      backgroundColor: "#F7F5F2", 
-                      borderRadius: 8, 
-                      padding: 8,
-                      borderWidth: internalClassifierError ? 1 : 1,
-                      borderColor: internalClassifierError ? "#ff4444" : "#E5D4C1"
-                    }}
-                  />
-                  {internalClassifierError ? (
-                    <Text style={{ 
-                      color: "#ff4444", 
-                      fontSize: 12, 
-                      marginTop: 6,
-                      fontFamily: "CrimsonText-Regular"
-                    }}>{internalClassifierError}</Text>
-                  ) : null}
-                </View>
-              </View>
-
-                            <View
+                        <TextInput
+                            keyboardType="numeric"
+                            value={
+                                selectedInternalClassifierNumber == null
+                                    ? ""
+                                    : String(selectedInternalClassifierNumber)
+                            }
+                            onChangeText={(v) => {
+                                setSelectedInternalClassifierNumber(
+                                    v === "" ? null : Number(v)
+                                );
+                                if (internalClassifierError)
+                                    setInternalClassifierError("");
+                            }}
+                            placeholder="1"
+                            placeholderTextColor="#B8967D"
+                            style={{
+                                backgroundColor: "#F7F5F2",
+                                borderRadius: 8,
+                                padding: 8,
+                                borderWidth: 1,
+                                borderColor: internalClassifierError
+                                    ? "#ff4444"
+                                    : "#E5D4C1",
+                            }}
+                        />
+                        {internalClassifierError ? (
+                            <Text
                                 style={{
-                                    width: windowWidth < 520 ? "100%" : 180,
+                                    color: "#ff4444",
+                                    fontSize: 12,
+                                    marginTop: 6,
+                                    fontFamily: "CrimsonText-Regular",
                                 }}
                             >
-                                <Text
-                                    style={{
-                                        fontFamily: "MateSC-Regular",
-                                        fontSize: 15,
-                                        color: "#8B5E3C",
-                                        marginBottom: 8,
-                                        fontWeight: "600",
-                                    }}
-                                >
-                                    Estantería
-                                </Text>
-
-                                <SimpleSelectRow
-                                    label="Seleccionar estantería"
-                                    value={
-                                        shelfCode
-                                            ? getShelfLabel(shelfCode)
-                                            : undefined
-                                    }
-                                    onPress={() => setShelfPickerOpen(true)}
-                                />
-
-                                {/* Eliminada la opción de crear estantería; solo seleccionar existente */}
-                            </View>
-                        </View>
+                                {internalClassifierError}
+                            </Text>
+                        ) : null}
+                        <TouchableOpacity
+                            style={{
+                                paddingVertical: 8,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                marginTop: 8,
+                            }}
+                            onPress={() => {
+                                router.push(
+                                    "/(tabs)/archaeological-Pieces/New_internal-classifier"
+                                );
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Crear nuevo Clasificador Interno"
+                        >
+                            <Text
+                                style={{
+                                    color: "#8B5E3C",
+                                    marginRight: 6,
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 14,
+                                }}
+                            >
+                                Crear nuevo Clasificador Interno
+                            </Text>
+                            <Ionicons
+                                name="arrow-forward-outline"
+                                size={16}
+                                color="#8B5E3C"
+                            />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Archivos */}
@@ -1628,7 +1760,7 @@ export default function EditPiece() {
                                 fontWeight: "600",
                             }}
                         >
-                            Foto y Ficha Histórica
+                            Archivos
                         </Text>
                         <View
                             style={{
@@ -1712,6 +1844,29 @@ export default function EditPiece() {
                                 </Text>
                             </TouchableOpacity>
 
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (Platform.OS === "web")
+                                        inplAddInputRef.current?.click?.();
+                                }}
+                                style={{
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 16,
+                                    backgroundColor: "#8B6C42",
+                                    borderRadius: 12,
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        color: "#fff",
+                                        fontFamily: "CrimsonText-Regular",
+                                        fontSize: 14,
+                                    }}
+                                >
+                                    AGREGAR FICHAS INPL
+                                </Text>
+                            </TouchableOpacity>
+
                             {Platform.OS === "web" && (
                                 <>
                                     <input
@@ -1745,7 +1900,109 @@ export default function EditPiece() {
                         ) : null}
                     </View>
 
-                    {/* INPL */}
+                    {/* Relaciones */}
+                    <View
+                        style={{
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 16,
+                            padding: 24,
+                            marginBottom: 24,
+                            shadowColor: "#8B5E3C",
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.08,
+                            shadowRadius: 12,
+                            elevation: 3,
+                        }}
+                    >
+                        {/* Colección */}
+                        <View style={{ marginBottom: 24 }}>
+                            <Text
+                                style={{
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                    marginBottom: 8,
+                                    fontWeight: "600",
+                                }}
+                            >
+                                Colección
+                            </Text>
+                            <SimpleSelectRow
+                                label="Sin colección"
+                                value={
+                                    collectionId
+                                        ? (collections.find(
+                                              (c) => c.id === collectionId
+                                          )?.name ?? "Sin colección")
+                                        : "Sin colección"
+                                }
+                                onPress={() => setCollPickerOpen(true)}
+                            />
+                        </View>
+
+                        {/* Arqueólogo */}
+                        <View style={{ marginBottom: 24 }}>
+                            <Text
+                                style={{
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                    marginBottom: 8,
+                                    fontWeight: "600",
+                                }}
+                            >
+                                Arqueólogo
+                            </Text>
+                            <SimpleSelectRow
+                                label="Seleccionar arqueólogo"
+                                value={
+                                    archaeologistId
+                                        ? (() => {
+                                              const a = archaeologists.find(
+                                                  (x) =>
+                                                      x.id === archaeologistId
+                                              );
+                                              return a
+                                                  ? `${a.firstname} ${a.lastname}`
+                                                  : "Seleccionar arqueólogo";
+                                          })()
+                                        : "Seleccionar arqueólogo"
+                                }
+                                onPress={() => setArchPickerOpen(true)}
+                            />
+                        </View>
+
+                        {/* Sitio arqueológico */}
+                        <View style={{ marginBottom: 16 }}>
+                            <Text
+                                style={{
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                    marginBottom: 8,
+                                    fontWeight: "600",
+                                }}
+                            >
+                                Sitio arqueológico
+                            </Text>
+                            <SimpleSelectRow
+                                label="Seleccionar Sitio arqueológico"
+                                value={
+                                    archaeologicalSiteId
+                                        ? (archaeologicalSites.find(
+                                              (s) =>
+                                                  s.id === archaeologicalSiteId
+                                          )?.Name ?? "Seleccionar sitio")
+                                        : "Seleccionar sitio"
+                                }
+                                onPress={() =>
+                                    setArchaeologicalSitePickerOpen(true)
+                                }
+                            />
+                        </View>
+                    </View>
+
+                    {/* Descripción */}
                     <View
                         style={{
                             backgroundColor: "#FFFFFF",
@@ -1762,36 +2019,73 @@ export default function EditPiece() {
                         <Text
                             style={{
                                 fontFamily: "MateSC-Regular",
-                                fontSize: 18,
-                                fontWeight: "600",
-                                marginBottom: 16,
+                                fontSize: 15,
                                 color: "#8B5E3C",
+                                marginBottom: 8,
+                                fontWeight: "600",
                             }}
                         >
-                            Ficha INPL
+                            Descripción
                         </Text>
+                        <TextInput
+                            multiline
+                            value={description}
+                            onChangeText={setDescription}
+                            placeholder="Descripción detallada de la pieza"
+                            placeholderTextColor="#B8967D"
+                            selectionColor="#8B5E3C"
+                            style={{
+                                backgroundColor: "#F7F5F2",
+                                borderRadius: 12,
+                                paddingHorizontal: 16,
+                                paddingVertical: 12,
+                                minHeight: 120,
+                                borderWidth: 1,
+                                borderColor: "#E5D4C1",
+                                fontFamily: "CrimsonText-Regular",
+                                fontSize: 16,
+                                color: "#4A3725",
+                            }}
+                        />
+                    </View>
 
-                        {/* Grid de fichas existentes (thumbnails con blob) */}
+                    {/* Visualización de INPL (solo mostrar las fichas existentes) */}
+                    {inplThumbs.length > 0 && (
                         <View
                             style={{
-                                flexDirection: "row",
-                                gap: 16,
-                                flexWrap: "wrap",
-                                marginBottom: 16,
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: 16,
+                                padding: 24,
+                                marginBottom: 24,
+                                shadowColor: "#8B5E3C",
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.08,
+                                shadowRadius: 12,
+                                elevation: 3,
                             }}
                         >
-                            {inplThumbs.length === 0 ? (
-                                <Text
-                                    style={{
-                                        fontFamily: "CrimsonText-Regular",
-                                        fontSize: 14,
-                                        color: "#4A3725",
-                                    }}
-                                >
-                                    No hay fichas INPL.
-                                </Text>
-                            ) : (
-                                inplThumbs.map((f) => (
+                            <Text
+                                style={{
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 18,
+                                    fontWeight: "600",
+                                    marginBottom: 16,
+                                    color: "#8B5E3C",
+                                }}
+                            >
+                                Fichas INPL
+                            </Text>
+
+                            {/* Grid de fichas existentes (thumbnails con blob) */}
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    gap: 16,
+                                    flexWrap: "wrap",
+                                    marginBottom: 16,
+                                }}
+                            >
+                                {inplThumbs.map((f) => (
                                     <View key={f.id} style={{ width: 160 }}>
                                         <Image
                                             source={{ uri: f.blobUrl }}
@@ -1872,105 +2166,10 @@ export default function EditPiece() {
                                             </TouchableOpacity>
                                         </View>
                                     </View>
-                                ))
-                            )}
+                                ))}
+                            </View>
                         </View>
-
-                        {/* Botón Agregar fichas */}
-                        <TouchableOpacity
-                            onPress={() => {
-                                if (Platform.OS === "web")
-                                    inplAddInputRef.current?.click?.();
-                            }}
-                            style={{
-                                alignSelf: "flex-start",
-                                paddingVertical: 12,
-                                paddingHorizontal: 16,
-                                backgroundColor: Colors.green,
-                                borderRadius: 12,
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    color: "#fff",
-                                    fontFamily: "CrimsonText-Regular",
-                                    fontSize: 14,
-                                }}
-                            >
-                                {inplClassifierId
-                                    ? "AGREGAR FICHAS INPL"
-                                    : "CREAR CLASIFICADOR + AGREGAR FICHAS"}
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* Inputs ocultos web */}
-                        {Platform.OS === "web" && (
-                            <>
-                                <input
-                                    ref={inplAddInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    style={{ display: "none" }}
-                                    onChange={handleWebAddInplFiles}
-                                />
-                                <input
-                                    ref={inplReplaceInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    style={{ display: "none" }}
-                                    onChange={handleWebReplaceInplFile}
-                                />
-                            </>
-                        )}
-                    </View>
-
-                    {/* Descripción */}
-                    <View
-                        style={{
-                            backgroundColor: "#FFFFFF",
-                            borderRadius: 16,
-                            padding: 24,
-                            marginBottom: 24,
-                            shadowColor: "#8B5E3C",
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.08,
-                            shadowRadius: 12,
-                            elevation: 3,
-                        }}
-                    >
-                        <Text
-                            style={{
-                                fontFamily: "MateSC-Regular",
-                                fontSize: 15,
-                                color: "#8B5E3C",
-                                marginBottom: 8,
-                                fontWeight: "600",
-                            }}
-                        >
-                            Descripción
-                        </Text>
-                        <TextInput
-                            multiline
-                            value={description}
-                            onChangeText={setDescription}
-                            placeholder="Descripción detallada de la pieza"
-                            placeholderTextColor="#B8967D"
-                            selectionColor="#8B5E3C"
-                            style={{
-                                backgroundColor: "#F7F5F2",
-                                borderRadius: 12,
-                                paddingHorizontal: 16,
-                                paddingVertical: 12,
-                                minHeight: 120,
-                                borderWidth: 1,
-                                borderColor: "#E5D4C1",
-                                fontFamily: "CrimsonText-Regular",
-                                fontSize: 16,
-                                color: "#4A3725",
-                            }}
-                        />
-                    </View>
+                    )}
 
                     {/* Ubicación física de la pieza */}
                     <View
@@ -1987,6 +2186,37 @@ export default function EditPiece() {
                             alignItems: "center",
                         }}
                     >
+                        {/* Selector de Estantería */}
+                        <View
+                            style={{
+                                width: "100%",
+                                marginBottom: 24,
+                                alignItems: "flex-start",
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "MateSC-Regular",
+                                    fontSize: 15,
+                                    color: "#8B5E3C",
+                                    marginBottom: 8,
+                                    fontWeight: "600",
+                                }}
+                            >
+                                Estantería
+                            </Text>
+                            <View style={{ width: 200 }}>
+                                <SimpleSelectRow
+                                    label="Seleccionar estantería"
+                                    value={
+                                        shelfCode
+                                            ? getShelfLabel(shelfCode)
+                                            : undefined
+                                    }
+                                    onPress={() => setShelfPickerOpen(true)}
+                                />
+                            </View>
+                        </View>
                         <Text
                             style={{
                                 fontFamily: "MateSC-Regular",
@@ -1997,11 +2227,10 @@ export default function EditPiece() {
                                 color: "#8B5E3C",
                             }}
                         >
-                            {shelfIdFromCode 
+                            {shelfIdFromCode
                                 ? `Mapa del ${getShelfLabel(shelfCode)}`
-                                : "Ubicación Física de la Pieza"}
+                                : "Selecciona una estantería para ver su mapa"}
                         </Text>
-
                         {!shelfIdFromCode ? (
                             <Text
                                 style={{
@@ -2013,13 +2242,14 @@ export default function EditPiece() {
                                     marginBottom: 20,
                                 }}
                             >
-                                Selecciona una estantería para ver la ubicación física.
+                                Selecciona una estantería para ver la ubicación
+                                física.
                             </Text>
                         ) : (
                             <View
                                 style={{
                                     width: "100%",
-                                    height: Platform.OS === 'web' ? 300 : 380,
+                                    height: Platform.OS === "web" ? 300 : 380,
                                     alignItems: "center",
                                     justifyContent: "center",
                                 }}
@@ -2496,18 +2726,18 @@ export default function EditPiece() {
                 onClose={() => setArchaeologicalSitePickerOpen(false)}
             />
 
-      {/* Modal Clasificador Interno */}
-      <SimplePickerModal
-        visible={internalClassifierPickerOpen}
-        title="Seleccionar clasificador interno"
-        items={internalClassifierNameItems}
-        selectedValue={selectedInternalClassifierName ?? null}
-        onSelect={(value) => {
-          setSelectedInternalClassifierName(String(value));
-          setInternalClassifierPickerOpen(false);
-        }}
-        onClose={() => setInternalClassifierPickerOpen(false)}
-      />
+            {/* Modal Clasificador Interno */}
+            <SimplePickerModal
+                visible={internalClassifierPickerOpen}
+                title="Seleccionar clasificador interno"
+                items={internalClassifierNameItems}
+                selectedValue={selectedInternalClassifierName ?? null}
+                onSelect={(value) => {
+                    setSelectedInternalClassifierName(String(value));
+                    setInternalClassifierPickerOpen(false);
+                }}
+                onClose={() => setInternalClassifierPickerOpen(false)}
+            />
 
             {/* Modal Colección */}
             <SimplePickerModal
@@ -2521,26 +2751,6 @@ export default function EditPiece() {
                 }}
                 onClose={() => setCollPickerOpen(false)}
             />
-
-            {/* Inputs ocultos web (foto/ficha general) */}
-            {Platform.OS === "web" && (
-                <>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: "none" }}
-                        onChange={handleWebFile}
-                    />
-                    <input
-                        ref={fileInputRef2}
-                        type="file"
-                        accept="image/*,application/pdf"
-                        style={{ display: "none" }}
-                        onChange={handleWebFile2}
-                    />
-                </>
-            )}
 
             {/* Inputs ocultos web (INPL) */}
             {Platform.OS === "web" && (

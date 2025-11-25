@@ -128,7 +128,7 @@ export default function DetailLoan() {
     const isFinished = loan.returnDate && loan.returnTime;
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar
                 title="Detalle de Préstamo"
                 showBackArrow

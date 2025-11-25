@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ColumnLetter,
+  LevelNumber,
   PhysicalLocation,
   PhysicalLocationRepository,
-  LevelNumber,
-  ColumnLetter,
 } from "@/repositories/physicalLocationRepository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["physical-locations"];
@@ -15,7 +15,7 @@ export const usePhysicalLocations = () => {
     queryKey: KEY,
     queryFn: PhysicalLocationRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

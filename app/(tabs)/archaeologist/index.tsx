@@ -1,10 +1,12 @@
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function ArchaeologistIndex() {
     return (
-        <View className="flex-1 bg-[#F7F0E6]">
+        <View className="flex-1"
+              style={{ backgroundColor: Colors.cream }}>
             <Navbar title="Arqueólogos" showBackArrow />
             <ScrollView className="flex-1 px-4">
                 <Text className="text-lg text-center mt-4 text-gray-700">

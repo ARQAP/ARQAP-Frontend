@@ -3,6 +3,7 @@ import Button from "@/components/ui/Button";
 import SimplePickerModal, {
     SimplePickerItem,
 } from "@/components/ui/SimpleModal";
+import Colors from "@/constants/Colors";
 import { useCreateRequester } from "@/hooks/useRequester";
 import type {
     Requester,
@@ -131,7 +132,7 @@ export default function NewRequester() {
     const isButtonDisabled = createRequesterMutation.isPending;
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Nuevo Solicitante" showBackArrow />
 
             <KeyboardAvoidingView

@@ -4,49 +4,85 @@ import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
     Platform,
     ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
     View,
-    KeyboardAvoidingView,
 } from "react-native";
 import Button from "../../../components/ui/Button";
+import SimplePickerModal, { SimplePickerItem } from "../../../components/ui/SimpleModal";
+import { useAllArchaeologicalSites, useUpdateArchaeologicalSite } from "../../../hooks/useArchaeologicalsite";
+import { useAllCountries } from "../../../hooks/useCountry";
+import { useAllRegions } from "../../../hooks/useRegion";
 import Navbar from "../Navbar";
-import { useUpdateCollection, useCollections } from "../../../hooks/useCollections";
+import Colors from "@/constants/Colors";
 
-export default function EditCollection() {
+export default function EditSite() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const id = Number(Array.isArray(params.id) ? params.id[0] : params.id);
     
-    const [nombre, setNombre] = useState("");
-    const [descripcion, setDescripcion] = useState("");
-    const [year, setYear] = useState("");
+    const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
+    const [location, setLocation] = useState("");
+    const [countryId, setCountryId] = useState<number | null>(null);
+    const [regionId, setRegionId] = useState<number | null>(null);
+    const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+    const [regionPickerOpen, setRegionPickerOpen] = useState(false);
     
-    const { data: collections = [], isLoading, refetch } = useCollections();
-    const updateMutation = useUpdateCollection();
+    const { data: sites = [], isLoading: sitesLoading, refetch } = useAllArchaeologicalSites();
+    const { data: regions = [], isLoading: regionsLoading } = useAllRegions();
+    const { data: countries = [], isLoading: countriesLoading } = useAllCountries();
+    const updateMutation = useUpdateArchaeologicalSite();
 
-    // Cargar datos de la colección
+    // Cargar datos del sitio arqueológico
     useEffect(() => {
-        const collection = collections.find(c => c.id === id);
-        if (collection) {
-            setNombre(collection.name);
-            setDescripcion(collection.description || "");
-            setYear(collection.year ? String(collection.year) : "");
+        const site = sites.find(s => s.id === id);
+        if (site) {
+            setName(site.Name);
+            setDescription(site.Description || "");
+            setLocation(site.Location || "");
+            setRegionId(site.regionId || null);
+            setCountryId(site.region?.countryId || null);
         }
-    }, [collections, id]);
+    }, [sites, id]);
+
+    // Preparar items para el picker de países
+    const countryItems: SimplePickerItem<any>[] = countries.map(country => ({
+        value: country.id ?? 0,
+        label: country.name,
+        raw: country,
+    }));
+
+    // Filtrar regiones por país seleccionado
+    const filteredRegions = countryId
+        ? regions.filter(region => region.countryId === countryId)
+        : regions;
+
+    // Preparar items para el picker de regiones
+    const regionItems: SimplePickerItem<any>[] = filteredRegions.map(region => ({
+        value: region.id ?? 0,
+        label: region.name,
+        raw: region,
+    }));
 
     const handleSave = () => {
-        if (!nombre.trim()) {
+        if (!name.trim()) {
             Alert.alert("Error", "El nombre es obligatorio.");
             return;
         }
 
-        const yearNum = year.trim() ? parseInt(year) : undefined;
-        if (year.trim() && (isNaN(yearNum!) || yearNum! < 1000 || yearNum! > 9999)) {
-            Alert.alert("Error", "El año debe ser un número válido de 4 dígitos.");
+        if (!regionId) {
+            Alert.alert("Error", "Debe seleccionar una región.");
+            return;
+        }
+
+        const selectedRegionData = regions.find(r => r.id === regionId);
+        if (!selectedRegionData) {
+            Alert.alert("Error", "Región no válida.");
             return;
         }
 
@@ -54,20 +90,21 @@ export default function EditCollection() {
             {
                 id,
                 payload: {
-                    name: nombre.trim(),
-                    description: descripcion.trim() || undefined,
-                    year: yearNum,
+                    Name: name.trim(),
+                    Description: description.trim() || "",
+                    Location: location.trim() || "",
+                    regionId: regionId,
+                    region: selectedRegionData,
                 },
             },
             {
                 onSuccess: async () => {
-                    // Refrescar la caché de colecciones
                     await refetch();
-                    Alert.alert("Éxito", "Colección actualizada correctamente.");
+                    Alert.alert("Éxito", "Sitio arqueológico actualizado correctamente.");
                     router.back();
                 },
                 onError: (error: any) => {
-                    const errorMessage = error?.message || "Error al actualizar la colección.";
+                    const errorMessage = error?.message || "Error al actualizar el sitio arqueológico.";
                     Alert.alert("Error", errorMessage);
                 },
             }
@@ -78,9 +115,7 @@ export default function EditCollection() {
         router.back();
     };
 
-    const handleClearYear = () => {
-        setYear("");
-    };
+    const isLoading = sitesLoading || regionsLoading || countriesLoading;
 
     if (isLoading) {
         return (
@@ -90,12 +125,15 @@ export default function EditCollection() {
         );
     }
 
-    const isSaveDisabled = updateMutation.isPending || !nombre.trim();
+    const isSaveDisabled = updateMutation.isPending || !name.trim() || !regionId;
+
+    const selectedCountry = countries.find(c => c.id === countryId);
+    const selectedRegion = regions.find(r => r.id === regionId);
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar
-                title="Editar Colección Arqueológica"
+                title="Editar Sitio Arqueológico"
                 showBackArrow
                 backToHome={false}
             />
@@ -143,7 +181,7 @@ export default function EditCollection() {
                                     fontWeight: "600",
                                 }}
                             >
-                                Editar Colección Arqueológica
+                                Editar Sitio Arqueológico
                             </Text>
                             <Text
                                 style={{
@@ -152,7 +190,7 @@ export default function EditCollection() {
                                     color: "#A0785D",
                                 }}
                             >
-                                Modifique los datos de la colección arqueológica
+                                Modifique los datos del sitio arqueológico
                             </Text>
                         </View>
 
@@ -195,9 +233,9 @@ export default function EditCollection() {
                                         fontSize: 16,
                                         color: "#4A3725",
                                     }}
-                                    placeholder="Nombre de la colección"
-                                    value={nombre}
-                                    onChangeText={setNombre}
+                                    placeholder="Nombre del sitio arqueológico"
+                                    value={name}
+                                    onChangeText={setName}
                                     placeholderTextColor="#B8967D"
                                     selectionColor="#8B5E3C"
                                     editable={!updateMutation.isPending}
@@ -231,9 +269,9 @@ export default function EditCollection() {
                                         minHeight: 120,
                                         textAlignVertical: "top",
                                     }}
-                                    placeholder="Descripción detallada de la colección"
-                                    value={descripcion}
-                                    onChangeText={setDescripcion}
+                                    placeholder="Descripción detallada del sitio arqueológico"
+                                    value={description}
+                                    onChangeText={setDescription}
                                     placeholderTextColor="#B8967D"
                                     selectionColor="#8B5E3C"
                                     multiline
@@ -242,23 +280,20 @@ export default function EditCollection() {
                                 />
                             </View>
 
-                            {/* Campo Año */}
-                            <View style={{ marginBottom: 8 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: "MateSC-Regular",
-                                            fontSize: 15,
-                                            color: "#8B5E3C",
-                                            fontWeight: "600",
-                                            flex: 1,
-                                        }}
-                                    >
-                                        Año
-                                    </Text>
-                                </View>
-                                
-                                <View
+                            {/* Campo Ubicación */}
+                            <View style={{ marginBottom: 24 }}>
+                                <Text
+                                    style={{
+                                        fontFamily: "MateSC-Regular",
+                                        fontSize: 15,
+                                        color: "#8B5E3C",
+                                        marginBottom: 8,
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    Ubicación
+                                </Text>
+                                <TextInput
                                     style={{
                                         backgroundColor: "#F7F5F2",
                                         borderRadius: 12,
@@ -266,37 +301,110 @@ export default function EditCollection() {
                                         paddingVertical: 12,
                                         borderWidth: 1,
                                         borderColor: "#E5D4C1",
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
+                                        fontFamily: "CrimsonText-Regular",
+                                        fontSize: 16,
+                                        color: "#4A3725",
+                                    }}
+                                    placeholder="Ubicación geográfica del sitio"
+                                    value={location}
+                                    onChangeText={setLocation}
+                                    placeholderTextColor="#B8967D"
+                                    selectionColor="#8B5E3C"
+                                    editable={!updateMutation.isPending}
+                                />
+                            </View>
+
+                            {/* Campo País */}
+                            <View style={{ marginBottom: 24 }}>
+                                <Text
+                                    style={{
+                                        fontFamily: "MateSC-Regular",
+                                        fontSize: 15,
+                                        color: "#8B5E3C",
+                                        marginBottom: 8,
+                                        fontWeight: "600",
                                     }}
                                 >
-                                    <TextInput
+                                    País *
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setCountryPickerOpen(true)}
+                                    disabled={updateMutation.isPending}
+                                    style={{
+                                        backgroundColor: "#F7F5F2",
+                                        borderRadius: 12,
+                                        paddingHorizontal: 16,
+                                        paddingVertical: 12,
+                                        borderWidth: 1,
+                                        borderColor: "#E5D4C1",
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                    }}
+                                >
+                                    <Text
                                         style={{
                                             fontFamily: "CrimsonText-Regular",
                                             fontSize: 16,
-                                            color: "#4A3725",
+                                            color: selectedCountry ? "#4A3725" : "#B8967D",
                                             flex: 1,
                                         }}
-                                        placeholder="Ej: 2024"
-                                        value={year}
-                                        onChangeText={setYear}
-                                        placeholderTextColor="#B8967D"
-                                        selectionColor="#8B5E3C"
-                                        keyboardType="numeric"
-                                        maxLength={4}
-                                        editable={!updateMutation.isPending}
+                                    >
+                                        {selectedCountry?.name || "Seleccionar país"}
+                                    </Text>
+                                    <Ionicons
+                                        name="chevron-down"
+                                        size={20}
+                                        color="#8B5E3C"
                                     />
-                                    {year && (
-                                        <TouchableOpacity
-                                            onPress={handleClearYear}
-                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                            disabled={updateMutation.isPending}
-                                        >
-                                            <Ionicons name="close-outline" size={20} color="#8B5E3C" />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Campo Región */}
+                            <View style={{ marginBottom: 8 }}>
+                                <Text
+                                    style={{
+                                        fontFamily: "MateSC-Regular",
+                                        fontSize: 15,
+                                        color: "#8B5E3C",
+                                        marginBottom: 8,
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    Región *
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setRegionPickerOpen(true)}
+                                    disabled={updateMutation.isPending || !countryId}
+                                    style={{
+                                        backgroundColor: !countryId ? "#EFEFEF" : "#F7F5F2",
+                                        borderRadius: 12,
+                                        paddingHorizontal: 16,
+                                        paddingVertical: 12,
+                                        borderWidth: 1,
+                                        borderColor: "#E5D4C1",
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        opacity: !countryId ? 0.5 : 1,
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            fontFamily: "CrimsonText-Regular",
+                                            fontSize: 16,
+                                            color: selectedRegion ? "#4A3725" : "#B8967D",
+                                            flex: 1,
+                                        }}
+                                    >
+                                        {selectedRegion?.name || (countryId ? "Seleccionar región" : "Primero seleccione un país")}
+                                    </Text>
+                                    <Ionicons
+                                        name="chevron-down"
+                                        size={20}
+                                        color="#8B5E3C"
+                                    />
+                                </TouchableOpacity>
                             </View>
                         </View>
 
@@ -321,6 +429,37 @@ export default function EditCollection() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Modal para seleccionar país */}
+            <SimplePickerModal
+                visible={countryPickerOpen}
+                title="Seleccionar País"
+                items={countryItems}
+                selectedValue={countryId ?? ""}
+                onSelect={(value) => {
+                    const newCountryId = Number(value);
+                    setCountryId(newCountryId);
+                    // Limpiar la región si cambia el país
+                    if (countryId !== newCountryId) {
+                        setRegionId(null);
+                    }
+                    setCountryPickerOpen(false);
+                }}
+                onClose={() => setCountryPickerOpen(false)}
+            />
+
+            {/* Modal para seleccionar región */}
+            <SimplePickerModal
+                visible={regionPickerOpen}
+                title="Seleccionar Región"
+                items={regionItems}
+                selectedValue={regionId ?? ""}
+                onSelect={(value) => {
+                    setRegionId(Number(value));
+                    setRegionPickerOpen(false);
+                }}
+                onClose={() => setRegionPickerOpen(false)}
+            />
         </View>
     );
 }

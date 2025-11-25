@@ -11,7 +11,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import Badge from "./Badge";
 import InfoRow from "./InfoRow";
 
 interface CollectionCardProps {
@@ -26,6 +25,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
     onDelete,
 }) => {
     const [menuVisible, setMenuVisible] = useState(false);
+    const [buttonPosition, setButtonPosition] = useState({ top: 0, right: 0 });
     const isWeb = Platform.OS === "web";
 
     // Validar que collection tenga los valores correctos
@@ -41,18 +41,25 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
     const handleDelete = () => {
         setMenuVisible(false);
         const collectionName = collection.name || "esta colección";
-        Alert.alert(
-            "Confirmar eliminación",
-            `¿Estás seguro que deseas eliminar la colección "${collectionName}"?`,
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "Eliminar",
-                    style: "destructive",
-                    onPress: () => collection.id && onDelete(collection.id),
-                },
-            ]
-        );
+        
+        if (Platform.OS === "web") {
+            if (window.confirm(`¿Estás seguro que deseas eliminar la colección "${collectionName}"?`)) {
+                collection.id && onDelete(collection.id);
+            }
+        } else {
+            Alert.alert(
+                "Confirmar eliminación",
+                `¿Estás seguro que deseas eliminar la colección "${collectionName}"?`,
+                [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                        text: "Eliminar",
+                        style: "destructive",
+                        onPress: () => collection.id && onDelete(collection.id),
+                    },
+                ]
+            );
+        }
     };
 
     // Asegurar que todos los valores sean strings válidos
@@ -129,6 +136,13 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                     <TouchableOpacity
                         onPress={(e: any) => {
                             e.stopPropagation?.();
+                            if (isWeb && e.currentTarget) {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setButtonPosition({
+                                    top: rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                });
+                            }
                             setMenuVisible(!menuVisible);
                         }}
                         style={{
@@ -146,75 +160,6 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                             color={Colors.black}
                         />
                     </TouchableOpacity>
-
-                    {isWeb && menuVisible && (
-                        <View
-                            style={{
-                                position: "absolute",
-                                top: 40,
-                                right: 8,
-                                backgroundColor: "white",
-                                borderRadius: 8,
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.25,
-                                shadowRadius: 4,
-                                elevation: 10,
-                                zIndex: 1000,
-                                width: 140,
-                            }}
-                        >
-                            <TouchableOpacity
-                                onPress={handleEdit}
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    padding: 12,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: "#e0e0e0",
-                                }}
-                            >
-                                <Ionicons
-                                    name="create-outline"
-                                    size={16}
-                                    color={Colors.brown}
-                                    style={{ marginRight: 10 }}
-                                />
-                                <Text
-                                    style={{
-                                        fontSize: 16,
-                                        color: Colors.brown,
-                                    }}
-                                >
-                                    Editar
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={handleDelete}
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    padding: 12,
-                                }}
-                            >
-                                <Ionicons
-                                    name="trash-outline"
-                                    size={16}
-                                    color={Colors.brown}
-                                    style={{ marginRight: 10 }}
-                                />
-                                <Text
-                                    style={{
-                                        fontSize: 16,
-                                        color: Colors.brown,
-                                    }}
-                                >
-                                    Eliminar
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
                 </View>
             </View>
         </View>
@@ -222,30 +167,118 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
 
     if (isWeb) {
         return (
-            <TouchableOpacity
-                activeOpacity={0.9}
-                style={{ flex: 1, minWidth: 0 }}
-                // @ts-ignore - Web-only hover effects
-                onMouseEnter={(e: any) => {
-                    e.currentTarget.style.transform = "translateY(-6px)";
-                    const card = e.currentTarget.querySelector("div");
-                    if (card) {
-                        card.style.shadowOpacity = "0.16";
-                        card.style.borderColor = "#6B705C";
-                    }
-                }}
-                // @ts-ignore
-                onMouseLeave={(e: any) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    const card = e.currentTarget.querySelector("div");
-                    if (card) {
-                        card.style.shadowOpacity = "0.08";
-                        card.style.borderColor = "#E8DFD0";
-                    }
-                }}
-            >
-                {CardContent}
-            </TouchableOpacity>
+            <>
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    style={{ flex: 1, minWidth: 0 }}
+                    // @ts-ignore - Web-only hover effects
+                    onMouseEnter={(e: any) => {
+                        e.currentTarget.style.transform = "translateY(-6px)";
+                        const card = e.currentTarget.querySelector("div");
+                        if (card) {
+                            card.style.shadowOpacity = "0.16";
+                            card.style.borderColor = "#6B705C";
+                        }
+                    }}
+                    // @ts-ignore
+                    onMouseLeave={(e: any) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        const card = e.currentTarget.querySelector("div");
+                        if (card) {
+                            card.style.shadowOpacity = "0.08";
+                            card.style.borderColor = "#E8DFD0";
+                        }
+                    }}
+                >
+                    {CardContent}
+                </TouchableOpacity>
+
+                {menuVisible && (
+                    <Modal
+                        visible={menuVisible}
+                        transparent
+                        animationType="none"
+                        onRequestClose={() => setMenuVisible(false)}
+                    >
+                        <Pressable
+                            style={{
+                                flex: 1,
+                                backgroundColor: "transparent",
+                            }}
+                            onPress={() => setMenuVisible(false)}
+                        >
+                            <View
+                                style={{
+                                    position: "absolute",
+                                    top: buttonPosition.top,
+                                    right: buttonPosition.right,
+                                    backgroundColor: "white",
+                                    borderRadius: 8,
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.25,
+                                    shadowRadius: 4,
+                                    elevation: 10,
+                                    minWidth: 140,
+                                    borderWidth: 1,
+                                    borderColor: "#E8E8E8",
+                                }}
+                                onStartShouldSetResponder={() => true}
+                            >
+                                <TouchableOpacity
+                                    onPress={handleEdit}
+                                    style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        padding: 12,
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: "#e0e0e0",
+                                    }}
+                                >
+                                    <Ionicons
+                                        name="create-outline"
+                                        size={16}
+                                        color={Colors.brown}
+                                        style={{ marginRight: 10 }}
+                                    />
+                                    <Text
+                                        style={{
+                                            fontSize: 16,
+                                            color: Colors.brown,
+                                        }}
+                                    >
+                                        Editar
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={handleDelete}
+                                    style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        padding: 12,
+                                    }}
+                                >
+                                    <Ionicons
+                                        name="trash-outline"
+                                        size={16}
+                                        color={Colors.brown}
+                                        style={{ marginRight: 10 }}
+                                    />
+                                    <Text
+                                        style={{
+                                            fontSize: 16,
+                                            color: Colors.brown,
+                                        }}
+                                    >
+                                        Eliminar
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </Pressable>
+                    </Modal>
+                )}
+            </>
         );
     }
 

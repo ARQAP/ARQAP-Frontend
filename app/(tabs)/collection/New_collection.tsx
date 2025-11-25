@@ -13,6 +13,7 @@ import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
 import { useCreateCollection } from "../../../hooks/useCollections";
 import { Collection } from "../../../repositories/collectionRepository";
+import Colors from "@/constants/Colors";
 
 export default function NewCollection() {
   const router = useRouter();
@@ -62,7 +63,7 @@ export default function NewCollection() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar
         title="Nueva Colección Arqueológica"
         showBackArrow

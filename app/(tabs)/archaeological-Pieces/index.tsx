@@ -466,7 +466,7 @@ export default function ArchaeologicalPiecesIndex() {
           style={{
             maxWidth: isDesktop ? 1360 : 720,
             paddingHorizontal: isDesktop ? 35 : 16,
-            paddingTop: isDesktop ? 35 : 0,
+            paddingTop: isDesktop ? 35 : 20,
             paddingBottom: isDesktop ? 0 : 24,
             justifyContent: isDesktop ? "flex-start" : "center",
           }}

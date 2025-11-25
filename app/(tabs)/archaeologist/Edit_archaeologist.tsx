@@ -11,6 +11,7 @@ import {
 import Button from "../../../components/ui/Button";
 import { useUpdateArchaeologist } from "../../../hooks/useArchaeologist";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function Edit_archaeologist({
   showBackArrow = false,
@@ -41,7 +42,7 @@ export default function Edit_archaeologist({
   const handleCancelar = () => router.back();
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar title="Editar Arqueólogo" showBackArrow />
       
       <KeyboardAvoidingView 

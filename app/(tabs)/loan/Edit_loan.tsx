@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Text, TextInput, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 type Loan = {
   id: number;
@@ -59,7 +60,7 @@ export default function EditLoan() {
   if (!loan) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5ECD6" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar title="Editar Prestamo" showBackArrow />
       <View
         style={{

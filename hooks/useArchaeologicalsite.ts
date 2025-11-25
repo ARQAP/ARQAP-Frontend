@@ -10,7 +10,7 @@ export const useAllArchaeologicalSites = () => {
     queryKey: KEY,
     queryFn: ArchaeologicalSiteRepository.getAll,
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 };
 

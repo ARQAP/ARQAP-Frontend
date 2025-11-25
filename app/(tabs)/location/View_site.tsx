@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function ViewSite() {
   const params = useLocalSearchParams();
@@ -79,7 +80,7 @@ export default function ViewSite() {
   }
 
   return (
-    <View className="flex-1 bg-[#F3E9DD]">
+    <View className="flex-1" style={{ backgroundColor: Colors.cream }}>
       <Navbar title="Sitio Arqueológico" showBackArrow />
 
       <ScrollView
