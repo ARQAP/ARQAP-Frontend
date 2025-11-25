@@ -8,7 +8,7 @@ const Colors = {
   brown: "#8B5E3C",
   lightbrown: "#C9ADA1",
   // Extensiones para unificar la UI (mobile/web)
-  cream: "#F3E9DD", // fondo general claro
+  cream: "#F0E6D2", // fondo general claro
   accent: "#A68B5B", // acentos, bordes, íconos suaves
   cremitLight: "#E2D1B2", // paneles suaves (login card)
   // Colores específicos para DepositMap

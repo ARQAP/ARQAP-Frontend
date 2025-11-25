@@ -23,6 +23,7 @@ import { useAllCountries } from "../../../hooks/useCountry";
 import { useCreateRegion } from "../../../hooks/useRegion";
 import { Country } from "../../../repositories/countryRepository";
 import { CreateRegionPayload } from "../../../repositories/regionRepository";
+import Colors from "@/constants/Colors";
 
 export default function New_Region() {
     const router = useRouter();
@@ -182,7 +183,7 @@ export default function New_Region() {
         isCreating || !regionName.trim() || !selectedCountryId;
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Nueva Región" showBackArrow />
 
             <KeyboardAvoidingView

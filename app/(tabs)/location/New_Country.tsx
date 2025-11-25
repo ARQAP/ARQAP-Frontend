@@ -17,6 +17,7 @@ import Navbar from "../Navbar";
 import { SimplePickerItem } from "../../../components/ui/SimpleModal";
 import { useAllCountries, useCreateCountry } from "../../../hooks/useCountry";
 import { Country } from "../../../repositories/countryRepository";
+import Colors from "@/constants/Colors";
 
 export default function New_Country() {
     const [countryName, setCountryName] = useState("");
@@ -99,7 +100,7 @@ export default function New_Country() {
     const isButtonDisabled = isCreating || !countryName.trim();
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Nuevo País" showBackArrow />
 
             <KeyboardAvoidingView

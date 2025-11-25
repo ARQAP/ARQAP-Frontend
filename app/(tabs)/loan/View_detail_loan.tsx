@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import Button from "../../../components/ui/Button";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 type Loan = {
   id: number;
@@ -45,7 +46,7 @@ export default function ViewDetailLoan() {
   }, [id]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5ECD6" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar
         title="Detalle Prestamo"
         showBackArrow

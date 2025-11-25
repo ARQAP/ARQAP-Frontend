@@ -2,10 +2,13 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import DepositMap from '../../../components/DepositMap';
 import Navbar from '../Navbar';
+import Colors from '@/constants/Colors';
 
 export default function DepositMapScreen() {
   return (
-    <View className="flex-1 bg-[#F3E9DD]">
+    <View className="flex-1"
+    style={{ backgroundColor: Colors.cream }}
+    >
       <Navbar 
         title="Mapa del Depósito" 
         showBackArrow

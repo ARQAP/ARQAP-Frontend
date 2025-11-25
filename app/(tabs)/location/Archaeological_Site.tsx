@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Region } from "../../../repositories/regionRepository";
+import Colors from "@/constants/Colors";
 
 // La interfaz refleja exactamente los datos que vienen del backend
 interface ArchaeologicalSiteProps {
@@ -45,7 +46,7 @@ export default function ArchaeologicalSite({
   <TouchableOpacity
    onPress={handlePress}
    activeOpacity={0.85}
-   style={{ width: '100%', maxWidth: 720, backgroundColor: '#FFF6ED', borderRadius: 14, padding: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}
+   style={{ width: '100%', maxWidth: 720, backgroundColor: Colors.cream, borderRadius: 14, padding: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}
    accessibilityRole="button"
   >
    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

@@ -891,7 +891,7 @@ export default function ViewPieces() {
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Piezas arqueologicas" showBackArrow />
 
             {isLoading ? (

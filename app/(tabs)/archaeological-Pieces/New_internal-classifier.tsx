@@ -68,7 +68,7 @@ export default function New_internal_classifier() {
   const isButtonDisabled = isBusy || !name.trim();
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar title="Nuevo Clasificador Interno" showBackArrow />
       
       <KeyboardAvoidingView 

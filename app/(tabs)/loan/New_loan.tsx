@@ -3,6 +3,7 @@ import Button from "@/components/ui/Button";
 import SimplePickerModal, {
     SimplePickerItem,
 } from "@/components/ui/SimpleModal";
+import Colors from "@/constants/Colors";
 import { useArtefacts } from "@/hooks/useArtefact";
 import { useCreateLoan } from "@/hooks/useLoan";
 import { useRequesters } from "@/hooks/useRequester";
@@ -185,7 +186,7 @@ export default function NewLoan() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Nuevo Préstamo" showBackArrow />
 
             <KeyboardAvoidingView

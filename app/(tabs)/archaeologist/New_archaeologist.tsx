@@ -13,6 +13,7 @@ import Button from "../../../components/ui/Button";
 import { useCreateArchaeologist } from "../../../hooks/useArchaeologist";
 import { Archaeologist } from "../../../repositories/archaeologistRespository";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function New_archaeologist() {
   const router = useRouter();
@@ -48,7 +49,7 @@ export default function New_archaeologist() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.cream }}>
       <Navbar title="Nuevo Arqueólogo" showBackArrow />
       
       <KeyboardAvoidingView 

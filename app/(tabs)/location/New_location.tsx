@@ -23,6 +23,7 @@ import { useAllRegions } from "../../../hooks/useRegion";
 import { ArchaeologicalSite } from "../../../repositories/archaeologicalsiteRepository";
 import { Country } from "../../../repositories/countryRepository";
 import { Region } from "../../../repositories/regionRepository";
+import Colors from "@/constants/Colors";
 
 export default function New_location() {
     const router = useRouter();
@@ -226,7 +227,7 @@ export default function New_location() {
         !selectedRegionId;
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Nuevo Sitio Arqueológico" showBackArrow />
 
             <KeyboardAvoidingView

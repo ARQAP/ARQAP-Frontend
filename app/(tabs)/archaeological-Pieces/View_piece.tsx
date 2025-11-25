@@ -550,7 +550,7 @@ export default function ViewPiece() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar title="Ficha de la pieza" showBackArrow />
             <ScrollView
                 contentContainerStyle={{

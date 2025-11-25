@@ -22,6 +22,7 @@ import {
 } from "../../../hooks/useArchaeologist";
 import type { Archaeologist } from "../../../repositories/archaeologistRespository";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function View_archaeologist() {
     const router = useRouter();
@@ -112,7 +113,7 @@ export default function View_archaeologist() {
     const isLoading = status === "pending" || isFetching;
 
     return (
-        <View className="flex-1 bg-[#F3E9DD] p-0">
+        <View className="flex-1 p-0" style={{ backgroundColor: Colors.cream }}>
             <Navbar title="Ver Arqueólogos" showBackArrow />
 
             <ScrollView

@@ -21,6 +21,7 @@ import {
 } from "../../../hooks/useArchaeologicalsite";
 import { ArchaeologicalSite as SiteType } from "../../../repositories/archaeologicalsiteRepository";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function Location() {
     const router = useRouter();
@@ -384,7 +385,7 @@ export default function Location() {
     );
 
     return (
-        <View className="flex-1 bg-[#F3E9DD] p-0">
+        <View className="flex-1 p-0" style={{ backgroundColor: Colors.cream }}>
             <Navbar title="Sitios Arqueológicos" showBackArrow />
 
             <ScrollView

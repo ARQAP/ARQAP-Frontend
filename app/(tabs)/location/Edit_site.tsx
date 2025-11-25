@@ -18,6 +18,7 @@ import { useAllArchaeologicalSites, useUpdateArchaeologicalSite } from "../../..
 import { useAllCountries } from "../../../hooks/useCountry";
 import { useAllRegions } from "../../../hooks/useRegion";
 import Navbar from "../Navbar";
+import Colors from "@/constants/Colors";
 
 export default function EditSite() {
     const router = useRouter();
@@ -130,7 +131,7 @@ export default function EditSite() {
     const selectedRegion = regions.find(r => r.id === regionId);
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
+        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
             <Navbar
                 title="Editar Sitio Arqueológico"
                 showBackArrow
