@@ -111,7 +111,6 @@ export default function ShelfDetailScreen() {
     const [, levelNum, columnPart] = match;
 
     // Navegamos a la vista de piezas pasando el valor de columna tal cual
-    // (ya no hacemos conversiones explícitas número->letra)
     router.push({
       pathname: '/(tabs)/archaeological-Pieces/View_pieces',
       params: {

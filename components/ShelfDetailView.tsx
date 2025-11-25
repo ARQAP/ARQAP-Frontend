@@ -312,7 +312,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
         <Pressable
           onPress={onClose}
           className={`absolute right-7 w-11 h-11 rounded-full items-center justify-center z-10 border-[1.5px] bg-white shadow-lg active:scale-95 ${
-            Platform.OS === 'android' ? 'top-16' : 'top-4'
+            Platform.OS === 'android' ? 'top-16' : 'top-20'
           }`}
           style={({ pressed }) => ({
             borderColor: Colors.cremit,
