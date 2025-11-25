@@ -1863,9 +1863,7 @@ export default function EditPiece() {
                                         fontSize: 14,
                                     }}
                                 >
-                                    {inplClassifierId
-                                        ? "AGREGAR FICHAS INPL"
-                                        : "CREAR CLASIFICADOR + AGREGAR FICHAS"}
+                                    AGREGAR FICHAS INPL
                                 </Text>
                             </TouchableOpacity>
 
