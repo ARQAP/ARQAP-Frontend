@@ -74,14 +74,57 @@ export default function View_archaeologist() {
     };
 
     const handleDelete = async (id: number) => {
-        try {
-            await deleteMutation.mutateAsync(id);
-            Alert.alert("Éxito", "Arqueólogo eliminado correctamente.");
-            refetch();
-        } catch (error) {
-            const errorMessage =
-                (error as Error).message || "Error al eliminar el arqueólogo.";
-            Alert.alert("Error", errorMessage);
+        if (!id) {
+            if (Platform.OS === "web") {
+                window.alert("ID de arqueólogo no válido.");
+            } else {
+                Alert.alert("Error", "ID de arqueólogo no válido.");
+            }
+            return;
+        }
+
+        const confirmMessage = "¿Está seguro que desea eliminar este arqueólogo? Esta acción no se puede deshacer.";
+        
+        if (Platform.OS === "web") {
+            if (!window.confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                await deleteMutation.mutateAsync(id);
+                await refetch();
+                window.alert("Arqueólogo eliminado correctamente.");
+            } catch (error: any) {
+                console.error("Error al eliminar arqueólogo:", error);
+                const errorMessage = error?.message || error?.response?.data?.message || "No se pudo eliminar el arqueólogo.";
+                window.alert(errorMessage);
+            }
+        } else {
+            Alert.alert(
+                "Confirmar eliminación",
+                confirmMessage,
+                [
+                    {
+                        text: "Cancelar",
+                        style: "cancel",
+                    },
+                    {
+                        text: "Eliminar",
+                        style: "destructive",
+                        onPress: async () => {
+                            try {
+                                await deleteMutation.mutateAsync(id);
+                                await refetch();
+                                Alert.alert("Éxito", "Arqueólogo eliminado correctamente.");
+                            } catch (error: any) {
+                                console.error("Error al eliminar arqueólogo:", error);
+                                const errorMessage = error?.message || error?.response?.data?.message || "No se pudo eliminar el arqueólogo.";
+                                Alert.alert("Error", errorMessage);
+                            }
+                        },
+                    },
+                ]
+            );
         }
     };
 
