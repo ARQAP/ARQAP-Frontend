@@ -410,58 +410,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View
-            style={{
-              marginTop: isDesktop ? 40 : 30,
-              marginBottom: isDesktop ? 40 : 30,
-            }}
-          >
-            {isDesktop && (
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  {
-                    marginBottom: 16,
-                    color: Colors.black,
-                    opacity: 0.6,
-                  },
-                ]}
-              >
-                Acciones Rápidas
-              </Text>
-            )}
-
-            <View
-              style={{
-                flexDirection: isDesktop ? "row" : "column",
-                columnGap: isDesktop ? 20 : 0,
-                rowGap: isDesktop ? 0 : 12,
-              }}
-            >
-              <QuickAction
-                title="Nueva Pieza"
-                icon="add-circle-outline"
-                onPress={() =>
-                  router.push("/(tabs)/archaeological-Pieces/New_piece")
-                }
-              />
-              <QuickAction
-                title="Nuevo Arqueólogo"
-                icon="person-add-outline"
-                onPress={() =>
-                  router.push("/(tabs)/archaeologist/New_archaeologist")
-                }
-              />
-              <QuickAction
-                title="Nueva Colección"
-                icon="add-circle-outline"
-                onPress={() =>
-                  router.push("/(tabs)/collection/New_collection")
-                }
-              />
-            </View>
-          </View>
-
           {/* Botón de Cerrar Sesión */}
           <View className="items-center mt-4 pb-8">
             <Pressable
