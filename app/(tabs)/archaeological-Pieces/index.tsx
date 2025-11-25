@@ -14,6 +14,7 @@ import {
 import Colors from "../../../constants/Colors";
 import Navbar from "../Navbar";
 import { useImportArtefactsFromExcel } from "../../../hooks/useArtefact";
+import ImportProgressModal from "../../../components/ui/ImportProgressModal";
 
 type ActionCardProps = {
     title: string;
@@ -182,6 +183,16 @@ export default function ArchaeologicalPiecesIndex() {
   const isDesktop = width >= 1024;
   const importMutation = useImportArtefactsFromExcel();
   const excelInputRef = useRef<HTMLInputElement | null>(null);
+  const [importProgress, setImportProgress] = React.useState<{
+    visible: boolean;
+    progress: number;
+    currentRow?: number;
+    totalRows?: number;
+    message?: string;
+  }>({
+    visible: false,
+    progress: 0,
+  });
 
   // --------- LÓGICA PRINCIPAL DE IMPORTACIÓN DESDE EXCEL ---------
 
@@ -234,7 +245,19 @@ export default function ArchaeologicalPiecesIndex() {
         }
 
         console.log("[IMPORT] ===== INICIANDO MUTACIÓN =====");
-        const result = await importMutation.mutateAsync(fileToUpload);
+        
+        // Mostrar modal de progreso
+        setImportProgress({
+          visible: true,
+          progress: 0,
+          message: "Importando piezas...",
+        });
+
+        try {
+          const result = await importMutation.mutateAsync(fileToUpload);
+          
+          // Ocultar modal al completar
+          setImportProgress((prev) => ({ ...prev, visible: false }));
 
         console.log(
           "[IMPORT] ===== RESULTADO DE LA IMPORTACIÓN ====="
@@ -265,9 +288,12 @@ export default function ArchaeologicalPiecesIndex() {
           }
         }
 
-        Alert.alert("Importación completada", message);
-      } catch (error: any) {
-        console.error("Error importing Excel:", error);
+          Alert.alert("Importación completada", message);
+        } catch (error: any) {
+          // Ocultar modal en caso de error
+          setImportProgress((prev) => ({ ...prev, visible: false }));
+          
+          console.error("Error importing Excel:", error);
         const errorMessage =
           error?.response?.data?.error ||
           error?.response?.data?.message ||
@@ -286,7 +312,11 @@ export default function ArchaeologicalPiecesIndex() {
           }
         }
 
-        Alert.alert("Error en la importación", fullMessage);
+          Alert.alert("Error en la importación", fullMessage);
+        }
+      } finally {
+        // Asegurar que el modal se oculte siempre
+        setImportProgress((prev) => ({ ...prev, visible: false }));
       }
     },
     [importMutation]
@@ -653,6 +683,15 @@ export default function ArchaeologicalPiecesIndex() {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Modal de progreso de importación */}
+      <ImportProgressModal
+        visible={importProgress.visible}
+        progress={importProgress.progress}
+        currentRow={importProgress.currentRow}
+        totalRows={importProgress.totalRows}
+        message={importProgress.message}
+      />
     </View>
   );
 }
