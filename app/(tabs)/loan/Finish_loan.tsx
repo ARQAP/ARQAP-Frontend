@@ -105,7 +105,7 @@ export default function FinishLoan() {
                 Alert.alert("Éxito", "Préstamo finalizado exitosamente");
             }
 
-            router.push("/(tabs)/loan/View_loan");
+            router.replace("/(tabs)/loan/View_loan");
         } catch (error) {
             const errorMessage =
                 (error as Error).message || "Error al finalizar el préstamo";
@@ -527,7 +527,6 @@ export default function FinishLoan() {
                 <Navbar
                     title="Finalizar Préstamo"
                     showBackArrow
-                    redirectTo="/(tabs)/loan/View_loan"
                 />
                 <View
                     style={{
@@ -551,7 +550,6 @@ export default function FinishLoan() {
                 <Navbar
                     title="Finalizar Préstamo"
                     showBackArrow
-                    redirectTo="/(tabs)/loan/View_loan"
                 />
                 <View
                     style={{
@@ -571,7 +569,7 @@ export default function FinishLoan() {
                         Préstamo no encontrado
                     </Text>
                     <TouchableOpacity
-                        onPress={() => router.push("/(tabs)/loan/View_loan")}
+                        onPress={() => router.replace("/(tabs)/loan/View_loan")}
                         style={{
                             marginTop: 20,
                             padding: 12,
@@ -593,7 +591,6 @@ export default function FinishLoan() {
             <Navbar
                 title="Finalizar Préstamo"
                 showBackArrow
-                redirectTo="/(tabs)/loan/View_loan"
             />
 
             <ScrollView style={{ flex: 1, padding: 20 }}>
@@ -743,7 +740,7 @@ export default function FinishLoan() {
                     style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}
                 >
                     <TouchableOpacity
-                        onPress={() => router.push("/(tabs)/loan/View_loan")}
+                        onPress={() => router.replace("/(tabs)/loan/View_loan")}
                         style={{
                             flex: 1,
                             padding: 15,

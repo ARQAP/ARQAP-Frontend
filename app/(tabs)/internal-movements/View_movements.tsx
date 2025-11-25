@@ -617,7 +617,7 @@ export default function ViewMovements() {
     if (isLoading) {
         return (
             <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-                <Navbar title="Movimientos Internos" showBackArrow backToHome />
+                <Navbar title="Movimientos Internos" showBackArrow redirectTo="/(tabs)/home" />
                 <View
                     style={{
                         flex: 1,
@@ -637,7 +637,7 @@ export default function ViewMovements() {
     if (error) {
         return (
             <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
-                <Navbar title="Movimientos Internos" showBackArrow backToHome />
+                <Navbar title="Movimientos Internos" showBackArrow redirectTo="/(tabs)/home" />
                 <View
                     style={{
                         flex: 1,
@@ -854,17 +854,7 @@ export default function ViewMovements() {
                                                 textAlign: "center",
                                             }}
                                         >
-                                            No hay movimientos registrados
-                                        </Text>
-                                        <Text
-                                            style={{
-                                                marginTop: 8,
-                                                fontSize: 14,
-                                                color: "#A0785D",
-                                                textAlign: "center",
-                                            }}
-                                        >
-                                            Registre el primer movimiento interno de una pieza
+                                            No hay movimientos activos
                                         </Text>
                                     </View>
                                 ) : (

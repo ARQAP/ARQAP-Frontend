@@ -3,8 +3,15 @@ import { Text, View } from 'react-native';
 import DepositMap from '../../../components/DepositMap';
 import Navbar from '../Navbar';
 import Colors from '@/constants/Colors';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function DepositMapScreen() {
+  const params = useLocalSearchParams();
+  const highlightShelvesParam = params?.highlightShelves as string | undefined;
+  const highlightedShelfIds = highlightShelvesParam 
+    ? highlightShelvesParam.split(',').filter(Boolean)
+    : [];
+
   return (
     <View className="flex-1"
     style={{ backgroundColor: Colors.cream }}
@@ -27,7 +34,7 @@ export default function DepositMapScreen() {
         </Text>
 
         <View className="flex-1">
-          <DepositMap />
+          <DepositMap highlightedShelfIds={highlightedShelfIds} />
         </View>
       </View>
     </View>

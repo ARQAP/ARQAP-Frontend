@@ -50,7 +50,6 @@ export default function ViewDetailLoan() {
       <Navbar
         title="Detalle Prestamo"
         showBackArrow
-        redirectTo={"/(tabs)/loan/View_loan"}
       />
       <View
         style={{

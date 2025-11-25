@@ -280,6 +280,18 @@ export default function NewMovement() {
 
     if (selectedArtefactIds.length === 0) {
       newErrors.artefact = "Debe seleccionar al menos una pieza arqueológica";
+    } else {
+      // Verificar que todas las piezas seleccionadas estén disponibles
+      const unavailableArtefacts = selectedArtefactIds.filter(
+        (id) => {
+          const artefact = artefacts.find((a) => a.id === id);
+          return !artefact?.available;
+        }
+      );
+      
+      if (unavailableArtefacts.length > 0) {
+        newErrors.artefact = "Una o más piezas seleccionadas no están disponibles para movimientos internos (ya están prestadas)";
+      }
     }
 
     if (!selectedToLocationId) {
@@ -327,13 +339,19 @@ export default function NewMovement() {
         "Éxito",
         `Se han registrado ${selectedArtefactIds.length} movimiento(s) correctamente.`
       );
-      router.push("/(tabs)/internal-movements/View_movements");
-    } catch (error) {
+      router.replace("/(tabs)/internal-movements/View_movements");
+    } catch (error: any) {
       console.error("Error completo:", error);
-      Alert.alert(
-        "Error",
-        "Hubo un error al registrar los movimientos. Por favor, intente nuevamente."
-      );
+      // Extraer mensaje de error del response
+      const errorMessage = error?.response?.data?.error || error?.message || "Hubo un error al registrar los movimientos. Por favor, intente nuevamente.";
+      
+      // Si el error indica que alguna pieza no está disponible, mostrar mensaje específico
+      if (errorMessage.includes("no está disponible")) {
+        setErrors({ artefact: errorMessage });
+        Alert.alert("Error", errorMessage);
+      } else {
+        Alert.alert("Error", errorMessage);
+      }
     }
   };
 
@@ -365,7 +383,6 @@ export default function NewMovement() {
       <Navbar
         title="Nuevo Movimiento Interno"
         showBackArrow
-        redirectTo="/(tabs)/internal-movements/View_movements"
       />
       
       <KeyboardAvoidingView 
@@ -472,10 +489,10 @@ export default function NewMovement() {
                         fontFamily: "CrimsonText-Regular",
                         fontSize: 16,
                         color: selectedArtefactsNames ? "#4A3725" : "#B8967D",
+                        flexShrink: 1,
                       }}
                       numberOfLines={2}
                       ellipsizeMode="tail"
-                      flexShrink={1}
                     >
                       {selectedArtefactsNames || "Seleccionar pieza(s) arqueológica(s)"}
                     </Text>
@@ -537,10 +554,10 @@ export default function NewMovement() {
                       color: selectedRequesterName ? "#4A3725" : "#B8967D",
                       flex: 1,
                       minWidth: 0,
+                      flexShrink: 1,
                     }}
                     numberOfLines={1}
                     ellipsizeMode="tail"
-                    flexShrink={1}
                   >
                     {selectedRequesterName || "Seleccionar solicitante (opcional)"}
                   </Text>
@@ -615,10 +632,10 @@ export default function NewMovement() {
                         color: selectedShelf ? "#4A3725" : "#B8967D",
                         flex: 1,
                         minWidth: 0,
+                        flexShrink: 1,
                       }}
                       numberOfLines={1}
                       ellipsizeMode="tail"
-                      flexShrink={1}
                     >
                       {selectedShelf ? getShelfLabel(selectedShelf.code) : "Seleccionar estante"}
                     </Text>
@@ -878,6 +895,7 @@ export default function NewMovement() {
         selectedArtefactIds={selectedArtefactIds}
         onSelect={setSelectedArtefactIds}
         onClose={() => setArtefactSelectorVisible(false)}
+        onlyAvailable={true}
       />
 
       {/* Modal de selección de solicitante */}

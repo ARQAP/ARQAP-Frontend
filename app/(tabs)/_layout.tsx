@@ -10,7 +10,10 @@ export default function TabsLayout() {
                 // Animación por defecto para navegación hacia adelante
                 animation: "slide_from_right",
                 presentation: "card",
-                animationDuration: 300,
+                animationDuration: 250,
+                contentStyle: {
+                    backgroundColor: "transparent",
+                },
             }}
         >
             <Stack.Screen

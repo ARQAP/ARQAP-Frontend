@@ -259,6 +259,71 @@ export default function ViewPieces() {
         });
     }, [pieces, query, filters]);
 
+    // Mapeo inverso: shelfCode (número) -> ID del mapa (string)
+    const SHELF_CODE_TO_MAP_ID: Record<number, string> = {
+        1: "s_120_398",   // A1
+        2: "s_120_322",   // A2
+        3: "s_120_246",   // A3
+        4: "s_120_190",   // A4
+        5: "s_162_398",   // B1
+        6: "s_162_322",   // B2
+        7: "s_162_246",   // B3
+        8: "s_162_190",   // B4
+        9: "s_259_454",   // C1
+        10: "s_259_378",  // C2
+        11: "s_259_302",  // C3
+        12: "s_259_226",  // C4
+        13: "s_301_454",  // D1
+        14: "s_301_378",  // D2
+        15: "s_301_302",  // D3
+        16: "s_301_226",  // D4
+        17: "s_399_467",  // E1
+        18: "s_399_391",  // E2
+        19: "s_399_315",  // E3
+        20: "s_399_240",  // E4
+        21: "s_441_467",  // F1
+        22: "s_441_391",  // F2
+        23: "s_441_315",  // F3
+        24: "s_441_240",  // F4
+        25: "s_121_92",   // G1
+        26: "s_259_92",   // G2
+        27: "s_397_92",   // G3
+        28: "s_203_172",  // MT-1
+        29: "s_203_245",  // MT-2
+        30: "s_399_226",  // MT-3
+    };
+
+    // Extraer shelfCodes únicos de las piezas filtradas
+    const highlightedShelfIds = useMemo(() => {
+        const shelfCodes = new Set<number>();
+        filtered.forEach((p) => {
+            if (p.shelfCode != null) {
+                shelfCodes.add(p.shelfCode);
+            }
+        });
+        // Convertir shelfCodes a IDs del mapa
+        return Array.from(shelfCodes)
+            .map((code) => SHELF_CODE_TO_MAP_ID[code])
+            .filter((id): id is string => id != null);
+    }, [filtered]);
+
+    // Función para navegar al mapa con estanterías resaltadas
+    const handleGoToMap = () => {
+        if (highlightedShelfIds.length === 0) {
+            Alert.alert(
+                "Sin estanterías",
+                "No hay piezas filtradas con estanterías asignadas para mostrar en el mapa."
+            );
+            return;
+        }
+        router.push({
+            pathname: "/(tabs)/archaeological-Pieces/deposit-map",
+            params: {
+                highlightShelves: highlightedShelfIds.join(","),
+            },
+        });
+    };
+
     const MAX_CONTENT_WIDTH = 1400;
 
     // Handler para limpiar todos los filtros
@@ -288,14 +353,6 @@ export default function ViewPieces() {
                 // que limite el z-index del dropdown dentro de FiltersBar
             }}
         >
-            <Button
-                title="REGISTRAR PIEZA ARQUEOLÓGICA"
-                className="bg-[#6B705C] rounded-xl py-5 px-8 items-center mb-8 shadow-lg"
-                textClassName="text-white text-base font-bold tracking-wider"
-                onPress={() =>
-                    router.push("/(tabs)/archaeological-Pieces/New_piece")
-                }
-            />
 
             {/* Componente de filtros mejorado */}
             <FiltersBar
@@ -310,6 +367,7 @@ export default function ViewPieces() {
                 style={{
                     flexDirection: "row",
                     alignItems: "center",
+                    justifyContent: "space-between",
                     marginTop: 24,
                     marginBottom: 24,
                     paddingLeft: 4,
@@ -323,22 +381,50 @@ export default function ViewPieces() {
                     zIndex: 1,
                 }}
             >
-                <Ionicons
-                    name="checkbox-outline"
-                    size={20}
-                    color="#6B705C"
-                    style={{ marginRight: 8 }}
-                />
-                <Text
-                    style={{
-                        color: "#555",
-                        fontWeight: "700",
-                        fontSize: 16,
-                        letterSpacing: 0.5,
-                    }}
-                >
-                    {filtered.length} PIEZAS ENCONTRADAS
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons
+                        name="checkbox-outline"
+                        size={20}
+                        color="#6B705C"
+                        style={{ marginRight: 8 }}
+                    />
+                    <Text
+                        style={{
+                            color: "#555",
+                            fontWeight: "700",
+                            fontSize: 16,
+                            letterSpacing: 0.5,
+                        }}
+                    >
+                        {filtered.length} PIEZAS ENCONTRADAS
+                    </Text>
+                </View>
+                {highlightedShelfIds.length > 0 && (
+                    <TouchableOpacity
+                        onPress={handleGoToMap}
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            backgroundColor: Colors.green,
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            borderRadius: 8,
+                            gap: 8,
+                        }}
+                    >
+                        <Ionicons name="map-outline" size={18} color={Colors.cremit} />
+                        <Text
+                            style={{
+                                color: Colors.cremit,
+                                fontWeight: "600",
+                                fontSize: 14,
+                                fontFamily: "CrimsonText-Regular",
+                            }}
+                        >
+                            Ir al mapa ({highlightedShelfIds.length})
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -608,14 +694,6 @@ export default function ViewPieces() {
     const renderMobileView = () => {
         const mobileListHeader = (
             <View style={{ padding: 16 }}>
-                <Button
-                    title="REGISTRAR PIEZA ARQUEOLÓGICA"
-                    className="bg-[#6B705C] rounded-lg py-3 items-center mb-6"
-                    textClassName="text-white"
-                    onPress={() =>
-                        router.push("/(tabs)/archaeological-Pieces/New_piece")
-                    }
-                />
 
                 {/* Componente de filtros mejorado */}
                 <FiltersBar
@@ -630,6 +708,7 @@ export default function ViewPieces() {
                     style={{
                         flexDirection: "row",
                         alignItems: "center",
+                        justifyContent: "space-between",
                         marginBottom: 16,
                         marginTop: 8,
                         // Deshabilitar pointer events cuando hay un dropdown abierto para que no intercepte los clics
@@ -651,6 +730,32 @@ export default function ViewPieces() {
                     >
                         {filtered.length} PIEZAS ENCONTRADAS
                     </Text>
+                    {highlightedShelfIds.length > 0 && (
+                        <TouchableOpacity
+                            onPress={handleGoToMap}
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                backgroundColor: Colors.green,
+                                paddingHorizontal: 12,
+                                paddingVertical: 8,
+                                borderRadius: 8,
+                                gap: 6,
+                            }}
+                        >
+                            <Ionicons name="map-outline" size={16} color={Colors.cremit} />
+                            <Text
+                                style={{
+                                    color: Colors.cremit,
+                                    fontWeight: "600",
+                                    fontSize: 12,
+                                    fontFamily: "CrimsonText-Regular",
+                                }}
+                            >
+                                Mapa ({highlightedShelfIds.length})
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         );

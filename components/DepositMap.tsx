@@ -90,7 +90,13 @@ const SHELF_ID_MAP: Record<string, number> = {
   s_399_226: 30,
 }
 
-export default function DepositMap({ style }: { style?: ViewStyle }) {
+export default function DepositMap({ 
+  style,
+  highlightedShelfIds = [],
+}: { 
+  style?: ViewStyle;
+  highlightedShelfIds?: string[];
+}) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
 
@@ -473,12 +479,13 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                     const height = (s.h / VB_HEIGHT) * svgHeight
                     const isSelected = selected?.id === s.id
                     const isHovered = hoveredShelf === s.id
+                    const isHighlighted = highlightedShelfIds.includes(s.id)
 
                     const webTransition =
                       Platform.OS === "web"
                         ? {
                             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                            transform: isSelected ? "scale(1.08)" : isHovered ? "scale(1.04)" : "scale(1)",
+                            transform: isSelected ? "scale(1.08)" : isHovered ? "scale(1.04)" : isHighlighted ? "scale(1.02)" : "scale(1)",
                           }
                         : {}
 
@@ -500,6 +507,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                             styles.hotInner,
                             isSelected && styles.selectedHot,
                             isHovered && styles.hoveredHot,
+                            isHighlighted && styles.highlightedHot,
                           ]}
                         />
                         {isHovered && Platform.OS === "web" && (
@@ -541,12 +549,13 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                     const height = (s.h / VB_HEIGHT) * svgHeight
                     const isSelected = selected?.id === s.id
                     const isHovered = hoveredShelf === s.id
+                    const isHighlighted = highlightedShelfIds.includes(s.id)
 
                     const webTransition =
                       Platform.OS === "web"
                         ? {
                             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                            transform: isSelected ? "scale(1.08)" : isHovered ? "scale(1.04)" : "scale(1)",
+                            transform: isSelected ? "scale(1.08)" : isHovered ? "scale(1.04)" : isHighlighted ? "scale(1.02)" : "scale(1)",
                           }
                         : {}
 
@@ -568,6 +577,7 @@ export default function DepositMap({ style }: { style?: ViewStyle }) {
                             styles.hotInner,
                             isSelected && styles.selectedHot,
                             isHovered && styles.hoveredHot,
+                            isHighlighted && styles.highlightedHot,
                           ]}
                         />
                         {isHovered && Platform.OS === "web" && (
@@ -779,6 +789,12 @@ const styles = StyleSheet.create({
   hotInner: {
     flex: 1,
     backgroundColor: "transparent",
+    borderRadius: 8,
+  },
+  highlightedHot: {
+    backgroundColor: Colors.green + "40", // Verde con 40% de opacidad
+    borderWidth: 3,
+    borderColor: Colors.green,
     borderRadius: 8,
   },
   selectedHot: {

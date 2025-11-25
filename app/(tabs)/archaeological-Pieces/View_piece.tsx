@@ -526,7 +526,6 @@ export default function ViewPiece() {
                 <Navbar
                     title="Ficha de la pieza"
                     showBackArrow
-                    redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
                 />
                 <View style={{ padding: 16 }}>
                     <Text style={{ color: "#b00020", marginBottom: 8 }}>

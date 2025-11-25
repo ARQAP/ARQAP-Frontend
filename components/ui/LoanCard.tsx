@@ -42,7 +42,7 @@ const LoanCard: React.FC<LoanCardProps> = ({
       label: "Préstamo",
       value: `${loan.artefact?.name} - ${
         loan.artefact?.internalClassifier
-          ? `(${loan.artefact.internalClassifier.number}-${loan.artefact.internalClassifier.color})`
+          ? `(${loan.artefact.internalClassifier.name}-${loan.artefact.internalClassifier.number})`
           : "Sin clasificador"
       }`,
       isTitle: true,

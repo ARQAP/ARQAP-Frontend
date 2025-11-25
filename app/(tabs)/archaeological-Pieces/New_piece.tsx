@@ -1079,7 +1079,6 @@ export default function NewPiece() {
             <Navbar
                 title="Nueva pieza arqueologica"
                 showBackArrow
-                redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
             />
             <ScrollView
                 style={{ flex: 1 }}

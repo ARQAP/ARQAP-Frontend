@@ -13,6 +13,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -151,8 +152,17 @@ export default function NewLoan() {
         try {
             await createLoanMutation.mutateAsync(loanData);
             router.replace("/(tabs)/loan/View_loan");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error completo:", error);
+            // Extraer mensaje de error del response
+            const errorMessage = error?.response?.data?.error || error?.message || "Error al crear el préstamo";
+            
+            // Si el error indica que la pieza no está disponible, mostrar mensaje específico
+            if (errorMessage.includes("no está disponible")) {
+                setErrors({ artefact: errorMessage });
+            } else {
+                Alert.alert("Error", errorMessage);
+            }
         }
     };
 

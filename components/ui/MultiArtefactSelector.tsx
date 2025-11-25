@@ -24,6 +24,7 @@ interface MultiArtefactSelectorProps {
   selectedArtefactIds: number[];
   onSelect: (artefactIds: number[]) => void;
   onClose: () => void;
+  onlyAvailable?: boolean; // Si es true, solo muestra piezas disponibles
 }
 
 export default function MultiArtefactSelector({
@@ -32,6 +33,7 @@ export default function MultiArtefactSelector({
   selectedArtefactIds,
   onSelect,
   onClose,
+  onlyAvailable = false,
 }: MultiArtefactSelectorProps) {
   const { width } = useWindowDimensions();
   const isMobile = Platform.OS !== "web";
@@ -86,6 +88,11 @@ export default function MultiArtefactSelector({
   // Filtrar artefactos
   const filteredArtefacts = useMemo(() => {
     return artefacts.filter((artefact) => {
+      // Si onlyAvailable es true, filtrar piezas no disponibles
+      if (onlyAvailable && !artefact.available) {
+        return false;
+      }
+
       // Filtros de FiltersBar
       if (filters.name.trim() !== "") {
         const query = filters.name.toLowerCase();
@@ -147,6 +154,7 @@ export default function MultiArtefactSelector({
   }, [
     artefacts,
     filters,
+    onlyAvailable,
   ]);
 
   const toggleArtefactSelection = (artefactId: number) => {

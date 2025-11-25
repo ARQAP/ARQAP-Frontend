@@ -62,7 +62,6 @@ export default function DetailLoan() {
                 <Navbar
                     title="Detalle de Préstamo"
                     showBackArrow
-                    redirectTo="/(tabs)/loan/View_loan"
                 />
                 <View
                     style={{
@@ -86,7 +85,6 @@ export default function DetailLoan() {
                 <Navbar
                     title="Detalle de Préstamo"
                     showBackArrow
-                    redirectTo="/(tabs)/loan/View_loan"
                 />
                 <View
                     style={{
@@ -108,7 +106,7 @@ export default function DetailLoan() {
                             : "Préstamo no encontrado"}
                     </Text>
                     <TouchableOpacity
-                        onPress={() => router.push("/(tabs)/loan/View_loan")}
+                        onPress={() => router.back()}
                         style={{
                             marginTop: 20,
                             padding: 12,
@@ -132,7 +130,6 @@ export default function DetailLoan() {
             <Navbar
                 title="Detalle de Préstamo"
                 showBackArrow
-                redirectTo="/(tabs)/loan/View_loan"
             />
 
             <ScrollView style={{ flex: 1, padding: 20 }}>

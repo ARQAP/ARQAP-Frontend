@@ -1381,7 +1381,6 @@ export default function EditPiece() {
             <Navbar
                 title="Editar pieza arqueologica"
                 showBackArrow
-                redirectTo="/(tabs)/archaeological-Pieces/View_pieces"
             />
             <ScrollView
                 style={{ flex: 1 }}

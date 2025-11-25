@@ -15,15 +15,18 @@ function Navbar({ title, showBackArrow, backToHome, redirectTo }: NavbarProps) {
     const insets = useSafeAreaInsets();
 
     const handleBackPress = () => {
-        if (backToHome) {
-            // Si es explícitamente para ir a home, usar replace
-            router.replace("/(tabs)/home");
+        // Intentar usar back() siempre que sea posible para animación suave
+        // Si hay un redirectTo específico, verificar si podemos usar back()
+        if (redirectTo) {
+            // Para rutas específicas, usar push pero con animación
+            // Esto evita la pantalla negra que causa replace()
+            router.push(redirectTo as any);
             return;
         }
 
-        if (redirectTo) {
-            // Si hay una ruta específica, usar replace también
-            router.replace(redirectTo as any);
+        if (backToHome) {
+            // Para home, usar push con animación
+            router.push("/(tabs)/home");
             return;
         }
 
