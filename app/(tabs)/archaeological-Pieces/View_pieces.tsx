@@ -184,9 +184,23 @@ export default function ViewPieces() {
 
     const filtered = useMemo(() => {
         return pieces.filter((p) => {
-            // Nombre
-            if (query && !p.name.toLowerCase().includes(query.toLowerCase()))
-                return false;
+            // Nombre - permite múltiples valores separados por comas o espacios
+            if (query) {
+                // Separar por comas o espacios y limpiar cada término
+                const searchTerms = query
+                    .split(/[,\s]+/)
+                    .map((term) => term.trim().toLowerCase())
+                    .filter((term) => term.length > 0);
+                
+                if (searchTerms.length > 0) {
+                    // Verificar si el nombre contiene AL MENOS UNO de los términos
+                    const pieceNameLower = p.name.toLowerCase();
+                    const matchesAny = searchTerms.some((term) =>
+                        pieceNameLower.includes(term)
+                    );
+                    if (!matchesAny) return false;
+                }
+            }
 
             // Material (filtrado por "empieza con" para permitir búsqueda parcial)
             if (filters.material.trim() !== "") {
