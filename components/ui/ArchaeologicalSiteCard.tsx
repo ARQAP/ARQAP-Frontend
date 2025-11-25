@@ -3,15 +3,13 @@ import { ArchaeologicalSite } from "@/repositories/archaeologicalsiteRepository"
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Alert,
     Modal,
     Platform,
     Pressable,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
-import Badge from "./Badge";
 import InfoRow from "./InfoRow";
 
 interface ArchaeologicalSiteCardProps {
@@ -37,18 +35,7 @@ const ArchaeologicalSiteCard: React.FC<ArchaeologicalSiteCardProps> = ({
 
     const handleDelete = () => {
         setMenuVisible(false);
-        Alert.alert(
-            "Confirmar eliminación",
-            `¿Estás seguro que deseas eliminar el sitio "${site.Name}"?`,
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "Eliminar",
-                    style: "destructive",
-                    onPress: () => site.id && onDelete(site.id),
-                },
-            ]
-        );
+        site.id && onDelete(site.id);
     };
 
     const handleViewDetails = () => {
@@ -172,32 +159,6 @@ const ArchaeologicalSiteCard: React.FC<ArchaeologicalSiteCardProps> = ({
                             }}
                         >
                             <TouchableOpacity
-                                onPress={handleViewDetails}
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    padding: 12,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: "#e0e0e0",
-                                }}
-                            >
-                                <Ionicons
-                                    name="eye-outline"
-                                    size={16}
-                                    color={Colors.brown}
-                                    style={{ marginRight: 10 }}
-                                />
-                                <Text
-                                    style={{
-                                        fontSize: 16,
-                                        color: Colors.brown,
-                                    }}
-                                >
-                                    Ver detalles
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
                                 onPress={handleEdit}
                                 style={{
                                     flexDirection: "row",
@@ -319,32 +280,6 @@ const ArchaeologicalSiteCard: React.FC<ArchaeologicalSiteCardProps> = ({
                                 overflow: "hidden",
                             }}
                         >
-                            <TouchableOpacity
-                                onPress={handleViewDetails}
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    padding: 16,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: Colors.lightbrown,
-                                }}
-                            >
-                                <Ionicons
-                                    name="eye"
-                                    size={20}
-                                    color={Colors.green}
-                                />
-                                <Text
-                                    style={{
-                                        marginLeft: 12,
-                                        fontSize: 16,
-                                        color: Colors.black,
-                                    }}
-                                >
-                                    Ver detalles
-                                </Text>
-                            </TouchableOpacity>
-
                             <TouchableOpacity
                                 onPress={handleEdit}
                                 style={{

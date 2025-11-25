@@ -80,45 +80,59 @@ export default function Location() {
         });
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = async (id: number) => {
         if (!id) {
-            Alert.alert("Error", "ID de sitio no válido.");
+            if (Platform.OS === "web") {
+                window.alert("ID de sitio no válido.");
+            } else {
+                Alert.alert("Error", "ID de sitio no válido.");
+            }
             return;
         }
 
-        Alert.alert(
-            "Confirmar eliminación",
-            "¿Está seguro que desea eliminar este sitio arqueológico? Esta acción no se puede deshacer.",
-            [
-                {
-                    text: "Cancelar",
-                    style: "cancel",
-                },
-                {
-                    text: "Eliminar",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteMutation.mutateAsync(id);
-
-                            await refetch();
-
-                            Alert.alert(
-                                "Éxito",
-                                "Sitio arqueológico eliminado correctamente."
-                            );
-                        } catch (error: any) {
-                            console.error("Error al eliminar:", error);
-                            const errorMessage =
-                                error?.message ||
-                                error?.response?.data?.message ||
-                                "Error al eliminar el sitio arqueológico.";
-                            Alert.alert("Error", errorMessage);
-                        }
+        const confirmMessage = "¿Está seguro que desea eliminar este sitio arqueológico? Esta acción no se puede deshacer.";
+        
+        if (Platform.OS === "web") {
+            if (!window.confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                await deleteMutation.mutateAsync(id);
+                await refetch();
+                window.alert("Sitio arqueológico eliminado correctamente.");
+            } catch (error: any) {
+                console.error("Error al eliminar sitio:", error);
+                const errorMessage = error?.message || error?.response?.data?.message || "No se pudo eliminar el sitio arqueológico.";
+                window.alert(errorMessage);
+            }
+        } else {
+            Alert.alert(
+                "Confirmar eliminación",
+                confirmMessage,
+                [
+                    {
+                        text: "Cancelar",
+                        style: "cancel",
                     },
-                },
-            ]
-        );
+                    {
+                        text: "Eliminar",
+                        style: "destructive",
+                        onPress: async () => {
+                            try {
+                                await deleteMutation.mutateAsync(id);
+                                await refetch();
+                                Alert.alert("Éxito", "Sitio arqueológico eliminado correctamente.");
+                            } catch (error: any) {
+                                console.error("Error al eliminar sitio:", error);
+                                const errorMessage = error?.message || error?.response?.data?.message || "No se pudo eliminar el sitio arqueológico.";
+                                Alert.alert("Error", errorMessage);
+                            }
+                        },
+                    },
+                ]
+            );
+        }
     };
 
     const handleViewDetails = (site: SiteType) => {
