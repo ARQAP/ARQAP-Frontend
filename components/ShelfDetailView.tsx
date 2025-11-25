@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -26,6 +26,8 @@ type ShelfDetailViewProps = {
   initialSelectedSlot?: SlotId | null;
   filteredPieces?: ArtefactSummary[];
   onViewPieces?: () => void;
+  highlightedSlots?: string[];
+  filteredPieceIds?: number[];
 };
 
 const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
@@ -37,6 +39,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   initialSelectedSlot,
   filteredPieces = [],
   onViewPieces,
+  highlightedSlots = [],
+  filteredPieceIds = [],
 }) => {
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(initialSelectedSlot ?? null);
   
@@ -115,6 +119,32 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
     return { level: Number(level), column: String(columnPart).toUpperCase() };
   }, [selectedSlot]);
 
+  // Función para determinar si una pieza debe estar resaltada
+  // Una pieza se resalta si está en la lista de IDs filtrados originalmente
+  const isPieceHighlighted = useCallback((piece: ArtefactSummary) => {
+    if (filteredPieceIds.length === 0) return false;
+    if (piece.id == null) return false;
+    
+    return filteredPieceIds.includes(piece.id);
+  }, [filteredPieceIds]);
+
+  // Ordenar piezas: las resaltadas primero
+  const sortedPieces = useMemo(() => {
+    if (filteredPieces.length === 0) return [];
+    const highlighted: ArtefactSummary[] = [];
+    const notHighlighted: ArtefactSummary[] = [];
+    
+    filteredPieces.forEach((piece) => {
+      if (isPieceHighlighted(piece)) {
+        highlighted.push(piece);
+      } else {
+        notHighlighted.push(piece);
+      }
+    });
+    
+    return [...highlighted, ...notHighlighted];
+  }, [filteredPieces, isPieceHighlighted]);
+
   const outerStroke = 1.2;
 
   // --- RENDERIZADO DEL SVG (Extraído para usar en ambas vistas) ---
@@ -183,9 +213,22 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
         {/* Slots */}
         {slots.map(({ id, uiLevel, uiCol, x, y }) => {
           const selected = selectedSlot === id;
-          const fill = selected ? Colors.darkgreen : '#ffffff';
-          const stroke = selected ? Colors.green : Colors.cremit;
-          const labelColor = selected ? '#ffffff' : Colors.brown;
+          const highlighted = highlightedSlots.includes(id);
+          const fill = selected 
+            ? Colors.darkgreen 
+            : highlighted 
+            ? Colors.green + '80' // Verde con opacidad
+            : '#ffffff';
+          const stroke = selected 
+            ? Colors.green 
+            : highlighted 
+            ? Colors.darkgreen 
+            : Colors.cremit;
+          const labelColor = selected 
+            ? '#ffffff' 
+            : highlighted 
+            ? Colors.darkgreen 
+            : Colors.brown;
           
           const gapX = slotWidth * 0.12;
           const gapY = levelHeight * 0.18;
@@ -195,7 +238,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
           const slotH = levelHeight - gapY * 2;
 
           // Tu lógica original de fuentes
-          const slotLabelFontSize = selected
+          const slotLabelFontSize = selected || highlighted
             ? isLargeScreen ? 13 : 14
             : isLargeScreen ? 11.5 : 12.5;
 
@@ -207,8 +250,24 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
           return (
             <G key={id} onPress={() => handleSlotClick(id)} style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : undefined}>
               <Rect x={slotX + 1.2} y={slotY + 1.6} width={slotW} height={slotH} fill="#000" opacity={0.05} rx={10} />
-              <Rect x={slotX} y={slotY} width={slotW} height={slotH} fill={fill} stroke={stroke} strokeWidth={selected ? 2 : 1.4} rx={10} />
-              <SvgText x={textX} y={textY} textAnchor="middle" fontSize={slotLabelFontSize} fontWeight={selected ? '700' : '600'} fill={labelColor}>
+              <Rect 
+                x={slotX} 
+                y={slotY} 
+                width={slotW} 
+                height={slotH} 
+                fill={fill} 
+                stroke={stroke} 
+                strokeWidth={selected ? 2 : highlighted ? 2 : 1.4} 
+                rx={10} 
+              />
+              <SvgText 
+                x={textX} 
+                y={textY} 
+                textAnchor="middle" 
+                fontSize={slotLabelFontSize} 
+                fontWeight={selected || highlighted ? '700' : '600'} 
+                fill={labelColor}
+              >
                 {uiLevel}-{colLetter}
               </SvgText>
             </G>
@@ -285,21 +344,47 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                      <Text className="text-xs font-bold uppercase text-gray-500 mb-2">
                        Piezas ({filteredPieces.length})
                      </Text>
-                     {filteredPieces.length > 0 ? (
+                     {sortedPieces.length > 0 ? (
                        <FlatList
-                         data={filteredPieces}
+                         data={sortedPieces}
                          keyExtractor={(item) => String(item.id)}
-                         renderItem={({ item }) => (
-                           <View className="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-200">
-                             <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
-                               {item.name}
-                             </Text>
-                             <Text className="text-xs text-gray-600 mt-0.5" numberOfLines={1}>
-                               {item.material}
-                               {item.collectionName && ` · ${item.collectionName}`}
-                             </Text>
-                           </View>
-                         )}
+                         renderItem={({ item }) => {
+                           const isHighlighted = isPieceHighlighted(item);
+                           return (
+                             <View 
+                               className={`rounded-lg p-2.5 mb-2 border ${
+                                 isHighlighted 
+                                   ? 'bg-green-50 border-green-400' 
+                                   : 'bg-gray-50 border-gray-200'
+                               }`}
+                             >
+                               <View className="flex-row items-center justify-between">
+                                 <View className="flex-1">
+                                   <Text 
+                                     className={`text-sm font-semibold ${
+                                       isHighlighted ? 'text-green-900' : 'text-gray-900'
+                                     }`} 
+                                     numberOfLines={1}
+                                   >
+                                     {item.name}
+                                   </Text>
+                                   <Text className="text-xs text-gray-600 mt-0.5" numberOfLines={1}>
+                                     {item.material}
+                                     {item.collectionName && ` · ${item.collectionName}`}
+                                   </Text>
+                                 </View>
+                                 {isHighlighted && (
+                                   <View 
+                                     className="ml-2 px-2 py-1 rounded-full items-center justify-center"
+                                     style={{ backgroundColor: Colors.green, minWidth: 28, minHeight: 28 }}
+                                   >
+                                     <Ionicons name="star" size={14} color="#FFFFFF" />
+                                   </View>
+                                 )}
+                               </View>
+                             </View>
+                           );
+                         }}
                          scrollEnabled={true}
                          showsVerticalScrollIndicator={false}
                          style={{ maxHeight: 200 }}
@@ -470,21 +555,47 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
                     <Text className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: Colors.brown }}>
                       Piezas ({filteredPieces.length})
                     </Text>
-                    {filteredPieces.length > 0 ? (
+                    {sortedPieces.length > 0 ? (
                       <FlatList
-                        data={filteredPieces}
+                        data={sortedPieces}
                         keyExtractor={(item) => String(item.id)}
-                        renderItem={({ item }) => (
-                          <View className="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-200">
-                            <Text className="text-xs font-semibold text-gray-900" numberOfLines={1}>
-                              {item.name}
-                            </Text>
-                            <Text className="text-[10px] text-gray-600 mt-0.5" numberOfLines={1}>
-                              {item.material}
-                              {item.collectionName && ` · ${item.collectionName}`}
-                            </Text>
-                          </View>
-                        )}
+                        renderItem={({ item }) => {
+                          const isHighlighted = isPieceHighlighted(item);
+                          return (
+                            <View 
+                              className={`rounded-lg p-2.5 mb-2 border ${
+                                isHighlighted 
+                                  ? 'bg-green-50 border-green-400' 
+                                  : 'bg-gray-50 border-gray-200'
+                              }`}
+                            >
+                              <View className="flex-row items-center justify-between">
+                                <View className="flex-1">
+                                  <Text 
+                                    className={`text-xs font-semibold ${
+                                      isHighlighted ? 'text-green-900' : 'text-gray-900'
+                                    }`} 
+                                    numberOfLines={1}
+                                  >
+                                    {item.name}
+                                  </Text>
+                                  <Text className="text-[10px] text-gray-600 mt-0.5" numberOfLines={1}>
+                                    {item.material}
+                                    {item.collectionName && ` · ${item.collectionName}`}
+                                  </Text>
+                                </View>
+                                {isHighlighted && (
+                                  <View 
+                                    className="ml-2 px-2 py-1 rounded-full items-center justify-center"
+                                    style={{ backgroundColor: Colors.green, minWidth: 24, minHeight: 24 }}
+                                  >
+                                    <Ionicons name="star" size={12} color="#FFFFFF" />
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          );
+                        }}
                         scrollEnabled={true}
                         showsVerticalScrollIndicator={false}
                         style={{ maxHeight: 150 }}

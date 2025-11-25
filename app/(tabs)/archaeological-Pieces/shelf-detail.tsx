@@ -19,11 +19,38 @@ export default function ShelfDetailScreen() {
   // Normalizamos los params
   const rawShelfId = params.shelfId as string | undefined;
   const shelfLabelParam = params.shelfLabel as string | undefined;
+  const highlightedLevelsColumnsParam = params.highlightedLevelsColumns as string | undefined;
+  const filteredPieceIdsParam = params.filteredPieceIds as string | undefined;
 
   const shelfIdNumber =
     rawShelfId && !Number.isNaN(Number(rawShelfId))
       ? Number(rawShelfId)
       : undefined;
+
+  // Procesar niveles y columnas destacados
+  const highlightedSlots = useMemo(() => {
+    if (!highlightedLevelsColumnsParam) return [];
+    const pairs = highlightedLevelsColumnsParam.split(',').filter(Boolean);
+    return pairs.map((pair) => {
+      const [level, column] = pair.split(':');
+      const levelNum = Number(level);
+      const columnUpper = String(column).toUpperCase();
+      if (!Number.isNaN(levelNum) && columnUpper) {
+        return `L${levelNum}-C${columnUpper}`;
+      }
+      return null;
+    }).filter((slot): slot is string => slot !== null);
+  }, [highlightedLevelsColumnsParam]);
+
+  // Procesar IDs de las piezas filtradas originalmente
+  const filteredPieceIds = useMemo(() => {
+    if (!filteredPieceIdsParam) return [];
+    return filteredPieceIdsParam
+      .split(',')
+      .filter(Boolean)
+      .map(Number)
+      .filter((id) => !Number.isNaN(id));
+  }, [filteredPieceIdsParam]);
 
   // Si por algún motivo llegamos sin shelfId válido, mostramos error limpio
   if (!shelfIdNumber) {
@@ -202,6 +229,8 @@ export default function ShelfDetailScreen() {
       initialSelectedSlot={selectedSlot}
       filteredPieces={filteredPieces}
       onViewPieces={handleViewPieces}
+      highlightedSlots={highlightedSlots}
+      filteredPieceIds={filteredPieceIds}
     />
   );
 }

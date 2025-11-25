@@ -12,6 +12,33 @@ export default function DepositMapScreen() {
     ? highlightShelvesParam.split(',').filter(Boolean)
     : [];
 
+  // Extraer información de niveles y columnas para cada estantería
+  const shelfLevelsColumns = React.useMemo(() => {
+    const map: Record<string, Array<{ level: number; column: string }>> = {};
+    highlightedShelfIds.forEach((shelfId) => {
+      const paramValue = params?.[shelfId] as string | undefined;
+      if (paramValue) {
+        // Formato: "level1:column1,level2:column2,..."
+        const pairs = paramValue.split(',').filter(Boolean);
+        map[shelfId] = pairs.map((pair) => {
+          const [level, column] = pair.split(':');
+          return {
+            level: Number(level),
+            column: String(column).toUpperCase(),
+          };
+        }).filter((lc) => !Number.isNaN(lc.level) && lc.column);
+      }
+    });
+    return map;
+  }, [highlightedShelfIds, params]);
+
+  // Extraer IDs de las piezas filtradas originalmente
+  const filteredPieceIds = React.useMemo(() => {
+    const idsParam = params?.filteredPieceIds as string | undefined;
+    if (!idsParam) return [];
+    return idsParam.split(',').filter(Boolean).map(Number).filter((id) => !Number.isNaN(id));
+  }, [params?.filteredPieceIds]);
+
   return (
     <View className="flex-1"
     style={{ backgroundColor: Colors.cream }}
@@ -34,7 +61,11 @@ export default function DepositMapScreen() {
         </Text>
 
         <View className="flex-1">
-          <DepositMap highlightedShelfIds={highlightedShelfIds} />
+          <DepositMap 
+            highlightedShelfIds={highlightedShelfIds} 
+            shelfLevelsColumns={shelfLevelsColumns}
+            filteredPieceIds={filteredPieceIds}
+          />
         </View>
       </View>
     </View>

@@ -259,6 +259,27 @@ export default function ViewPieces() {
         });
     }, [pieces, query, filters]);
 
+    // Determinar qué piezas deben estar resaltadas
+    const highlightedPieceIds = useMemo(() => {
+        const ids = new Set<number>();
+        if (hasLevel && hasColumn && shelfIdNum != null) {
+            const levelNum = Number(params.level);
+            const columnUpper = String(params.column).toUpperCase();
+            filtered.forEach((p) => {
+                if (
+                    p.shelfCode === shelfIdNum &&
+                    p.level === levelNum &&
+                    String(p.column).toUpperCase() === columnUpper
+                ) {
+                    if (p.id != null) {
+                        ids.add(p.id);
+                    }
+                }
+            });
+        }
+        return ids;
+    }, [hasLevel, hasColumn, shelfIdNum, params?.level, params?.column, filtered]);
+
     // Mapeo inverso: shelfCode (número) -> ID del mapa (string)
     const SHELF_CODE_TO_MAP_ID: Record<number, string> = {
         1: "s_120_398",   // A1
@@ -293,7 +314,7 @@ export default function ViewPieces() {
         30: "s_399_226",  // MT-3
     };
 
-    // Extraer shelfCodes únicos de las piezas filtradas
+    // Extraer shelfCodes únicos de las piezas filtradas y sus niveles/columnas
     const highlightedShelfIds = useMemo(() => {
         const shelfCodes = new Set<number>();
         filtered.forEach((p) => {
@@ -307,6 +328,28 @@ export default function ViewPieces() {
             .filter((id): id is string => id != null);
     }, [filtered]);
 
+    // Mapear cada estantería a sus niveles y columnas con piezas
+    const shelfLevelsColumns = useMemo(() => {
+        const map: Record<number, Array<{ level: number; column: string }>> = {};
+        filtered.forEach((p) => {
+            if (p.shelfCode != null && p.level != null && p.column != null) {
+                if (!map[p.shelfCode]) {
+                    map[p.shelfCode] = [];
+                }
+                const level = p.level;
+                const column = String(p.column).toUpperCase();
+                // Evitar duplicados
+                const exists = map[p.shelfCode].some(
+                    (lc) => lc.level === level && lc.column === column
+                );
+                if (!exists) {
+                    map[p.shelfCode].push({ level, column });
+                }
+            }
+        });
+        return map;
+    }, [filtered]);
+
     // Función para navegar al mapa con estanterías resaltadas
     const handleGoToMap = () => {
         if (highlightedShelfIds.length === 0) {
@@ -316,10 +359,31 @@ export default function ViewPieces() {
             );
             return;
         }
+        
+        // Obtener IDs de las piezas filtradas originalmente
+        const filteredPieceIds = filtered
+            .filter((p) => p.id != null)
+            .map((p) => p.id!)
+            .join(",");
+        
+        // Convertir shelfLevelsColumns a un formato serializable para params
+        const levelsColumnsParam: Record<string, string> = {};
+        Object.entries(shelfLevelsColumns).forEach(([shelfCode, lcArray]) => {
+            const mapId = SHELF_CODE_TO_MAP_ID[Number(shelfCode)];
+            if (mapId) {
+                // Formato: "level1:column1,level2:column2,..."
+                levelsColumnsParam[mapId] = lcArray
+                    .map((lc) => `${lc.level}:${lc.column}`)
+                    .join(",");
+            }
+        });
+
         router.push({
             pathname: "/(tabs)/archaeological-Pieces/deposit-map",
             params: {
                 highlightShelves: highlightedShelfIds.join(","),
+                filteredPieceIds: filteredPieceIds,
+                ...levelsColumnsParam,
             },
         });
     };
@@ -433,6 +497,7 @@ export default function ViewPieces() {
     const renderWebView = () => {
         const webRenderPiece = ({ item }: { item: Piece }) => {
             const p = item;
+            const isHighlighted = p.id != null && highlightedPieceIds.has(p.id);
             return (
                 <View style={{ flex: 1, minWidth: 0, marginBottom: 24 }}>
                     <TouchableOpacity
@@ -443,14 +508,14 @@ export default function ViewPieces() {
                         }
                         activeOpacity={0.9}
                         style={{
-                            backgroundColor: "#FFFFFF",
+                            backgroundColor: isHighlighted ? "#F0F8E8" : "#FFFFFF",
                             borderRadius: 16,
                             padding: 24,
-                            borderWidth: 1,
-                            borderColor: "#E8DFD0",
-                            shadowColor: "#000",
+                            borderWidth: isHighlighted ? 3 : 1,
+                            borderColor: isHighlighted ? Colors.green : "#E8DFD0",
+                            shadowColor: isHighlighted ? Colors.green : "#000",
                             shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.08,
+                            shadowOpacity: isHighlighted ? 0.2 : 0.08,
                             shadowRadius: 16,
                             position: "relative",
                             overflow: "hidden",
@@ -460,14 +525,14 @@ export default function ViewPieces() {
                         onMouseEnter={(e: any) => {
                             e.currentTarget.style.transform =
                                 "translateY(-6px)";
-                            e.currentTarget.style.shadowOpacity = "0.16";
-                            e.currentTarget.style.borderColor = "#6B705C";
+                            e.currentTarget.style.shadowOpacity = isHighlighted ? "0.3" : "0.16";
+                            e.currentTarget.style.borderColor = isHighlighted ? Colors.darkgreen : "#6B705C";
                         }}
                         // @ts-ignore
                         onMouseLeave={(e: any) => {
                             e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.shadowOpacity = "0.08";
-                            e.currentTarget.style.borderColor = "#E8DFD0";
+                            e.currentTarget.style.shadowOpacity = isHighlighted ? "0.2" : "0.08";
+                            e.currentTarget.style.borderColor = isHighlighted ? Colors.green : "#E8DFD0";
                         }}
                     >
                         <View
@@ -762,6 +827,7 @@ export default function ViewPieces() {
 
         const mobileRenderPiece = ({ item }: { item: Piece }) => {
             const p = item;
+            const isHighlighted = p.id != null && highlightedPieceIds.has(p.id);
             return (
                 <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
                     <TouchableOpacity
@@ -772,16 +838,16 @@ export default function ViewPieces() {
                         }
                         activeOpacity={0.9}
                         style={{
-                            backgroundColor: "#fff",
+                            backgroundColor: isHighlighted ? "#F0F8E8" : "#fff",
                             borderRadius: 12,
                             padding: 16,
-                            borderWidth: 1,
-                            borderColor: "#e6dac4",
-                            shadowColor: "#000",
+                            borderWidth: isHighlighted ? 3 : 1,
+                            borderColor: isHighlighted ? Colors.green : "#e6dac4",
+                            shadowColor: isHighlighted ? Colors.green : "#000",
                             shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.05,
+                            shadowOpacity: isHighlighted ? 0.15 : 0.05,
                             shadowRadius: 4,
-                            elevation: 2,
+                            elevation: isHighlighted ? 4 : 2,
                         }}
                     >
                         <View

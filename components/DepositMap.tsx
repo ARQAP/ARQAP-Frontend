@@ -93,9 +93,13 @@ const SHELF_ID_MAP: Record<string, number> = {
 export default function DepositMap({ 
   style,
   highlightedShelfIds = [],
+  shelfLevelsColumns = {},
+  filteredPieceIds = [],
 }: { 
   style?: ViewStyle;
   highlightedShelfIds?: string[];
+  shelfLevelsColumns?: Record<string, Array<{ level: number; column: string }>>;
+  filteredPieceIds?: number[];
 }) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -337,6 +341,14 @@ export default function DepositMap({
                   if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId)
                   if (selected.label) params.shelfLabel = selected.label
                   
+                  // Agregar información de niveles y columnas si existe
+                  const levelsColumns = shelfLevelsColumns[selected.id]
+                  if (levelsColumns && levelsColumns.length > 0) {
+                    params.highlightedLevelsColumns = levelsColumns
+                      .map((lc) => `${lc.level}:${lc.column}`)
+                      .join(",")
+                  }
+                  
                   if (isMobile || isTablet) {
                     setShowMobilePanel(false)
                   }
@@ -363,6 +375,19 @@ export default function DepositMap({
                     const params: any = {}
                     if (shelfId !== undefined && shelfId !== null) params.shelfId = Number(shelfId)
                     if (selected.label) params.shelfLabel = selected.label
+                    
+                    // Agregar información de niveles y columnas si existe
+                    const levelsColumns = shelfLevelsColumns[selected.id]
+                    if (levelsColumns && levelsColumns.length > 0) {
+                      params.highlightedLevelsColumns = levelsColumns
+                        .map((lc) => `${lc.level}:${lc.column}`)
+                        .join(",")
+                    }
+                    
+                    // Agregar IDs de las piezas filtradas originalmente
+                    if (filteredPieceIds.length > 0) {
+                      params.filteredPieceIds = filteredPieceIds.join(",")
+                    }
                     
                     if (isMobile || isTablet) {
                       setShowMobilePanel(false)
