@@ -18,6 +18,367 @@ import {
     View,
 } from "react-native";
 
+/**
+ * Componente para renderizar una sección de movimientos (grupos o individuales)
+ */
+interface MovementSectionProps {
+    title: string;
+    movements: InternalMovement[];
+    variant: "group" | "single";
+    status: "active" | "finished";
+    onFinalize?: (id: number) => void;
+    onFinalizeGroup?: (groupId: number) => void;
+    groupStats?: Map<number, { total: number; active: number; finished: number }>;
+    expandedGroups: Set<number>;
+    onToggleGroup: (groupId: number) => void;
+}
+
+const MovementSection: React.FC<MovementSectionProps> = ({
+    title,
+    movements,
+    variant,
+    status,
+    onFinalize,
+    onFinalizeGroup,
+    groupStats,
+    expandedGroups,
+    onToggleGroup,
+}) => {
+    if (movements.length === 0) {
+        return null;
+    }
+
+    const isActive = status === "active";
+    const sectionColor = isActive ? Colors.brown : Colors.green;
+
+    return (
+        <View style={{ marginBottom: Platform.OS === "web" ? 20 : 16 }}>
+            {/* Título de la sección */}
+            <View
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: Platform.OS === "web" ? 12 : 10,
+                    paddingHorizontal: Platform.OS === "web" ? 4 : 0,
+                }}
+            >
+                <Ionicons
+                    name={variant === "group" ? "layers-outline" : "cube-outline"}
+                    size={18}
+                    color={sectionColor}
+                />
+                <Text
+                    style={{
+                        marginLeft: 8,
+                        fontSize: 16,
+                        fontWeight: "600",
+                        color: sectionColor,
+                    }}
+                >
+                    {title} ({movements.length})
+                </Text>
+            </View>
+
+            {/* Lista de movimientos */}
+            {variant === "group" ? (
+                // Renderizar grupos
+                <View style={{ gap: Platform.OS === "web" ? 12 : 10 }}>
+                    {Array.from(
+                        new Map(
+                            movements
+                                .filter((m) => m.groupMovementId !== null)
+                                .map((m) => [m.groupMovementId!, m])
+                        ).entries()
+                    ).map(([groupId, firstMovement]) => {
+                            const groupMovements = movements.filter(
+                                (m) => m.groupMovementId === groupId
+                            );
+                            const stats = groupStats?.get(groupId!);
+                            const isGroupExpanded = expandedGroups.has(groupId!);
+                            const hasActiveMovements =
+                                stats && stats.active > 0 && isActive;
+
+                            return (
+                                <View
+                                    key={groupId}
+                                    style={{
+                                        backgroundColor: Colors.white,
+                                        borderRadius: 12,
+                                        padding: Platform.OS === "web" ? 12 : 10,
+                                        shadowColor: sectionColor,
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.1,
+                                        shadowRadius: 4,
+                                        elevation: 3,
+                                        borderWidth: 2,
+                                        borderColor: sectionColor,
+                                    }}
+                                >
+                                    {/* Header del grupo */}
+                                    <View
+                                        style={{
+                                            flexDirection: "row",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            marginBottom: isGroupExpanded
+                                                ? Platform.OS === "web"
+                                                    ? 8
+                                                    : 6
+                                                : 0,
+                                            paddingHorizontal:
+                                                Platform.OS === "web" ? 12 : 10,
+                                            paddingVertical:
+                                                Platform.OS === "web" ? 10 : 8,
+                                            backgroundColor: isActive
+                                                ? Colors.cremitLight
+                                                : Colors.lightgreen,
+                                            borderRadius: 8,
+                                            borderLeftWidth: 5,
+                                            borderLeftColor: sectionColor,
+                                        }}
+                                        pointerEvents="box-none"
+                                    >
+                                        <Pressable
+                                            onPress={() => onToggleGroup(groupId!)}
+                                            style={{
+                                                flexDirection: "row",
+                                                alignItems: "center",
+                                                flex: 1,
+                                            }}
+                                        >
+                                            <Ionicons
+                                                name="layers-outline"
+                                                size={18}
+                                                color={sectionColor}
+                                            />
+                                            <Text
+                                                style={{
+                                                    marginLeft: 8,
+                                                    fontSize: 15,
+                                                    fontWeight: "600",
+                                                    color: sectionColor,
+                                                }}
+                                            >
+                                                Movimiento en grupo ({stats?.total || 0}{" "}
+                                                piezas)
+                                            </Text>
+                                        </Pressable>
+                                        <View
+                                            style={{
+                                                flexDirection: "row",
+                                                alignItems: "center",
+                                                marginLeft: 8,
+                                                gap: 8,
+                                            }}
+                                        >
+                                            {stats && (
+                                                <>
+                                                    {hasActiveMovements && (
+                                                        <Pressable
+                                                            onPress={() =>
+                                                                onFinalizeGroup?.(groupId!)
+                                                            }
+                                                            style={({ pressed }) => ({
+                                                                backgroundColor: Colors.green,
+                                                                paddingHorizontal: 10,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 8,
+                                                                flexDirection: "row",
+                                                                alignItems: "center",
+                                                                gap: 4,
+                                                                opacity: pressed ? 0.7 : 1,
+                                                            })}
+                                                        >
+                                                            <Ionicons
+                                                                name="checkmark-circle"
+                                                                size={14}
+                                                                color={Colors.cremit}
+                                                            />
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 12,
+                                                                    fontWeight: "600",
+                                                                    color: Colors.cremit,
+                                                                }}
+                                                            >
+                                                                Finalizar todos
+                                                            </Text>
+                                                        </Pressable>
+                                                    )}
+                                                    {stats.active > 0 && (
+                                                        <View
+                                                            style={{
+                                                                backgroundColor: Colors.brown,
+                                                                paddingHorizontal: 10,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 12,
+                                                            }}
+                                                        >
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 13,
+                                                                    fontWeight: "700",
+                                                                    color: Colors.cremit,
+                                                                }}
+                                                            >
+                                                                {stats.active}/{stats.total}{" "}
+                                                                activas
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                    {stats.finished > 0 && (
+                                                        <View
+                                                            style={{
+                                                                backgroundColor: Colors.green,
+                                                                paddingHorizontal: 10,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 12,
+                                                            }}
+                                                        >
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 13,
+                                                                    fontWeight: "700",
+                                                                    color: Colors.cremit,
+                                                                }}
+                                                            >
+                                                                {stats.finished}/{stats.total}{" "}
+                                                                finalizadas
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </>
+                                            )}
+                                            <Pressable onPress={() => onToggleGroup(groupId!)}>
+                                                <Ionicons
+                                                    name={
+                                                        isGroupExpanded
+                                                            ? "chevron-up-outline"
+                                                            : "chevron-down-outline"
+                                                    }
+                                                    size={18}
+                                                    color={sectionColor}
+                                                />
+                                            </Pressable>
+                                        </View>
+                                    </View>
+
+                                    {/* Movimientos del grupo */}
+                                    {isGroupExpanded && (
+                                        <View
+                                            style={{
+                                                marginTop: Platform.OS === "web" ? 8 : 6,
+                                                paddingLeft: Platform.OS === "web" ? 8 : 6,
+                                                borderLeftWidth: 2,
+                                                borderLeftColor: isActive
+                                                    ? Colors.cremitLight
+                                                    : Colors.lightgreen,
+                                                gap: Platform.OS === "web" ? 10 : 8,
+                                            }}
+                                        >
+                                            {groupMovements.map((movement) =>
+                                                movement.id ? (
+                                                    <View
+                                                        key={movement.id}
+                                                        style={{
+                                                            marginBottom:
+                                                                Platform.OS === "web" ? 8 : 6,
+                                                        }}
+                                                    >
+                                                        <MovementCard
+                                                            movement={movement}
+                                                            onViewDetails={() => {}}
+                                                            onFinalize={onFinalize}
+                                                            type="group"
+                                                            groupSize={stats?.total}
+                                                        />
+                                                    </View>
+                                                ) : null
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })}
+                </View>
+            ) : (
+                // Renderizar movimientos individuales
+                <View style={{ gap: Platform.OS === "web" ? 12 : 10 }}>
+                    {movements.map((movement) =>
+                        movement.id ? (
+                            <MovementCard
+                                key={movement.id}
+                                movement={movement}
+                                onViewDetails={() => {}}
+                                onFinalize={onFinalize}
+                                type="single"
+                            />
+                        ) : null
+                    )}
+                </View>
+            )}
+        </View>
+    );
+};
+
+/**
+ * Componente de leyenda visual
+ */
+const MovementLegend: React.FC = () => {
+    return (
+        <View
+            style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: Platform.OS === "web" ? 24 : 16,
+                paddingVertical: Platform.OS === "web" ? 12 : 10,
+                paddingHorizontal: Platform.OS === "web" ? 16 : 12,
+                backgroundColor: Colors.white,
+                borderRadius: 8,
+                marginBottom: Platform.OS === "web" ? 16 : 12,
+            }}
+        >
+            <View
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                }}
+            >
+                <Ionicons name="layers-outline" size={16} color={Colors.brown} />
+                <Text
+                    style={{
+                        fontSize: 12,
+                        color: Colors.brown,
+                        fontFamily: "CrimsonText-Regular",
+                    }}
+                >
+                    Movimiento en grupo
+                </Text>
+            </View>
+            <View
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                }}
+            >
+                <Ionicons name="cube-outline" size={16} color={Colors.brown} />
+                <Text
+                    style={{
+                        fontSize: 12,
+                        color: Colors.brown,
+                        fontFamily: "CrimsonText-Regular",
+                    }}
+                >
+                    Movimiento individual
+                </Text>
+            </View>
+        </View>
+    );
+};
+
 export default function ViewMovements() {
     const router = useRouter();
     const {
@@ -68,7 +429,10 @@ export default function ViewMovements() {
 
             await updateMovementMutation.mutateAsync({ id, payload: updateData });
             if (Platform.OS !== "web") {
-                Alert.alert("Éxito", "Movimiento finalizado correctamente. La pieza ha sido devuelta a su ubicación origen.");
+                Alert.alert(
+                    "Éxito",
+                    "Movimiento finalizado correctamente. La pieza ha sido devuelta a su ubicación origen."
+                );
             }
         } catch (error) {
             const errorMessage =
@@ -81,23 +445,22 @@ export default function ViewMovements() {
     };
 
     const handleFinalizeGroup = async (groupId: number) => {
-        console.log("handleFinalizeGroup called with groupId:", groupId);
         try {
             const groupMovements = movements.filter(
                 (m) => m.groupMovementId === groupId && !m.returnTime && m.id
             );
 
-            console.log("Group movements found:", groupMovements.length);
-
             if (groupMovements.length === 0) {
                 if (Platform.OS !== "web") {
-                    Alert.alert("Info", "No hay movimientos activos en este grupo para finalizar.");
+                    Alert.alert(
+                        "Info",
+                        "No hay movimientos activos en este grupo para finalizar."
+                    );
                 }
                 return;
             }
 
             const finalizeMovements = async () => {
-                console.log("Finalizing group movements...");
                 const returnDateTime = getReturnDateTime();
                 const promises = groupMovements.map((movement) => {
                     if (!movement.id) return Promise.resolve();
@@ -173,7 +536,10 @@ export default function ViewMovements() {
     };
 
     // Agrupar movimientos por groupMovementId y calcular estadísticas
-    const groupMovements = (movementsList: InternalMovement[], allMovements: InternalMovement[]) => {
+    const groupMovements = (
+        movementsList: InternalMovement[],
+        allMovements: InternalMovement[]
+    ) => {
         const grouped = new Map<number | null, InternalMovement[]>();
         const ungrouped: InternalMovement[] = [];
 
@@ -189,19 +555,10 @@ export default function ViewMovements() {
             }
         });
 
-        grouped.forEach((groupMovements) => {
-            groupMovements.sort((a, b) => {
-                try {
-                    const dateTimeA = new Date(a.movementTime).getTime();
-                    const dateTimeB = new Date(b.movementTime).getTime();
-                    return dateTimeB - dateTimeA;
-                } catch (error) {
-                    return 0;
-                }
-            });
-        });
-
-        const groupStats = new Map<number, { total: number; active: number; finished: number }>();
+        const groupStats = new Map<
+            number,
+            { total: number; active: number; finished: number }
+        >();
         grouped.forEach((groupMovements, groupId) => {
             if (groupId !== null) {
                 const allGroupMovements = allMovements.filter(
@@ -248,13 +605,13 @@ export default function ViewMovements() {
     const activeGrouped = groupMovements(activeMovements, movements);
     const finishedGrouped = groupMovements(finishedMovements, movements);
 
-    const renderMovementCard = (movement: InternalMovement) => (
-        <MovementCard
-            movement={movement}
-            onViewDetails={() => {}}
-            onFinalize={handleFinalizeMovement}
-        />
-    );
+    // Separar grupos e individuales para activos
+    const activeGroupMovements = Array.from(activeGrouped.grouped.values()).flat();
+    const activeSingleMovements = activeGrouped.ungrouped;
+
+    // Separar grupos e individuales para finalizados
+    const finishedGroupMovements = Array.from(finishedGrouped.grouped.values()).flat();
+    const finishedSingleMovements = finishedGrouped.ungrouped;
 
     if (isLoading) {
         return (
@@ -295,8 +652,7 @@ export default function ViewMovements() {
                             fontSize: 16,
                         }}
                     >
-                        Error al cargar los movimientos:{" "}
-                        {(error as Error).message}
+                        Error al cargar los movimientos: {(error as Error).message}
                     </Text>
                 </View>
             </View>
@@ -315,11 +671,6 @@ export default function ViewMovements() {
                     paddingBottom: 24,
                     alignItems: Platform.OS === "web" ? "center" : "stretch",
                 }}
-                refreshControl={
-                    Platform.OS !== "web" ? (
-                        <View />
-                    ) : undefined
-                }
             >
                 <View
                     style={{
@@ -496,177 +847,34 @@ export default function ViewMovements() {
                                         </Text>
                                     </View>
                                 ) : (
-                                    <View style={{ gap: Platform.OS === "web" ? 16 : 12 }}>
-                                        {/* Renderizar grupos de movimientos */}
-                                        {Array.from(activeGrouped.grouped.entries()).map(([groupId, groupMovements]) => {
-                                            if (groupId === null) return null;
-                                            const stats = activeGrouped.groupStats.get(groupId);
-                                            const isGroupExpanded = expandedGroups.has(groupId);
-                                            const hasActiveMovements = stats && stats.active > 0;
+                                    <>
+                                        {/* Leyenda visual */}
+                                        <MovementLegend />
 
-                                            return (
-                                                <View 
-                                                    key={groupId} 
-                                                    style={{ 
-                                                        marginBottom: Platform.OS === "web" ? 12 : 10,
-                                                        backgroundColor: Colors.white,
-                                                        borderRadius: 12,
-                                                        padding: Platform.OS === "web" ? 12 : 10,
-                                                        shadowColor: Colors.brown,
-                                                        shadowOffset: { width: 0, height: 2 },
-                                                        shadowOpacity: 0.1,
-                                                        shadowRadius: 4,
-                                                        elevation: 3,
-                                                        borderWidth: 2,
-                                                        borderColor: Colors.brown,
-                                                    }}
-                                                >
-                                                    <View
-                                                        style={{
-                                                            flexDirection: "row",
-                                                            alignItems: "center",
-                                                            marginBottom: 8,
-                                                            paddingHorizontal: Platform.OS === "web" ? 12 : 10,
-                                                            paddingVertical: Platform.OS === "web" ? 10 : 8,
-                                                            backgroundColor: Colors.cremitLight,
-                                                            borderRadius: 8,
-                                                            borderLeftWidth: 5,
-                                                            borderLeftColor: Colors.brown,
-                                                        }}
-                                                        pointerEvents="box-none"
-                                                    >
-                                                        <Pressable
-                                                            onPress={() => toggleGroupExpansion(groupId)}
-                                                            style={{
-                                                                flexDirection: "row",
-                                                                alignItems: "center",
-                                                                flex: 1,
-                                                            }}
-                                                        >
-                                                            <Ionicons name="layers-outline" size={18} color={Colors.brown} />
-                                                            <Text
-                                                                style={{
-                                                                    marginLeft: 8,
-                                                                    fontSize: 15,
-                                                                    fontWeight: "600",
-                                                                    color: Colors.brown,
-                                                                }}
-                                                            >
-                                                                Movimiento en grupo
-                                                            </Text>
-                                                        </Pressable>
-                                                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 8, gap: 8 }}>
-                                                            {stats && (
-                                                                <>
-                                                                    {hasActiveMovements && (
-                                                                        <Pressable
-                                                                            onPress={() => {
-                                                                                console.log("Finalizar todos button pressed for groupId:", groupId);
-                                                                                handleFinalizeGroup(groupId);
-                                                                            }}
-                                                                            style={({ pressed }) => ({
-                                                                                backgroundColor: Colors.green,
-                                                                                paddingHorizontal: 10,
-                                                                                paddingVertical: 4,
-                                                                                borderRadius: 8,
-                                                                                flexDirection: "row",
-                                                                                alignItems: "center",
-                                                                                gap: 4,
-                                                                                opacity: pressed ? 0.7 : 1,
-                                                                            })}
-                                                                        >
-                                                                            <Ionicons name="checkmark-circle" size={14} color={Colors.cremit} />
-                                                                            <Text
-                                                                                style={{
-                                                                                    fontSize: 12,
-                                                                                    fontWeight: "600",
-                                                                                    color: Colors.cremit,
-                                                                                }}
-                                                                            >
-                                                                                Finalizar todos
-                                                                            </Text>
-                                                                        </Pressable>
-                                                                    )}
-                                                                    <View
-                                                                        style={{
-                                                                            backgroundColor: Colors.brown,
-                                                                            paddingHorizontal: 10,
-                                                                            paddingVertical: 4,
-                                                                            borderRadius: 12,
-                                                                        }}
-                                                                    >
-                                                                        <Text
-                                                                            style={{
-                                                                                fontSize: 13,
-                                                                                fontWeight: "700",
-                                                                                color: Colors.cremit,
-                                                                            }}
-                                                                        >
-                                                                            {stats.active}/{stats.total} activas
-                                                                        </Text>
-                                                                    </View>
-                                                                    {stats.finished > 0 && (
-                                                                        <View
-                                                                            style={{
-                                                                                backgroundColor: Colors.green,
-                                                                                paddingHorizontal: 10,
-                                                                                paddingVertical: 4,
-                                                                                borderRadius: 12,
-                                                                            }}
-                                                                        >
-                                                                            <Text
-                                                                                style={{
-                                                                                    fontSize: 13,
-                                                                                    fontWeight: "700",
-                                                                                    color: Colors.cremit,
-                                                                                }}
-                                                                            >
-                                                                                {stats.finished}/{stats.total} finalizadas
-                                                                            </Text>
-                                                                        </View>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                            <Pressable
-                                                                onPress={() => toggleGroupExpansion(groupId)}
-                                                            >
-                                                                <Ionicons
-                                                                    name={
-                                                                        isGroupExpanded
-                                                                            ? "chevron-up-outline"
-                                                                            : "chevron-down-outline"
-                                                                    }
-                                                                    size={18}
-                                                                    color={Colors.brown}
-                                                                />
-                                                            </Pressable>
-                                                        </View>
-                                                    </View>
-                                                    {isGroupExpanded && (
-                                                        <View style={{ 
-                                                            marginTop: Platform.OS === "web" ? 8 : 6,
-                                                            paddingLeft: Platform.OS === "web" ? 8 : 6,
-                                                            borderLeftWidth: 2,
-                                                            borderLeftColor: Colors.cremit,
-                                                            gap: Platform.OS === "web" ? 10 : 8,
-                                                        }}>
-                                                            {groupMovements.map((movement) =>
-                                                                movement.id ? (
-                                                                    <View key={movement.id} style={{ marginBottom: Platform.OS === "web" ? 8 : 6 }}>
-                                                                        {renderMovementCard(movement)}
-                                                                    </View>
-                                                                ) : null
-                                                            )}
-                                                        </View>
-                                                    )}
-                                                </View>
-                                            );
-                                        })}
-                                        {/* Renderizar movimientos individuales */}
-                                        {activeGrouped.ungrouped.map((movement) =>
-                                            movement.id ? renderMovementCard(movement) : null
-                                        )}
-                                    </View>
+                                        {/* Movimientos en grupo */}
+                                        <MovementSection
+                                            title="Movimientos en grupo"
+                                            movements={activeGroupMovements}
+                                            variant="group"
+                                            status="active"
+                                            onFinalize={handleFinalizeMovement}
+                                            onFinalizeGroup={handleFinalizeGroup}
+                                            groupStats={activeGrouped.groupStats}
+                                            expandedGroups={expandedGroups}
+                                            onToggleGroup={toggleGroupExpansion}
+                                        />
+
+                                        {/* Movimientos individuales */}
+                                        <MovementSection
+                                            title="Movimientos individuales"
+                                            movements={activeSingleMovements}
+                                            variant="single"
+                                            status="active"
+                                            onFinalize={handleFinalizeMovement}
+                                            expandedGroups={expandedGroups}
+                                            onToggleGroup={toggleGroupExpansion}
+                                        />
+                                    </>
                                 )}
                             </>
                         )}
@@ -676,7 +884,9 @@ export default function ViewMovements() {
                     <View style={{ marginBottom: Platform.OS === "web" ? 30 : 24 }}>
                         <TouchableOpacity
                             activeOpacity={0.7}
-                            onPress={() => setIsFinishedSectionExpanded(!isFinishedSectionExpanded)}
+                            onPress={() =>
+                                setIsFinishedSectionExpanded(!isFinishedSectionExpanded)
+                            }
                             style={{
                                 flexDirection: "row",
                                 alignItems: "center",
@@ -751,148 +961,33 @@ export default function ViewMovements() {
                                         </Text>
                                     </View>
                                 ) : (
-                                    <View style={{ gap: Platform.OS === "web" ? 16 : 12 }}>
-                                        {/* Renderizar grupos de movimientos */}
-                                        {Array.from(finishedGrouped.grouped.entries()).map(([groupId, groupMovements]) => {
-                                            if (groupId === null) return null;
-                                            const stats = finishedGrouped.groupStats.get(groupId);
-                                            const isGroupExpanded = expandedGroups.has(groupId);
+                                    <>
+                                        {/* Leyenda visual */}
+                                        <MovementLegend />
 
-                                            return (
-                                                <View 
-                                                    key={groupId} 
-                                                    style={{ 
-                                                        marginBottom: Platform.OS === "web" ? 12 : 10,
-                                                        backgroundColor: Colors.white,
-                                                        borderRadius: 12,
-                                                        padding: Platform.OS === "web" ? 12 : 10,
-                                                        shadowColor: Colors.green,
-                                                        shadowOffset: { width: 0, height: 2 },
-                                                        shadowOpacity: 0.1,
-                                                        shadowRadius: 4,
-                                                        elevation: 3,
-                                                        borderWidth: 2,
-                                                        borderColor: Colors.green,
-                                                    }}
-                                                >
-                                                    <View
-                                                        style={{
-                                                            flexDirection: "row",
-                                                            alignItems: "center",
-                                                            marginBottom: 8,
-                                                            paddingHorizontal: Platform.OS === "web" ? 12 : 10,
-                                                            paddingVertical: Platform.OS === "web" ? 10 : 8,
-                                                            backgroundColor: Colors.lightgreen,
-                                                            opacity: 0.3,
-                                                            borderRadius: 8,
-                                                            borderLeftWidth: 5,
-                                                            borderLeftColor: Colors.green,
-                                                        }}
-                                                        pointerEvents="box-none"
-                                                    >
-                                                        <Pressable
-                                                            onPress={() => toggleGroupExpansion(groupId)}
-                                                            style={{
-                                                                flexDirection: "row",
-                                                                alignItems: "center",
-                                                                flex: 1,
-                                                            }}
-                                                        >
-                                                            <Ionicons name="layers-outline" size={18} color={Colors.green} />
-                                                            <Text
-                                                                style={{
-                                                                    marginLeft: 8,
-                                                                    fontSize: 15,
-                                                                    fontWeight: "600",
-                                                                    color: Colors.green,
-                                                                }}
-                                                            >
-                                                                Movimiento en grupo
-                                                            </Text>
-                                                        </Pressable>
-                                                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 8, gap: 8 }}>
-                                                            {stats && (
-                                                                <>
-                                                                    {stats.active > 0 && (
-                                                                        <View
-                                                                            style={{
-                                                                                backgroundColor: Colors.brown,
-                                                                                paddingHorizontal: 10,
-                                                                                paddingVertical: 4,
-                                                                                borderRadius: 12,
-                                                                            }}
-                                                                        >
-                                                                            <Text
-                                                                                style={{
-                                                                                    fontSize: 13,
-                                                                                    fontWeight: "700",
-                                                                                    color: Colors.cremit,
-                                                                                }}
-                                                                            >
-                                                                                {stats.active}/{stats.total} activas
-                                                                            </Text>
-                                                                        </View>
-                                                                    )}
-                                                                    <View
-                                                                        style={{
-                                                                            backgroundColor: Colors.green,
-                                                                            paddingHorizontal: 10,
-                                                                            paddingVertical: 4,
-                                                                            borderRadius: 12,
-                                                                        }}
-                                                                    >
-                                                                        <Text
-                                                                            style={{
-                                                                                fontSize: 13,
-                                                                                fontWeight: "700",
-                                                                                color: Colors.cremit,
-                                                                            }}
-                                                                        >
-                                                                            {stats.finished}/{stats.total} finalizadas
-                                                                        </Text>
-                                                                    </View>
-                                                                </>
-                                                            )}
-                                                            <Pressable
-                                                                onPress={() => toggleGroupExpansion(groupId)}
-                                                            >
-                                                                <Ionicons
-                                                                    name={
-                                                                        isGroupExpanded
-                                                                            ? "chevron-up-outline"
-                                                                            : "chevron-down-outline"
-                                                                    }
-                                                                    size={18}
-                                                                    color={Colors.green}
-                                                                />
-                                                            </Pressable>
-                                                        </View>
-                                                    </View>
-                                                    {isGroupExpanded && (
-                                                        <View style={{ 
-                                                            marginTop: Platform.OS === "web" ? 8 : 6,
-                                                            paddingLeft: Platform.OS === "web" ? 8 : 6,
-                                                            borderLeftWidth: 2,
-                                                            borderLeftColor: Colors.cremit,
-                                                            gap: Platform.OS === "web" ? 10 : 8,
-                                                        }}>
-                                                            {groupMovements.map((movement) =>
-                                                                movement.id ? (
-                                                                    <View key={movement.id} style={{ marginBottom: Platform.OS === "web" ? 8 : 6 }}>
-                                                                        {renderMovementCard(movement)}
-                                                                    </View>
-                                                                ) : null
-                                                            )}
-                                                        </View>
-                                                    )}
-                                                </View>
-                                            );
-                                        })}
-                                        {/* Renderizar movimientos individuales */}
-                                        {finishedGrouped.ungrouped.map((movement) =>
-                                            movement.id ? renderMovementCard(movement) : null
-                                        )}
-                                    </View>
+                                        {/* Movimientos en grupo */}
+                                        <MovementSection
+                                            title="Movimientos en grupo"
+                                            movements={finishedGroupMovements}
+                                            variant="group"
+                                            status="finished"
+                                            onFinalize={handleFinalizeMovement}
+                                            groupStats={finishedGrouped.groupStats}
+                                            expandedGroups={expandedGroups}
+                                            onToggleGroup={toggleGroupExpansion}
+                                        />
+
+                                        {/* Movimientos individuales */}
+                                        <MovementSection
+                                            title="Movimientos individuales"
+                                            movements={finishedSingleMovements}
+                                            variant="single"
+                                            status="finished"
+                                            onFinalize={handleFinalizeMovement}
+                                            expandedGroups={expandedGroups}
+                                            onToggleGroup={toggleGroupExpansion}
+                                        />
+                                    </>
                                 )}
                             </>
                         )}
