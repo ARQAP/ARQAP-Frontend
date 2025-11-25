@@ -4,6 +4,10 @@ import { useIsAuthenticated } from "./useUserAuth";
 
 const KEY = ["loans"];
 
+// Claves de queries de artefactos para invalidar cuando cambia la disponibilidad
+const ARTEFACT_KEY = ["artefacts"];
+const ARTEFACT_SUMMARY_KEY = ["artefact_summaries"];
+
 export const useLoans = () => {
   const { data: token } = useIsAuthenticated();
   return useQuery({
@@ -28,7 +32,11 @@ export const useCreateLoan = () => {
   return useMutation({
     mutationFn: (payload: Loan) => LoanRepository.create(payload),
     onSuccess: () => {
+      // Invalidar queries de préstamos
       qc.invalidateQueries({ queryKey: KEY });
+      // Invalidar queries de artefactos porque la disponibilidad cambió
+      qc.invalidateQueries({ queryKey: ARTEFACT_KEY });
+      qc.invalidateQueries({ queryKey: ARTEFACT_SUMMARY_KEY });
     },
   });
 };
@@ -39,8 +47,12 @@ export const useUpdateLoan = () => {
     mutationFn: ({ id, payload }: { id: number; payload: Loan }) =>
       LoanRepository.update(id, payload),
     onSuccess: (_data, { id }) => {
+      // Invalidar queries de préstamos
       qc.invalidateQueries({ queryKey: KEY });
       qc.invalidateQueries({ queryKey: [...KEY, id] });
+      // Invalidar queries de artefactos porque la disponibilidad puede cambiar
+      qc.invalidateQueries({ queryKey: ARTEFACT_KEY });
+      qc.invalidateQueries({ queryKey: ARTEFACT_SUMMARY_KEY });
     },
   });
 };
@@ -50,8 +62,12 @@ export const useDeleteLoan = () => {
   return useMutation({
     mutationFn: (id: number) => LoanRepository.remove(id),
     onSuccess: (_data, id) => {
+      // Invalidar queries de préstamos
       qc.invalidateQueries({ queryKey: KEY });
       qc.invalidateQueries({ queryKey: [...KEY, id] });
+      // Invalidar queries de artefactos porque la disponibilidad puede cambiar
+      qc.invalidateQueries({ queryKey: ARTEFACT_KEY });
+      qc.invalidateQueries({ queryKey: ARTEFACT_SUMMARY_KEY });
     },
   });
 };
