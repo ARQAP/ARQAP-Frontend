@@ -2232,7 +2232,7 @@ export default function EditPiece() {
                             {shelfIdFromCode
                                 ? `Mapa del ${getShelfLabel(shelfCode)}`
                                 : "Selecciona una estantería para ver su mapa"}
-                        </Text>{" "}
+                        </Text>
                         {!shelfIdFromCode ? (
                             <Text
                                 style={{
