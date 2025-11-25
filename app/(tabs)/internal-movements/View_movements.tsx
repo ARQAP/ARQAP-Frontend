@@ -36,10 +36,6 @@ export default function ViewMovements() {
     // Estados para controlar la expansión de cada grupo
     const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
 
-    const handleViewDetails = (movement: InternalMovement) => {
-        console.log("Ver detalles del movimiento:", movement);
-    };
-
     const getReturnDateTime = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -255,7 +251,7 @@ export default function ViewMovements() {
     const renderMovementCard = (movement: InternalMovement) => (
         <MovementCard
             movement={movement}
-            onViewDetails={handleViewDetails}
+            onViewDetails={() => {}}
             onFinalize={handleFinalizeMovement}
         />
     );
@@ -315,7 +311,7 @@ export default function ViewMovements() {
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={{
-                    paddingHorizontal: 20,
+                    paddingHorizontal: Platform.OS === "web" ? 20 : 16,
                     paddingBottom: 24,
                     alignItems: Platform.OS === "web" ? "center" : "stretch",
                 }}
@@ -332,7 +328,7 @@ export default function ViewMovements() {
                     }}
                 >
                     {/* Botón para crear nuevo movimiento */}
-                    <View style={{ paddingVertical: 20 }}>
+                    <View style={{ paddingVertical: Platform.OS === "web" ? 20 : 16 }}>
                         <Button
                             title="Registrar Movimiento"
                             onPress={() => router.push("/(tabs)/internal-movements/New_movement")}
@@ -341,14 +337,14 @@ export default function ViewMovements() {
                     </View>
 
                     {/* Estadísticas */}
-                    <View style={{ marginBottom: 20 }}>
+                    <View style={{ marginBottom: Platform.OS === "web" ? 20 : 16 }}>
                         <View
                             style={{
                                 flexDirection: "row",
                                 justifyContent: "space-around",
                                 backgroundColor: "#F7F5F2",
                                 borderRadius: 12,
-                                padding: 15,
+                                padding: Platform.OS === "web" ? 15 : 12,
                             }}
                         >
                             <View style={{ alignItems: "center" }}>
@@ -412,7 +408,7 @@ export default function ViewMovements() {
                     </View>
 
                     {/* Movimientos Activos */}
-                    <View style={{ marginBottom: 30 }}>
+                    <View style={{ marginBottom: Platform.OS === "web" ? 30 : 24 }}>
                         <TouchableOpacity
                             activeOpacity={0.7}
                             onPress={() => setIsActiveSectionExpanded(!isActiveSectionExpanded)}
@@ -421,9 +417,9 @@ export default function ViewMovements() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 backgroundColor: "#F7F5F2",
-                                padding: 15,
+                                padding: Platform.OS === "web" ? 15 : 12,
                                 borderRadius: 12,
-                                marginBottom: 15,
+                                marginBottom: Platform.OS === "web" ? 15 : 12,
                             }}
                         >
                             <View
@@ -500,7 +496,7 @@ export default function ViewMovements() {
                                         </Text>
                                     </View>
                                 ) : (
-                                    <View style={{ gap: 16 }}>
+                                    <View style={{ gap: Platform.OS === "web" ? 16 : 12 }}>
                                         {/* Renderizar grupos de movimientos */}
                                         {Array.from(activeGrouped.grouped.entries()).map(([groupId, groupMovements]) => {
                                             if (groupId === null) return null;
@@ -509,17 +505,32 @@ export default function ViewMovements() {
                                             const hasActiveMovements = stats && stats.active > 0;
 
                                             return (
-                                                <View key={groupId} style={{ marginBottom: -8 }}>
+                                                <View 
+                                                    key={groupId} 
+                                                    style={{ 
+                                                        marginBottom: Platform.OS === "web" ? 12 : 10,
+                                                        backgroundColor: Colors.white,
+                                                        borderRadius: 12,
+                                                        padding: Platform.OS === "web" ? 12 : 10,
+                                                        shadowColor: Colors.brown,
+                                                        shadowOffset: { width: 0, height: 2 },
+                                                        shadowOpacity: 0.1,
+                                                        shadowRadius: 4,
+                                                        elevation: 3,
+                                                        borderWidth: 2,
+                                                        borderColor: Colors.brown,
+                                                    }}
+                                                >
                                                     <View
                                                         style={{
                                                             flexDirection: "row",
                                                             alignItems: "center",
                                                             marginBottom: 8,
-                                                            paddingHorizontal: 12,
-                                                            paddingVertical: 8,
-                                                            backgroundColor: "#F0F8F0",
+                                                            paddingHorizontal: Platform.OS === "web" ? 12 : 10,
+                                                            paddingVertical: Platform.OS === "web" ? 10 : 8,
+                                                            backgroundColor: Colors.cremitLight,
                                                             borderRadius: 8,
-                                                            borderLeftWidth: 4,
+                                                            borderLeftWidth: 5,
                                                             borderLeftColor: Colors.brown,
                                                         }}
                                                         pointerEvents="box-none"
@@ -632,10 +643,16 @@ export default function ViewMovements() {
                                                         </View>
                                                     </View>
                                                     {isGroupExpanded && (
-                                                        <View style={{ marginLeft: 16, gap: 8 }}>
+                                                        <View style={{ 
+                                                            marginTop: Platform.OS === "web" ? 8 : 6,
+                                                            paddingLeft: Platform.OS === "web" ? 8 : 6,
+                                                            borderLeftWidth: 2,
+                                                            borderLeftColor: Colors.cremit,
+                                                            gap: Platform.OS === "web" ? 10 : 8,
+                                                        }}>
                                                             {groupMovements.map((movement) =>
                                                                 movement.id ? (
-                                                                    <View key={movement.id} style={{ marginBottom: 8 }}>
+                                                                    <View key={movement.id} style={{ marginBottom: Platform.OS === "web" ? 8 : 6 }}>
                                                                         {renderMovementCard(movement)}
                                                                     </View>
                                                                 ) : null
@@ -656,7 +673,7 @@ export default function ViewMovements() {
                     </View>
 
                     {/* Movimientos Finalizados */}
-                    <View style={{ marginBottom: 30 }}>
+                    <View style={{ marginBottom: Platform.OS === "web" ? 30 : 24 }}>
                         <TouchableOpacity
                             activeOpacity={0.7}
                             onPress={() => setIsFinishedSectionExpanded(!isFinishedSectionExpanded)}
@@ -665,9 +682,9 @@ export default function ViewMovements() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 backgroundColor: "#F7F5F2",
-                                padding: 15,
+                                padding: Platform.OS === "web" ? 15 : 12,
                                 borderRadius: 12,
-                                marginBottom: 15,
+                                marginBottom: Platform.OS === "web" ? 15 : 12,
                             }}
                         >
                             <View
@@ -734,7 +751,7 @@ export default function ViewMovements() {
                                         </Text>
                                     </View>
                                 ) : (
-                                    <View style={{ gap: 16 }}>
+                                    <View style={{ gap: Platform.OS === "web" ? 16 : 12 }}>
                                         {/* Renderizar grupos de movimientos */}
                                         {Array.from(finishedGrouped.grouped.entries()).map(([groupId, groupMovements]) => {
                                             if (groupId === null) return null;
@@ -742,24 +759,45 @@ export default function ViewMovements() {
                                             const isGroupExpanded = expandedGroups.has(groupId);
 
                                             return (
-                                                <View key={groupId} style={{ marginBottom: 8 }}>
-                                                    <TouchableOpacity
-                                                        activeOpacity={0.7}
-                                                        onPress={() => toggleGroupExpansion(groupId)}
+                                                <View 
+                                                    key={groupId} 
+                                                    style={{ 
+                                                        marginBottom: Platform.OS === "web" ? 12 : 10,
+                                                        backgroundColor: Colors.white,
+                                                        borderRadius: 12,
+                                                        padding: Platform.OS === "web" ? 12 : 10,
+                                                        shadowColor: Colors.green,
+                                                        shadowOffset: { width: 0, height: 2 },
+                                                        shadowOpacity: 0.1,
+                                                        shadowRadius: 4,
+                                                        elevation: 3,
+                                                        borderWidth: 2,
+                                                        borderColor: Colors.green,
+                                                    }}
+                                                >
+                                                    <View
                                                         style={{
                                                             flexDirection: "row",
                                                             alignItems: "center",
-                                                            justifyContent: "space-between",
                                                             marginBottom: 8,
-                                                            paddingHorizontal: 12,
-                                                            paddingVertical: 8,
-                                                            backgroundColor: "#F0F8F0",
+                                                            paddingHorizontal: Platform.OS === "web" ? 12 : 10,
+                                                            paddingVertical: Platform.OS === "web" ? 10 : 8,
+                                                            backgroundColor: Colors.lightgreen,
+                                                            opacity: 0.3,
                                                             borderRadius: 8,
-                                                            borderLeftWidth: 4,
+                                                            borderLeftWidth: 5,
                                                             borderLeftColor: Colors.green,
                                                         }}
+                                                        pointerEvents="box-none"
                                                     >
-                                                        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                                                        <Pressable
+                                                            onPress={() => toggleGroupExpansion(groupId)}
+                                                            style={{
+                                                                flexDirection: "row",
+                                                                alignItems: "center",
+                                                                flex: 1,
+                                                            }}
+                                                        >
                                                             <Ionicons name="layers-outline" size={18} color={Colors.green} />
                                                             <Text
                                                                 style={{
@@ -771,7 +809,7 @@ export default function ViewMovements() {
                                                             >
                                                                 Movimiento en grupo
                                                             </Text>
-                                                        </View>
+                                                        </Pressable>
                                                         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 8, gap: 8 }}>
                                                             {stats && (
                                                                 <>
@@ -815,22 +853,32 @@ export default function ViewMovements() {
                                                                     </View>
                                                                 </>
                                                             )}
-                                                            <Ionicons
-                                                                name={
-                                                                    isGroupExpanded
-                                                                        ? "chevron-up-outline"
-                                                                        : "chevron-down-outline"
-                                                                }
-                                                                size={18}
-                                                                color={Colors.green}
-                                                            />
+                                                            <Pressable
+                                                                onPress={() => toggleGroupExpansion(groupId)}
+                                                            >
+                                                                <Ionicons
+                                                                    name={
+                                                                        isGroupExpanded
+                                                                            ? "chevron-up-outline"
+                                                                            : "chevron-down-outline"
+                                                                    }
+                                                                    size={18}
+                                                                    color={Colors.green}
+                                                                />
+                                                            </Pressable>
                                                         </View>
-                                                    </TouchableOpacity>
+                                                    </View>
                                                     {isGroupExpanded && (
-                                                        <View style={{ marginLeft: 16, gap: 8 }}>
+                                                        <View style={{ 
+                                                            marginTop: Platform.OS === "web" ? 8 : 6,
+                                                            paddingLeft: Platform.OS === "web" ? 8 : 6,
+                                                            borderLeftWidth: 2,
+                                                            borderLeftColor: Colors.cremit,
+                                                            gap: Platform.OS === "web" ? 10 : 8,
+                                                        }}>
                                                             {groupMovements.map((movement) =>
                                                                 movement.id ? (
-                                                                    <View key={movement.id} style={{ marginBottom: 8 }}>
+                                                                    <View key={movement.id} style={{ marginBottom: Platform.OS === "web" ? 8 : 6 }}>
                                                                         {renderMovementCard(movement)}
                                                                     </View>
                                                                 ) : null

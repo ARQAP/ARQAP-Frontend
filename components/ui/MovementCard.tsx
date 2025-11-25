@@ -85,13 +85,7 @@ const MovementCard: React.FC<MovementCardProps> = ({
     }] : []),
   ];
 
-  const actions: CardAction[] = [
-    {
-      icon: "eye",
-      label: "Ver detalles",
-      onPress: () => onViewDetails(movement),
-    },
-  ];
+  const actions: CardAction[] = [];
 
   // Solo agregar la opción de finalizar si el movimiento está activo
   if (isActive && onFinalize && movement.id) {
