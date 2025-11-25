@@ -154,10 +154,6 @@ const MovementCard: React.FC<MovementCardProps> = ({
   return (
     <View style={movementType === "group" ? styles.groupCardContainer : styles.singleCardContainer}>
       <View style={movementType === "group" ? styles.groupCardWrapper : undefined}>
-        {/* Badges arriba de la card */}
-        <View style={styles.badgesWrapper}>
-          {renderBadges()}
-        </View>
         <GenericCard
           id={movement.id}
           fields={fields}
@@ -166,6 +162,7 @@ const MovementCard: React.FC<MovementCardProps> = ({
           customStyles={{
             container: movementType === "group" ? styles.groupCard : styles.singleCard,
           }}
+          headerContent={renderBadges()}
         />
       </View>
     </View>
@@ -173,14 +170,11 @@ const MovementCard: React.FC<MovementCardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  badgesWrapper: {
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
   badgesContainer: {
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+    flexWrap: "wrap",
   },
   badge: {
     flexDirection: "row",

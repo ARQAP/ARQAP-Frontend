@@ -110,7 +110,7 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                         shadowOpacity: 0.1,
                                         shadowRadius: 4,
                                         elevation: 3,
-                                        borderWidth: 2,
+                                        borderWidth: 1.8,
                                         borderColor: sectionColor,
                                     }}
                                 >
@@ -317,64 +317,6 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                     )}
                 </View>
             )}
-        </View>
-    );
-};
-
-/**
- * Componente de leyenda visual
- */
-const MovementLegend: React.FC = () => {
-    return (
-        <View
-            style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: Platform.OS === "web" ? 24 : 16,
-                paddingVertical: Platform.OS === "web" ? 12 : 10,
-                paddingHorizontal: Platform.OS === "web" ? 16 : 12,
-                backgroundColor: Colors.white,
-                borderRadius: 8,
-                marginBottom: Platform.OS === "web" ? 16 : 12,
-            }}
-        >
-            <View
-                style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                }}
-            >
-                <Ionicons name="layers-outline" size={16} color={Colors.brown} />
-                <Text
-                    style={{
-                        fontSize: 12,
-                        color: Colors.brown,
-                        fontFamily: "CrimsonText-Regular",
-                    }}
-                >
-                    Movimiento en grupo
-                </Text>
-            </View>
-            <View
-                style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                }}
-            >
-                <Ionicons name="cube-outline" size={16} color={Colors.brown} />
-                <Text
-                    style={{
-                        fontSize: 12,
-                        color: Colors.brown,
-                        fontFamily: "CrimsonText-Regular",
-                    }}
-                >
-                    Movimiento individual
-                </Text>
-            </View>
         </View>
     );
 };
@@ -848,8 +790,6 @@ export default function ViewMovements() {
                                     </View>
                                 ) : (
                                     <>
-                                        {/* Leyenda visual */}
-                                        <MovementLegend />
 
                                         {/* Movimientos en grupo */}
                                         <MovementSection
@@ -962,8 +902,6 @@ export default function ViewMovements() {
                                     </View>
                                 ) : (
                                     <>
-                                        {/* Leyenda visual */}
-                                        <MovementLegend />
 
                                         {/* Movimientos en grupo */}
                                         <MovementSection

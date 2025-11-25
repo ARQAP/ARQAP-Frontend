@@ -37,6 +37,7 @@ export interface GenericCardProps {
     subtitle?: object;
     field?: object;
   };
+  headerContent?: React.ReactNode; // Contenido adicional para el header (ej: badges)
 }
 
 const GenericCard: React.FC<GenericCardProps> = ({
@@ -45,6 +46,7 @@ const GenericCard: React.FC<GenericCardProps> = ({
   actions,
   cardType = "",
   customStyles = {},
+  headerContent,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -92,6 +94,12 @@ const GenericCard: React.FC<GenericCardProps> = ({
             >
               {subtitleField.value}
             </Text>
+          )}
+          {/* Contenido adicional del header (ej: badges) */}
+          {headerContent && (
+            <View style={styles.headerContent}>
+              {headerContent}
+            </View>
           )}
         </View>
 
@@ -199,6 +207,9 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
     marginRight: 12,
+  },
+  headerContent: {
+    marginTop: 8,
   },
   title: {
     fontSize: 18,
