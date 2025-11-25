@@ -16,6 +16,7 @@ import {
     Text,
     TouchableOpacity,
     View,
+    useWindowDimensions,
 } from "react-native";
 
 /**
@@ -44,6 +45,10 @@ const MovementSection: React.FC<MovementSectionProps> = ({
     expandedGroups,
     onToggleGroup,
 }) => {
+    const { width } = useWindowDimensions();
+    const isNarrow = width < 420;
+    const isVeryNarrow = width < 360;
+
     if (movements.length === 0) {
         return null;
     }
@@ -97,6 +102,10 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                             const isGroupExpanded = expandedGroups.has(groupId!);
                             const hasActiveMovements =
                                 stats && stats.active > 0 && isActive;
+                            
+                            if (__DEV__ && hasActiveMovements) {
+                                console.log("Group header - Platform.OS:", Platform.OS, "hasActiveMovements:", hasActiveMovements, "stats:", stats);
+                            }
 
                             return (
                                 <View
@@ -110,15 +119,15 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                         shadowOpacity: 0.1,
                                         shadowRadius: 4,
                                         elevation: 3,
-                                        borderWidth: 1.8,
+                                        borderWidth: 1,
                                         borderColor: sectionColor,
                                     }}
                                 >
                                     {/* Header del grupo */}
                                     <View
                                         style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
+                                            flexDirection: isNarrow ? "column" : "row",
+                                            alignItems: isNarrow ? "flex-start" : "center",
                                             justifyContent: "space-between",
                                             marginBottom: isGroupExpanded
                                                 ? Platform.OS === "web"
@@ -126,7 +135,7 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                                     : 6
                                                 : 0,
                                             paddingHorizontal:
-                                                Platform.OS === "web" ? 12 : 10,
+                                                Platform.OS === "web" ? 12 : isNarrow ? 8 : 10,
                                             paddingVertical:
                                                 Platform.OS === "web" ? 10 : 8,
                                             backgroundColor: isActive
@@ -135,15 +144,40 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                             borderRadius: 8,
                                             borderLeftWidth: 5,
                                             borderLeftColor: sectionColor,
+                                            gap: isNarrow ? 8 : 0,
+                                            position: "relative",
                                         }}
                                         pointerEvents="box-none"
                                     >
+                                        {/* Chevron siempre arriba a la derecha */}
+                                        <Pressable
+                                            onPress={() => onToggleGroup(groupId!)}
+                                            style={{
+                                                position: "absolute",
+                                                top: Platform.OS === "web" ? 10 : 8,
+                                                right: Platform.OS === "web" ? 12 : isNarrow ? 8 : 10,
+                                                zIndex: 10,
+                                            }}
+                                        >
+                                            <Ionicons
+                                                name={
+                                                    isGroupExpanded
+                                                        ? "chevron-up-outline"
+                                                        : "chevron-down-outline"
+                                                }
+                                                size={18}
+                                                color={sectionColor}
+                                            />
+                                        </Pressable>
+
                                         <Pressable
                                             onPress={() => onToggleGroup(groupId!)}
                                             style={{
                                                 flexDirection: "row",
                                                 alignItems: "center",
                                                 flex: 1,
+                                                minWidth: 0,
+                                                paddingRight: 30, // Espacio para el chevron
                                             }}
                                         >
                                             <Ionicons
@@ -157,7 +191,10 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                                     fontSize: 15,
                                                     fontWeight: "600",
                                                     color: sectionColor,
+                                                    flexShrink: 1,
                                                 }}
+                                                numberOfLines={1}
+                                                ellipsizeMode="tail"
                                             >
                                                 Movimiento en grupo ({stats?.total || 0}{" "}
                                                 piezas)
@@ -167,62 +204,95 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                             style={{
                                                 flexDirection: "row",
                                                 alignItems: "center",
-                                                marginLeft: 8,
+                                                flexWrap: "wrap",
+                                                marginLeft: isNarrow ? 0 : 8,
+                                                marginRight: isNarrow ? 0 : 30, // Espacio para el chevron
                                                 gap: 8,
                                             }}
                                         >
                                             {stats && (
                                                 <>
-                                                    {hasActiveMovements && (
-                                                        <Pressable
-                                                            onPress={() =>
-                                                                onFinalizeGroup?.(groupId!)
-                                                            }
-                                                            style={({ pressed }) => ({
-                                                                backgroundColor: Colors.green,
-                                                                paddingHorizontal: 10,
-                                                                paddingVertical: 4,
-                                                                borderRadius: 8,
-                                                                flexDirection: "row",
-                                                                alignItems: "center",
-                                                                gap: 4,
-                                                                opacity: pressed ? 0.7 : 1,
-                                                            })}
-                                                        >
-                                                            <Ionicons
-                                                                name="checkmark-circle"
-                                                                size={14}
-                                                                color={Colors.cremit}
-                                                            />
-                                                            <Text
+                                                    {hasActiveMovements && (() => {
+                                                        const isMobile = Platform.OS !== "web";
+                                                        const bgColor = isMobile 
+                                                            ? "#2d5016" // Verde oscuro para mobile - mejor contraste
+                                                            : Colors.green; // Verde original para web
+                                                        
+                                                        console.log("Rendering Finalizar todos button - Platform.OS:", Platform.OS, "isMobile:", isMobile, "bgColor:", bgColor);
+                                                        
+                                                        return (
+                                                            <View
                                                                 style={{
-                                                                    fontSize: 12,
-                                                                    fontWeight: "600",
-                                                                    color: Colors.cremit,
+                                                                    
+                                                                    backgroundColor: bgColor,
+                                                                    borderRadius: 8,
+                                                                    flexDirection: "row",
+                                                                    alignItems: "center",
+                                                                    ...(isMobile && {
+                                                                        borderWidth: 1,
+                                                                        borderColor: "#1a3d0e",
+                                                                        shadowColor: "#000",
+                                                                        shadowOffset: { width: 0, height: 1 },
+                                                                        shadowOpacity: 0.3,
+                                                                        shadowRadius: 2,
+                                                                        elevation: 3,
+                                                                    }),
                                                                 }}
                                                             >
-                                                                Finalizar todos
-                                                            </Text>
-                                                        </Pressable>
-                                                    )}
+                                                                <Pressable
+                                                                    onPress={() =>
+                                                                        onFinalizeGroup?.(groupId!)
+                                                                    }
+                                                                    style={({ pressed }) => ({
+                                                                        paddingHorizontal: isVeryNarrow ? 8 : 10,
+                                                                        paddingVertical: 4,
+                                                                        borderRadius: 8,
+                                                                        flexDirection: "row",
+                                                                        alignItems: "center",
+                                                                        gap: 4,
+                                                                        opacity: pressed ? 0.7 : 1,
+                                                                        flex: 1,
+                                                                    })}
+                                                                >
+                                                                    <Ionicons
+                                                                        name="checkmark-circle"
+                                                                        size={14}
+                                                                        color={Colors.cremit}
+                                                                    />
+                                                                    {!isVeryNarrow && (
+                                                                        <Text
+                                                                            style={{
+                                                                                fontSize: 12,
+                                                                                fontWeight: "600",
+                                                                                color: Colors.cremit,
+                                                                                flexShrink: 0,
+                                                                            }}
+                                                                        >
+                                                                            Finalizar todos
+                                                                        </Text>
+                                                                    )}
+                                                                </Pressable>
+                                                            </View>
+                                                        );
+                                                    })()}
                                                     {stats.active > 0 && (
                                                         <View
                                                             style={{
                                                                 backgroundColor: Colors.brown,
-                                                                paddingHorizontal: 10,
+                                                                paddingHorizontal: isVeryNarrow ? 8 : 10,
                                                                 paddingVertical: 4,
                                                                 borderRadius: 12,
                                                             }}
                                                         >
                                                             <Text
                                                                 style={{
-                                                                    fontSize: 13,
+                                                                    fontSize: isVeryNarrow ? 11 : 13,
                                                                     fontWeight: "700",
                                                                     color: Colors.cremit,
                                                                 }}
                                                             >
                                                                 {stats.active}/{stats.total}{" "}
-                                                                activas
+                                                                {!isVeryNarrow && "activas"}
                                                             </Text>
                                                         </View>
                                                     )}
@@ -230,36 +300,25 @@ const MovementSection: React.FC<MovementSectionProps> = ({
                                                         <View
                                                             style={{
                                                                 backgroundColor: Colors.green,
-                                                                paddingHorizontal: 10,
+                                                                paddingHorizontal: isVeryNarrow ? 8 : 10,
                                                                 paddingVertical: 4,
                                                                 borderRadius: 12,
                                                             }}
                                                         >
                                                             <Text
                                                                 style={{
-                                                                    fontSize: 13,
+                                                                    fontSize: isVeryNarrow ? 11 : 13,
                                                                     fontWeight: "700",
                                                                     color: Colors.cremit,
                                                                 }}
                                                             >
                                                                 {stats.finished}/{stats.total}{" "}
-                                                                finalizadas
+                                                                {!isVeryNarrow && "finalizadas"}
                                                             </Text>
                                                         </View>
                                                     )}
                                                 </>
                                             )}
-                                            <Pressable onPress={() => onToggleGroup(groupId!)}>
-                                                <Ionicons
-                                                    name={
-                                                        isGroupExpanded
-                                                            ? "chevron-up-outline"
-                                                            : "chevron-down-outline"
-                                                    }
-                                                    size={18}
-                                                    color={sectionColor}
-                                                />
-                                            </Pressable>
                                         </View>
                                     </View>
 
@@ -602,7 +661,7 @@ export default function ViewMovements() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: Colors.cream }}>
+        <View style={{ flex: 1, backgroundColor: "#F3E9DD" }}>
             <Navbar title="Movimientos Internos" showBackArrow />
 
             <ScrollView
@@ -634,13 +693,21 @@ export default function ViewMovements() {
                         <View
                             style={{
                                 flexDirection: "row",
+                                flexWrap: "wrap",
                                 justifyContent: "space-around",
                                 backgroundColor: "#F7F5F2",
                                 borderRadius: 12,
                                 padding: Platform.OS === "web" ? 15 : 12,
+                                gap: Platform.OS === "web" ? 0 : 8,
                             }}
                         >
-                            <View style={{ alignItems: "center" }}>
+                            <View
+                                style={{
+                                    alignItems: "center",
+                                    minWidth: Platform.OS === "web" ? undefined : 80,
+                                    flex: Platform.OS === "web" ? undefined : 1,
+                                }}
+                            >
                                 <Text
                                     style={{
                                         fontSize: 24,
@@ -659,7 +726,13 @@ export default function ViewMovements() {
                                     Activos
                                 </Text>
                             </View>
-                            <View style={{ alignItems: "center" }}>
+                            <View
+                                style={{
+                                    alignItems: "center",
+                                    minWidth: Platform.OS === "web" ? undefined : 80,
+                                    flex: Platform.OS === "web" ? undefined : 1,
+                                }}
+                            >
                                 <Text
                                     style={{
                                         fontSize: 24,
@@ -678,7 +751,13 @@ export default function ViewMovements() {
                                     Finalizados
                                 </Text>
                             </View>
-                            <View style={{ alignItems: "center" }}>
+                            <View
+                                style={{
+                                    alignItems: "center",
+                                    minWidth: Platform.OS === "web" ? undefined : 80,
+                                    flex: Platform.OS === "web" ? undefined : 1,
+                                }}
+                            >
                                 <Text
                                     style={{
                                         fontSize: 24,

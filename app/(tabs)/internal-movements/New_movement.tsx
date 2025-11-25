@@ -22,6 +22,7 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
+    Pressable,
     ScrollView,
     Text,
     TextInput,
@@ -32,6 +33,16 @@ import {
 export default function NewMovement() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { width } = useWindowDimensions();
+
+  // Variables responsive
+  const isMobile = Platform.OS !== "web";
+  const isNarrow = width < 420;
+  const pagePadX = isMobile ? 16 : 32;
+  const pagePadTop = isMobile ? 16 : 40;
+  const cardPad = isMobile ? 16 : 24;
+  const headerPad = isMobile ? 16 : 28;
+  const h1Size = isMobile ? 22 : 28;
 
   // Hooks para datos
   const { data: artefacts = [], isLoading: loadingArtefacts } = useArtefacts();
@@ -364,10 +375,11 @@ export default function NewMovement() {
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingHorizontal: Platform.OS === "web" ? 32 : 20,
-            paddingTop: Platform.OS === "web" ? 40 : 20,
-            paddingBottom: Platform.OS === "web" ? 32 : 20,
+            paddingHorizontal: pagePadX,
+            paddingTop: pagePadTop,
+            paddingBottom: 120,
           }}
+          keyboardShouldPersistTaps="handled"
         >
           <View
             style={{
@@ -381,8 +393,8 @@ export default function NewMovement() {
               style={{
                 backgroundColor: "#FFFFFF",
                 borderRadius: 16,
-                padding: 28,
-                marginBottom: 32,
+                padding: headerPad,
+                marginBottom: isMobile ? 20 : 32,
                 shadowColor: "#8B5E3C",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,
@@ -393,7 +405,7 @@ export default function NewMovement() {
               <Text
                 style={{
                   fontFamily: "MateSC-Regular",
-                  fontSize: 28,
+                  fontSize: h1Size,
                   color: "#8B5E3C",
                   marginBottom: 8,
                   fontWeight: "600",
@@ -417,8 +429,8 @@ export default function NewMovement() {
               style={{
                 backgroundColor: "#FFFFFF",
                 borderRadius: 16,
-                padding: 24,
-                marginBottom: 24,
+                padding: cardPad,
+                marginBottom: isMobile ? 16 : 24,
                 shadowColor: "#8B5E3C",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,
@@ -454,7 +466,7 @@ export default function NewMovement() {
                     alignItems: "center",
                   }}
                 >
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={{
                         fontFamily: "CrimsonText-Regular",
@@ -462,6 +474,8 @@ export default function NewMovement() {
                         color: selectedArtefactsNames ? "#4A3725" : "#B8967D",
                       }}
                       numberOfLines={2}
+                      ellipsizeMode="tail"
+                      flexShrink={1}
                     >
                       {selectedArtefactsNames || "Seleccionar pieza(s) arqueológica(s)"}
                     </Text>
@@ -522,7 +536,11 @@ export default function NewMovement() {
                       fontSize: 16,
                       color: selectedRequesterName ? "#4A3725" : "#B8967D",
                       flex: 1,
+                      minWidth: 0,
                     }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    flexShrink={1}
                   >
                     {selectedRequesterName || "Seleccionar solicitante (opcional)"}
                   </Text>
@@ -596,7 +614,11 @@ export default function NewMovement() {
                         fontSize: 16,
                         color: selectedShelf ? "#4A3725" : "#B8967D",
                         flex: 1,
+                        minWidth: 0,
                       }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      flexShrink={1}
                     >
                       {selectedShelf ? getShelfLabel(selectedShelf.code) : "Seleccionar estante"}
                     </Text>
@@ -617,25 +639,26 @@ export default function NewMovement() {
                     >
                       Seleccione nivel y columna:
                     </Text>
-                    <View
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 12,
-                        padding: 16,
-                        borderWidth: 1,
-                        borderColor: "#E5D4C1",
-                      }}
-                    >
-                      <ShelfSvgSelector
-                        levels={shelfLevels}
-                        columns={shelfColumns}
-                        selectedLevel={selectedLevel}
-                        selectedColumn={selectedColumn}
-                        onSlotClick={(levelIndex: number, column: string) => {
-                          setSelectedLevel(levelIndex);
-                          setSelectedColumn(column.toUpperCase());
+                    <View>
+                      <View
+                        style={{
+                          width: "100%",
+                          height: Platform.OS === "web" ? 300 : 380,
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
-                      />
+                      >
+                        <ShelfSvgSelector
+                          levels={shelfLevels}
+                          columns={shelfColumns}
+                          selectedLevel={selectedLevel}
+                          selectedColumn={selectedColumn}
+                          onSlotClick={(levelIndex: number, column: string) => {
+                            setSelectedLevel(levelIndex);
+                            setSelectedColumn(column.toUpperCase());
+                          }}
+                        />
+                      </View>
                     </View>
                   </View>
                 )}
@@ -819,23 +842,33 @@ export default function NewMovement() {
               </View>
             </View>
 
-            {/* Botones de Acción */}
-            <View style={{ gap: 16 }}>
-              <Button
-                title={createMovementMutation.isPending ? "Registrando Movimiento..." : "Registrar Movimiento"}
-                onPress={createMovementMutation.isPending ? () => {} : handleSubmit}
-                style={{
-                  opacity: isButtonDisabled ? 0.6 : 1,
-                }}
-                textStyle={{
-                  fontFamily: "MateSC-Regular",
-                  fontWeight: "bold",
-                  fontSize: 15,
-                }}
-              />
-            </View>
           </View>
         </ScrollView>
+
+        {/* Botón fijo fuera del ScrollView */}
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: "#E5D4C1",
+            backgroundColor: Colors.cream,
+            paddingHorizontal: pagePadX,
+            paddingVertical: isMobile ? 12 : 16,
+            paddingBottom: Platform.OS === "ios" ? (isMobile ? 24 : 32) : (isMobile ? 12 : 16),
+          }}
+        >
+          <Button
+            title={createMovementMutation.isPending ? "Registrando Movimiento..." : "Registrar Movimiento"}
+            onPress={createMovementMutation.isPending ? () => {} : handleSubmit}
+            style={{
+              opacity: isButtonDisabled ? 0.6 : 1,
+            }}
+            textStyle={{
+              fontFamily: "MateSC-Regular",
+              fontWeight: "bold",
+              fontSize: 15,
+            }}
+          />
+        </View>
       </KeyboardAvoidingView>
 
       {/* Modal de selección múltiple de artefactos */}
@@ -939,8 +972,28 @@ function ShelfSvgSelector({
 
           const x = gridOriginX + colIndex * slotWidth;
           const y = gridOriginY + levelIndex * levelHeight;
+          
+          const gapX = slotWidth * 0.12;
+          const gapY = levelHeight * 0.18;
+          const slotX = x + gapX;
+          const slotY = y + gapY;
+          const slotW = slotWidth - gapX * 2;
+          const slotH = levelHeight - gapY * 2;
 
-          return { id, uiLevel, uiCol, colLetter, x, y, levelIndex, colIndex };
+          return { 
+            id, 
+            uiLevel, 
+            uiCol, 
+            colLetter, 
+            x, 
+            y, 
+            levelIndex, 
+            colIndex,
+            slotX,
+            slotY,
+            slotW,
+            slotH,
+          };
         })
       ),
     [levels, columns, slotWidth, levelHeight, gridOriginX, gridOriginY]
@@ -948,13 +1001,44 @@ function ShelfSvgSelector({
 
   const outerStroke = 1.2;
 
+  // Handler para clic en slot
+  const handleSlotClick = (levelIdx: number, colLetter: string) => {
+    onSlotClick(levelIdx, colLetter);
+  };
+
+  // Calcular posiciones absolutas para el overlay
+  const getSlotPosition = (slot: (typeof slots)[0]) => {
+    return {
+      left: slot.slotX,
+      top: slot.slotY,
+      width: slot.slotW,
+      height: slot.slotH,
+    };
+  };
+
   return (
-    <Svg
-      width="100%"
-      height="100%"
-      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-      preserveAspectRatio="xMidYMid meet"
+    <View
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
+      <View
+        style={{
+          width: svgWidth,
+          height: svgHeight,
+          position: "relative",
+        }}
+      >
+        <Svg
+          width={svgWidth}
+          height={svgHeight}
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
       <Defs>
         <ClipPath id="gridRoundedClip">
           <Rect x={gridOriginX} y={gridOriginY} width={gridWidth} height={gridHeight} rx={12} />
@@ -1062,19 +1146,24 @@ function ShelfSvgSelector({
         )}
 
         {/* Slots */}
-        {slots.map(({ id, uiLevel, colLetter, x, y, levelIndex, colIndex }) => {
+        {slots.map((slot) => {
+          const {
+            id,
+            uiLevel,
+            uiCol,
+            levelIndex,
+            colIndex,
+            slotX,
+            slotY,
+            slotW,
+            slotH,
+            colLetter,
+          } = slot;
           const isSelected =
             selectedLevel === levelIndex && selectedColumn === colLetter;
           const fill = isSelected ? Colors.darkgreen : "#ffffff";
           const stroke = isSelected ? Colors.green : Colors.cremit;
           const labelColor = isSelected ? "#ffffff" : Colors.brown;
-
-          const gapX = slotWidth * 0.12;
-          const gapY = levelHeight * 0.18;
-          const slotX = x + gapX;
-          const slotY = y + gapY;
-          const slotW = slotWidth - gapX * 2;
-          const slotH = levelHeight - gapY * 2;
 
           const slotLabelFontSize = isSelected
             ? isLargeScreen
@@ -1094,15 +1183,7 @@ function ShelfSvgSelector({
           const textY = slotY + slotH / 2 + textOffsetY;
 
           return (
-            <G
-              key={id}
-              onPress={() => onSlotClick(levelIndex, colLetter)}
-              style={
-                Platform.OS === "web"
-                  ? ({ cursor: "pointer" } as any)
-                  : undefined
-              }
-            >
+            <G key={id}>
               <Rect
                 x={slotX + 1.2}
                 y={slotY + 1.6}
@@ -1147,7 +1228,35 @@ function ShelfSvgSelector({
         strokeWidth={1.2}
         pointerEvents="none"
       />
-    </Svg>
+        </Svg>
+
+        {/* Overlay con botones táctiles para móvil */}
+        {slots.map((slot) => {
+          const { id, levelIndex, colIndex, colLetter } = slot;
+          const position = getSlotPosition(slot);
+          // Ajuste fino para nivel 4 (compensar desalineación)
+          const topAdjustment =
+            levelIndex === levels - 1
+              ? Platform.OS === "ios"
+                ? -1
+                : -1.5
+              : 0;
+          return (
+            <Pressable
+              key={`overlay-${id}`}
+              onPress={() => handleSlotClick(levelIndex, colLetter)}
+              style={{
+                position: "absolute",
+                left: position.left,
+                top: position.top + topAdjustment,
+                width: position.width,
+                height: position.height,
+              }}
+            />
+          );
+        })}
+      </View>
+    </View>
   );
 }
 

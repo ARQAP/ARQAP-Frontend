@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
@@ -32,6 +33,9 @@ export default function MultiArtefactSelector({
   onSelect,
   onClose,
 }: MultiArtefactSelectorProps) {
+  const { width } = useWindowDimensions();
+  const isMobile = Platform.OS !== "web";
+  
   const [filters, setFilters] = useState<FilterValues>({
     name: "",
     material: "",
@@ -184,11 +188,14 @@ export default function MultiArtefactSelector({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { maxHeight: modalHeight }]}>
+      <View style={[styles.modalOverlay, isMobile && styles.modalOverlayMobile]}>
+        <View style={[
+          styles.modalContent,
+          isMobile ? styles.modalContentMobile : { maxHeight: modalHeight }
+        ]}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Seleccionar Piezas Arqueológicas</Text>
+          <View style={[styles.header, isMobile && styles.headerMobile]}>
+            <Text style={[styles.title, isMobile && styles.titleMobile]}>Seleccionar Piezas Arqueológicas</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.black} />
             </TouchableOpacity>
@@ -258,9 +265,19 @@ export default function MultiArtefactSelector({
                   <View style={styles.checkbox}>
                     {isSelected && <Ionicons name="checkmark" size={20} color={Colors.green} />}
                   </View>
-                  <View style={styles.artefactInfo}>
-                    <Text style={styles.artefactName}>{item.name}</Text>
-                    <Text style={styles.artefactDetails}>
+                  <View style={[styles.artefactInfo, { minWidth: 0 }]}>
+                    <Text 
+                      style={styles.artefactName}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {item.name}
+                    </Text>
+                    <Text 
+                      style={styles.artefactDetails}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
                       {item.material} • {(item.collection as any)?.name || "Sin colección"} • {classifierLabel} • {siteName} • {shelfLabel}
                     </Text>
                   </View>
@@ -298,7 +315,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: Platform.OS === "web" ? 20 : 16,
+    padding: Platform.OS === "web" ? 20 : 0,
+  },
+  modalOverlayMobile: {
+    backgroundColor: "transparent",
+    justifyContent: "flex-start",
+    padding: 0,
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
@@ -317,25 +339,41 @@ const styles = StyleSheet.create({
     // @ts-ignore - Web-only style
     overflow: "visible" as any,
   },
+  modalContentMobile: {
+    borderRadius: 0,
+    flex: 1,
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+    overflow: "hidden",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: Platform.OS === "web" ? 20 : 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5D4C1",
   },
+  headerMobile: {
+    padding: 12,
+  },
   title: {
-    fontSize: 22,
+    fontSize: Platform.OS === "web" ? 22 : 18,
     fontWeight: "600",
     color: Colors.black,
     fontFamily: "MateSC-Regular",
+  },
+  titleMobile: {
+    fontSize: 18,
   },
   closeButton: {
     padding: 4,
   },
   filtersSection: {
-    padding: 20,
+    padding: Platform.OS === "web" ? 20 : 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5D4C1",
     backgroundColor: "#FAFAF8",
@@ -348,10 +386,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: Platform.OS === "web" ? 16 : 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5D4C1",
     backgroundColor: "#FFFFFF",
+    flexWrap: Platform.OS === "web" ? "nowrap" : "wrap",
+    gap: Platform.OS === "web" ? 0 : 8,
+  },
+  actionsBarMobile: {
+    flexWrap: "wrap",
+    gap: 8,
+    padding: 12,
   },
   counter: {
     fontSize: 14,
@@ -362,6 +407,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: Platform.OS === "web" ? "nowrap" : "wrap",
   },
   actionButton: {
     paddingHorizontal: 12,
@@ -383,7 +429,7 @@ const styles = StyleSheet.create({
   artefactItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    padding: Platform.OS === "web" ? 16 : 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5D4C1",
   },
@@ -402,6 +448,7 @@ const styles = StyleSheet.create({
   },
   artefactInfo: {
     flex: 1,
+    minWidth: 0,
   },
   artefactName: {
     fontSize: 16,
@@ -416,7 +463,7 @@ const styles = StyleSheet.create({
     fontFamily: "CrimsonText-Regular",
   },
   footer: {
-    padding: 16,
+    padding: Platform.OS === "web" ? 16 : 12,
     borderTopWidth: 1,
     borderTopColor: "#E5D4C1",
     backgroundColor: "#FFFFFF",
