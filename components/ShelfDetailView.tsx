@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
+  FlatList,
   Platform,
   Pressable,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { ClipPath, Defs, G, Rect, Text as SvgText } from 'react-native-svg';
 import Colors from '../constants/Colors';
+import { ArtefactSummary } from '../repositories/artefactRepository';
 
 type SlotId = string;
 
@@ -22,6 +24,8 @@ type ShelfDetailViewProps = {
   onSlotClick?: (slotId: SlotId) => void;
   onClose?: () => void;
   initialSelectedSlot?: SlotId | null;
+  filteredPieces?: ArtefactSummary[];
+  onViewPieces?: () => void;
 };
 
 const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
@@ -31,6 +35,8 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
   onSlotClick,
   onClose,
   initialSelectedSlot,
+  filteredPieces = [],
+  onViewPieces,
 }) => {
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(initialSelectedSlot ?? null);
   
@@ -97,7 +103,7 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
 
   const handleSlotClick = (slotId: SlotId) => {
     setSelectedSlot(slotId);
-    // Llamar al callback si está definido
+    // Llamar al callback si está definido (ahora solo actualiza selección, no navega)
     onSlotClick?.(slotId);
   };
 
@@ -263,19 +269,53 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
             
             <View className="h-px bg-gray-100 w-full my-2" />
 
-            <View className="flex-1 justify-center py-4">
+            <View className="flex-1 py-4">
               {selectedSlotInfo ? (
-                <View className="bg-white border-2 border-green-600 rounded-2xl p-5 shadow-sm">
-                   <View className="flex-row justify-between items-start mb-2">
+                <View className="bg-white border-2 border-green-600 rounded-2xl p-5 shadow-sm flex-1 flex-col">
+                   <View className="flex-row justify-between items-start mb-3">
                       <View>
                         <Text className="text-xs font-bold uppercase text-green-700 mb-1">Posición Seleccionada</Text>
                         <Text className="text-2xl font-bold text-gray-900">{selectedSlotInfo.level}-{selectedSlotInfo.column}</Text>
                       </View>
                       <Ionicons name="checkmark-circle" size={24} color={Colors.darkgreen} />
                    </View>
+                   
+                   {/* Lista de piezas */}
+                   <View className="flex-1 mt-3 mb-3">
+                     <Text className="text-xs font-bold uppercase text-gray-500 mb-2">
+                       Piezas ({filteredPieces.length})
+                     </Text>
+                     {filteredPieces.length > 0 ? (
+                       <FlatList
+                         data={filteredPieces}
+                         keyExtractor={(item) => String(item.id)}
+                         renderItem={({ item }) => (
+                           <View className="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-200">
+                             <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+                               {item.name}
+                             </Text>
+                             <Text className="text-xs text-gray-600 mt-0.5" numberOfLines={1}>
+                               {item.material}
+                               {item.collectionName && ` · ${item.collectionName}`}
+                             </Text>
+                           </View>
+                         )}
+                         scrollEnabled={true}
+                         showsVerticalScrollIndicator={false}
+                         style={{ maxHeight: 200 }}
+                       />
+                     ) : (
+                       <View className="bg-gray-50 rounded-lg p-4 border border-dashed border-gray-300">
+                         <Text className="text-xs text-gray-500 text-center">
+                           No hay piezas en esta posición
+                         </Text>
+                       </View>
+                     )}
+                   </View>
+
                    <Pressable
-                      className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3.5 px-4 rounded-xl shadow-md hover:bg-[#3a491b] active:scale-95 transition-all mt-4"
-                      onPress={() => selectedSlot && onSlotClick?.(selectedSlot)}
+                      className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3.5 px-4 rounded-xl shadow-md hover:bg-[#3a491b] active:scale-95 transition-all"
+                      onPress={onViewPieces}
                     >
                       <Ionicons name="eye-outline" size={20} color="#FFFFFF" />
                       <Text className="text-white text-base font-bold">Ver Piezas</Text>
@@ -424,13 +464,48 @@ const ShelfDetailView: React.FC<ShelfDetailViewProps> = ({
               </View>
 
               {selectedSlotInfo ? (
-                <Pressable
-                  className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3 px-4 rounded-full my-2.5 shadow-lg active:scale-[0.98] active:bg-[#656e55]"
-                  onPress={() => selectedSlot && onSlotClick?.(selectedSlot)}
-                >
-                  <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
-                  <Text className="text-white text-[15px] font-bold">Ver piezas</Text>
-                </Pressable>
+                <>
+                  {/* Lista de piezas */}
+                  <View className="mt-2 mb-3">
+                    <Text className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: Colors.brown }}>
+                      Piezas ({filteredPieces.length})
+                    </Text>
+                    {filteredPieces.length > 0 ? (
+                      <FlatList
+                        data={filteredPieces}
+                        keyExtractor={(item) => String(item.id)}
+                        renderItem={({ item }) => (
+                          <View className="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-200">
+                            <Text className="text-xs font-semibold text-gray-900" numberOfLines={1}>
+                              {item.name}
+                            </Text>
+                            <Text className="text-[10px] text-gray-600 mt-0.5" numberOfLines={1}>
+                              {item.material}
+                              {item.collectionName && ` · ${item.collectionName}`}
+                            </Text>
+                          </View>
+                        )}
+                        scrollEnabled={true}
+                        showsVerticalScrollIndicator={false}
+                        style={{ maxHeight: 150 }}
+                      />
+                    ) : (
+                      <View className="bg-gray-50 rounded-lg p-3 border border-dashed border-gray-300">
+                        <Text className="text-[10px] text-gray-500 text-center">
+                          No hay piezas en esta posición
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Pressable
+                    className="flex-row items-center justify-center gap-2 bg-[#4A5D23] py-3 px-4 rounded-full my-2.5 shadow-lg active:scale-[0.98] active:bg-[#656e55]"
+                    onPress={onViewPieces}
+                  >
+                    <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
+                    <Text className="text-white text-[15px] font-bold">Ver piezas</Text>
+                  </Pressable>
+                </>
               ) : (
                 <Text className="text-sm text-center py-2 leading-[21px]" style={{ color: Colors.green }}>
                   Toca un espacio en la estantería para ver sus detalles y las piezas almacenadas.

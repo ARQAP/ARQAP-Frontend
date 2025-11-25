@@ -1,17 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import ShelfDetailView from '../../../components/ShelfDetailView';
 import Colors from '../../../constants/Colors';
+import { useArtefactSummaries } from '../../../hooks/useArtefact';
 import { usePhysicalLocations } from '../../../hooks/usePhysicalLocation';
 import { useShelf } from '../../../hooks/useShelf';
+import { ArtefactSummary } from '../../../repositories/artefactRepository';
 
 type SlotId = string;
 
 export default function ShelfDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
 
   // Normalizamos los params
   const rawShelfId = params.shelfId as string | undefined;
@@ -56,6 +59,9 @@ export default function ShelfDetailScreen() {
   // Hooks de datos
   const { data: shelf, isLoading: shelfLoading } = useShelf(shelfIdNumber);
   const { data: allLocations, isLoading: locationsLoading } = usePhysicalLocations();
+  const { data: artefactsData, isLoading: artefactsLoading } = useArtefactSummaries(
+    shelfIdNumber ? { shelfId: shelfIdNumber } : undefined
+  );
 
   // Calcular niveles y columnas desde locations
   const { levels, columns } = useMemo(() => {
@@ -95,22 +101,45 @@ export default function ShelfDetailScreen() {
     };
   }, [allLocations, shelfIdNumber]);
 
-  const loading = shelfLoading || locationsLoading;
+  const loading = shelfLoading || locationsLoading || artefactsLoading;
 
   const shelfName =
     shelfLabelParam || (shelf ? `Estante ${shelf.code}` : 'Estantería');
 
-  const handleSlotClick = (slotId: string) => {
+  // Extraer información del slot seleccionado
+  const selectedSlotInfo = useMemo(() => {
+    if (!selectedSlot) return null;
+    const match = selectedSlot.match(/L(\d+)-C(.+)/);
+    if (!match) return null;
+    const [, levelNum, columnPart] = match;
+    return { level: Number(levelNum), column: String(columnPart).toUpperCase() };
+  }, [selectedSlot]);
 
-    // slotId normalmente tiene la forma L{nivel}-C{col}, donde {col}
-    // ahora puede ser letra (A,B,...) o número. Conservamos la parte
-    // después de la `C` tal cual para pasarla a la siguiente pantalla.
-    const match = slotId.match(/L(\d+)-C(.+)/);
+  // Filtrar piezas por nivel y columna seleccionados
+  const filteredPieces = useMemo(() => {
+    if (!artefactsData || !selectedSlotInfo) return [];
+    
+    return (artefactsData as ArtefactSummary[]).filter((piece) => {
+      const levelMatch = piece.level === selectedSlotInfo.level;
+      const columnMatch = piece.column?.toUpperCase() === selectedSlotInfo.column;
+      return levelMatch && columnMatch;
+    });
+  }, [artefactsData, selectedSlotInfo]);
+
+  // Manejar click en slot: solo actualizar selección, no navegar
+  const handleSlotClick = (slotId: string) => {
+    setSelectedSlot(slotId);
+  };
+
+  // Manejar navegación a View_pieces cuando se presiona "Ver piezas"
+  const handleViewPieces = () => {
+    if (!selectedSlot || !shelfIdNumber) return;
+
+    const match = selectedSlot.match(/L(\d+)-C(.+)/);
     if (!match) return;
 
     const [, levelNum, columnPart] = match;
 
-    // Navegamos a la vista de piezas pasando el valor de columna tal cual
     router.push({
       pathname: '/(tabs)/archaeological-Pieces/View_pieces',
       params: {
@@ -118,7 +147,7 @@ export default function ShelfDetailScreen() {
         shelfLabel: shelfName,
         level: String(levelNum),
         column: String(columnPart),
-        slotId,
+        slotId: selectedSlot,
       },
     });
   };
@@ -170,6 +199,9 @@ export default function ShelfDetailScreen() {
       columns={columns}
       onSlotClick={handleSlotClick}
       onClose={() => router.back()}
+      initialSelectedSlot={selectedSlot}
+      filteredPieces={filteredPieces}
+      onViewPieces={handleViewPieces}
     />
   );
 }
